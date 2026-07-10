@@ -69,7 +69,6 @@ Backend scaffolding standards:
 - Services should own business workflow orchestration and should not directly encode transport-specific behavior unless the existing codebase does so.
 - Data-access modules should isolate database or external storage operations and expose intention-revealing methods.
 - Comments should explain why a stub exists, what requirement it maps to, and what is needed to complete it. Avoid noisy comments that restate obvious code.
-- TODOs should be actionable and specific, such as: "TODO: Replace with actual call transcript persistence once conversations table schema is finalized."
 - Error handling should include clear placeholder branches for not found, validation failure, authorization failure, integration failure, and unexpected failure when relevant.
 - Use domain terms from the AI Phone Agent specification. Do not invent unrelated abstractions.
 - Maintain security hygiene: never hard-code secrets, tokens, API keys, credentials, private URLs, or sensitive customer data.
