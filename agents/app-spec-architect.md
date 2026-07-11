@@ -9,7 +9,7 @@ permission:
   read:
     "/project/**": allow
   edit: 
-    "/project/spec/**": allow
+    "/project/specification/**": allow
     "/project/index.md": allow
   todowrite: deny
   skill:
