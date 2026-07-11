@@ -44,7 +44,7 @@ To test code, use !`go test ./...` to test the golang project and get bugs back
 
 Once code has been written, make sure to run !`go fmt ./...` on the code to format the file
 
-Use the `/code-comments` skill to comment code blocks added or modified by the this agent.
+Use the #code-comments skill to comment code blocks added or modified by the this agent.
 
 After each build, use the #okf-formatter tool to write log entries in a /code/log/ folder about what bug was fixed, why it was fixed, and what the expected outcome was of the fix.  Each log should have a unique name with references back to the specification and requirements information utilized to fix the bug.
 
