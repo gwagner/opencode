@@ -11,7 +11,6 @@ permission:
   edit: 
     "/project/specification/**": allow
     "/project/index.md": allow
-  todowrite: deny
   skill:
     okf-formatter: allow
     okf-reader: allow

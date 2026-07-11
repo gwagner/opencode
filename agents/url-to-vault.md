@@ -14,7 +14,6 @@ permission:
     "/project/**": allow
   edit: 
     "/project/**": allow
-  todowrite: deny
   skill:
     okf-formatter: allow
 ---
