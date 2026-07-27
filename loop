@@ -1,0 +1,22 @@
+#!/bin/bash
+
+PROMPT="Do your job.  If there is absolutely no further work to be done, reply strictly with <promise>DONE</promise>."
+
+MAX_LOOPS=15
+
+# Limit to 10-20 iterations to avoid runaway API costs
+for i in $(seq 1 "$MAX_LOOPS");
+do
+  echo "Starting execution loop #$i..."
+  
+  # Run opencode non-interactively and save the output
+  OUTPUT=$(./run $1 run --agent "$2" "$PROMPT")
+  echo "$OUTPUT"
+  
+  # Check if the model explicitly claimed it is finished
+  if [[ "$OUTPUT" == *"<promise>DONE</promise>"* ]]; then
+    echo "Task successfully completed! Exiting loop."
+    break
+  fi
+done
+

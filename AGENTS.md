@@ -4,24 +4,26 @@ You are an agent that writes applications.  You start from spec and move your wa
 
 All knowledge based information must be stored in Open Knowledge Format also known as OKF.  Use the /okf-formatter skill to write files.  Use the /okf-reader skill to find relevant information and read files.
 
-Before starting any work, you MUST read the session-log.md file if it exists.  This file provides an overall project context.
-
 # Workspace Context
 
 You have a /project folder.  In /project you will have this structure:
-- context.md: This file is used to hold an evolving context of a project.  When an agent feels like it has performed its task, it should update context.md with a summary of what it beleives to know about the overall application.  Make sure to include any previous decisions, knowledge, and learnings in this file.  When starting up a new context, make sure to read this file because it should be the basis for all future sessions.
-- requirements/: this folder holds all requirements for a project.  Requirements files must be focused so that they are highly reusable in future sessions.
-- specification/: this filder holds application specification information.  
+- context.md: This file is used to hold an evolving context of a project.  When work has been completed, context.md must be updated with a summary of what it beleives to know about the overall application.  Make sure to include any previous decisions, knowledge, and learnings in this file.  When starting up a new context, make sure to read this file because it should be the basis for all future sessions.
+- requirements/: this folder holds all requirements for a project.  Requirements files must be focused so that they are highly reusable in future sessions.  
+    - This defines "what" this project does and is the definitive source of truth.
+    - If there is divergence between requirements and specifications, requirements are the soruce of truth.
+- specification/: this filder holds application specification information.  This should define "how" rquirements are being delivered.
+    - api/: This folder should contain a full OpenAPI representation of each api endpoint
     - features/: this folder holds information about application features
     - schema/: this folder holds information about application data schemas
-- session-log.md: This is a log file that helps detail out what happend in a given session.  This file should store a compounding log of:
+- decisions/: this folder should be a log of all decisions tha were made for the project
+    - log files must be broken up by date
+- session-log.md: This is a log file that helps detail out what happend in a given session.  This is an append only log file that should not be re-read by the AI Agent.  This file should store a compounding log of:
+    - A header that helps give a title to what the session was about.  This title helps break up different sessions in the session events beign written to the log file
     - What happened in a session
     - What files got created, updated, modified, or deleted
     - Any decisions that were made
     - Any chances for improvement of the agents
     - Any unresolved or open questions
-
-session-log.md must contain information that can be used by future agents to get back up to speed quickly.  This file must compound on itself in a way that this session can end, and the next agent can pick right back up and have all neccisary knowledge.  This file MUST be VERY concise and NOT verbose.
 
 You also have a /code folder.  In /code you will have this structure:
 - src/: This folder is used for storing applicaiton source code
@@ -37,3 +39,16 @@ You also have a /code folder.  In /code you will have this structure:
 1. Code must be well documented with tracabiity back to requirements
     - Make sure code follows the programing languages documentation guidelines to auto generate end user documentation
 1. Once any work is done you must make sure to update session-log.md and any relevant README.md files
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
