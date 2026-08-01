@@ -1,4 +1,4 @@
-from  ghcr.io/anomalyco/opencode:1.17.14
+FROM ghcr.io/anomalyco/opencode:1.18.10
 
 ENV PATH="$PATH:/root/.local/bin/"
 

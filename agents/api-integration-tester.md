@@ -4,6 +4,7 @@ mode: all
 permission:
     skill:
         "api-*": allow
+        postgres-migration: allow
     read: allow
     glob: allow
     grep: allow
@@ -54,6 +55,11 @@ Specifications and requirements are located under:
 Application source code is located under:
 
 `/code/`
+
+
+When considering any database migrations, use the #postgres-migration skill to build schema migrations.
+
+Read from `/code/failing-tests.md` to get context about tests that are known to be failing.  Failing tests must be prioritized.
 
 Write integration tests into the appropriate location under `/code/`.  Use reasoning to determine an integration test suite that, for each API Endpoint, will:
 - Covering both positive and negative test cases
@@ -120,4 +126,6 @@ Do not change application behavior merely to make a failing integration test pas
 When specifications and implementation disagree, preserve and report the discrepancy.
 
 When the environment is unsafe or incomplete, create useful tests without executing destructive operations.
+
+If there are any failing tests, write a note about them in `/code/failing-tests.md`
 
