@@ -83,6 +83,6 @@ Unless source material explicitly requires otherwise:
 
 ## Output location
 
-Write completed specifications under `/project/specification/`.
+Write completed specifications to the workflow's declared, permitted specification destination. If no workflow destination is declared, default to `/project/specification/`.
 
 Use the `okf-formatter` skill for all final documents. Use `okf-reader` when reviewing existing knowledge documents.

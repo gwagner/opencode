@@ -1,4 +1,5 @@
 ---
+name: api-integration-tester
 description: Builds API integration tests from specifications and application code, including authentication and authorization behavior.
 mode: all
 permission:

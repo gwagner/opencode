@@ -1,4 +1,5 @@
 ---
+name: app-spec-architect
 description: Designs implementation-ready application specifications from product requirements. Use for architecture, workflows, data, APIs, UI, and delivery design.
 mode: all
 model: "openai/gpt-5.4"

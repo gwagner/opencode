@@ -1,4 +1,5 @@
 ---
+name: reconcile-spec-to-code
 description: Compares authoritative project specifications to code-derived specifications, implements confirmed gaps in /code, validates the result, and iterates until alignment.
 mode: primary
 temperature: 0.1

@@ -1,4 +1,5 @@
 ---
+name: url-to-vault
 description: Ingests a web page into an Obsidian or OKF vault as a structured, durable, searchable note.
 mode: all
 permission:

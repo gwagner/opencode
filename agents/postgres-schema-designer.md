@@ -1,4 +1,5 @@
 ---
+name: postgres-schema-designer
 description: Designs PostgreSQL schema specifications from approved application specifications. Use for entities, constraints, indexes, relationships, and migration-ready table documentation.
 mode: all
 model: "openai/gpt-5.4"

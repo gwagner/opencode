@@ -1,4 +1,5 @@
 ---
+name: backend-scaffolder
 description: Scaffolds maintainable backend code from approved requirements and application specifications. Use when a backend feature needs routes, services, data access, and reachable wiring.
 mode: all
 permission:

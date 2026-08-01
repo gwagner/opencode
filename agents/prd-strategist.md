@@ -1,4 +1,5 @@
 ---
+name: prd-strategist
 description: Creates, refines, and reconciles product requirements as focused OKF documents.
 mode: all
 model: "openai/gpt-5.4"

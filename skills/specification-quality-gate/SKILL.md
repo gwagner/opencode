@@ -62,7 +62,7 @@ For reverse-engineered specifications verify:
 
 Use `okf-formatter`.
 
-Write only under `/project/specification/`.
+Write only to the workflow's declared, permitted specification destination. If no workflow destination is declared, default to `/project/specification/`.
 
 Return a concise completion summary listing:
 

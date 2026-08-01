@@ -1,4 +1,5 @@
 ---
+name: code-spec-engineer
 description: Translates approved product requirements and application architecture into implementation-ready feature specifications. Use before production implementation when code-level contracts remain undefined.
 mode: all
 model: "openai/gpt-5.4"
