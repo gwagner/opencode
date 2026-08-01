@@ -1,6 +1,6 @@
 ---
-name: okf-reogranizer
-description: reorganize an OKF bundle
+name: okf-reorganizer
+description: Reorganizes an OKF bundle while preserving concepts, links, metadata, and history.
 ---
 
 # What I Do

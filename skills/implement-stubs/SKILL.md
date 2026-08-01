@@ -42,7 +42,7 @@ Do not implement behavior that is materially ambiguous.
 
 ## Before editing
 
-- Confirm the Git working tree is clean.
+- Inspect the working tree and preserve changes you did not make.
 - Identify the enclosing function.
 - Read the complete source file.
 - Find callers and references.
@@ -76,6 +76,6 @@ If validation fails:
 
 - attempt a focused correction;
 - do not make unrelated changes;
-- restore the working tree if the implementation cannot be validated.
+- leave the focused change in place and report the validation failure; do not revert collaborative work.
 
 Never commit, push, or open a pull request.

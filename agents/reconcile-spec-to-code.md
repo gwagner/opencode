@@ -5,7 +5,7 @@ temperature: 0.1
 permission:
   read: 
     "/code/**": allow
-    "/project/specification/**": deny
+    "/project/specification/**": allow
   glob: allow
   grep: allow
   list: allow
