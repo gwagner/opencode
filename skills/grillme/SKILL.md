@@ -3,4 +3,4 @@ name: grillme
 description: start a grilling session
 ---
 
-Start a Q&A session going through any open questions about the application design.  Go question by question until there is a very clear understanding and we have gotten rid of any ambiquity.
+Ask one concise question at a time only for ambiguity that blocks a safe design or change. Record or label non-blocking uncertainty rather than delaying work indefinitely.

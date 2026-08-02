@@ -10,16 +10,17 @@ metadata:
 
 Use this skill to compare:
 
-- Authoritative specification: `/project/specification/`
+- Product requirements: `/project/requirements/`
+- Approved specification: `/project/specification/`
 - Code-derived specification: `/code/specification/`
 
-The authoritative specification always wins unless the user explicitly changes that policy.
+Requirements override conflicting specifications. An approved specification defines required behavior only when it does not conflict with requirements. Stop and report unresolved requirement/specification conflicts.
 
 ## Inputs
 
-Read both specification trees using `okf-reader`.
+Read requirements and both specification trees using `okf-reader`.
 
-Treat `/project/specification/` as the required product behavior.
+Treat `/project/requirements/` as product authority and `/project/specification/` as approved delivery design.
 
 Treat `/code/specification/` as a description of current implementation behavior, not as a competing source of truth.
 

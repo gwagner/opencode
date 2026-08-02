@@ -44,7 +44,7 @@ For each screen define:
 For Lit components, describe:
 
 - Public properties
-- Internal reactive state
+- Presentation-only reactive state; never backend data state
 - Custom events
 - Slots
 - Lifecycle behavior
@@ -61,3 +61,5 @@ For Lit components, describe:
 - Define stale or concurrent update behavior.
 - Identify data shown to business users, not merely that a dashboard exists.
 - Do not invent frontend implementation when none exists; label required surfaces as proposed or expected.
+- Define a server-fragment versus Lit-island boundary: HTMX owns forms, requests, errors, and server-fragment swaps; Lit owns interaction behavior and emits events.
+- Never specify an HTMX swap inside Lit-owned DOM. Lit receives server-provided inputs and does not fetch or own backend-derived state.

@@ -101,14 +101,13 @@ Do not mix transactional and non-transactional operations in one file when split
 
 Create the new file without replacing an existing path.
 
-After the file is created:
+Until validation is complete:
 
 - Re-read it to verify the contents.
-- Do not edit it again.
-- If verification reveals a problem, create another migration that corrects it.
+- Correct the newly created file when verification reveals a problem.
 - Report the exact path created.
 
-The immutability rule applies even during the same task: once written, the migration file is final.
+After validation or commit, existing migration files are immutable. Create a new corrective migration for later changes.
 
 ### 6. Validate
 

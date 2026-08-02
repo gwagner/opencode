@@ -1,11 +1,11 @@
 ---
 name: git-auto-commit
-description: Automatically creates a safe, verbose Git commit for agent-owned code changes after all applicable validation succeeds. Use before editing when a code-changing agent must commit its work.
+description: Creates a safe, verbose Git commit for agent-owned validated changes when the user explicitly requests a commit.
 ---
 
 # Git auto-commit
 
-Load before the first edit. This skill owns the candidate file list for the task.
+Use only when the user explicitly requests a commit. Load before the first edit when used; this skill owns the candidate file list.
 
 1. Record `git status --porcelain=v1 -z` and require an empty index. Preserve all pre-existing worktree changes; exclude every path present in the baseline from this commit.
 2. Track only files created or edited by this agent after the baseline. Do not commit when ownership of a changed path is uncertain.

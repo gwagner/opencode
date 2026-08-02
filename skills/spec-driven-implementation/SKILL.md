@@ -12,12 +12,13 @@ Use this skill after `specification-reconciliation` has identified confirmed gap
 
 ## Source-of-truth policy
 
-- `/project/specification/` defines required behavior.
+- `/project/requirements/` defines required behavior and overrides conflicting specifications.
+- `/project/specification/` defines approved delivery design when consistent with requirements.
 - `/code/specification/` describes current behavior.
 - `/code/specification/reconciliation-report.md` tracks differences.
 - Production code under `/code/` is the implementation target.
 
-Never alter `/project/specification/` merely to match existing code.
+Never alter requirements or specifications merely to match existing code. Stop and report requirement/specification conflicts.
 
 ## Implementation sequence
 

@@ -5,7 +5,7 @@ description: Discovers and runs the narrowest project-native formatting, build, 
 
 # Project validation
 
-Project specific validation steps are held in /code/validation.md.  Follow the guidance of that file to perform project validation
+If `/code/validation.md` exists, follow it. Otherwise inspect project scripts, manifests, CI, and contributor guidance for supported validation.
 
 1. Inspect existing scripts, manifests, CI, and contributor guidance for supported commands.
 2. Run the narrowest formatter and focused tests covering the change.
