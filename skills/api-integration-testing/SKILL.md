@@ -55,7 +55,7 @@ Depending on endpoint type, test:
 | Authorized    | authenticated unauthorized rejection |
 | Authorized    | authenticated authorized success     |
 
-Use the API authentication skill for detailed authentication behavior.
+Use `api-auth-testing` for detailed authentication behavior.
 
 # Contract assertions
 
@@ -235,4 +235,3 @@ Extract shared utilities when they eliminate meaningful repetition, especially:
 Avoid premature frameworks or elaborate internal DSLs.
 
 Establish readable working tests first.
-

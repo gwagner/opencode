@@ -111,23 +111,7 @@ For bundle overview questions:
 - Then read child `index.md` files.
 - Summarize by directory, concept type, or tag.
 
-For validation questions:
-
-A bundle conforms to OKF v0.1 if:
-
-1. Every non-reserved `.md` file has parseable YAML frontmatter.
-2. Every concept frontmatter block has a non-empty `type`.
-3. Every `index.md` and `log.md`, when present, follows OKF structure.
-
-Treat all other guidance as soft.
-
-Do not fail validation for:
-
-- Missing optional fields.
-- Unknown `type` values.
-- Unknown additional frontmatter keys.
-- Broken cross-links.
-- Missing `index.md`.
+For validation questions, use the canonical OKF validation rules in `okf-formatter`. This skill only reports observed bundle state; it does not add independent validity rules.
 
 ## Editing Rules
 

@@ -78,4 +78,4 @@ If validation fails:
 - do not make unrelated changes;
 - leave the focused change in place and report the validation failure; do not revert collaborative work.
 
-Never commit, push, or open a pull request.
+Never push or open a pull request. Commit only when the user explicitly requests it and `git-auto-commit` safety gates pass.

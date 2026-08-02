@@ -32,6 +32,7 @@ permission:
     "/code/**": allow
     "/project/requirements/**": allow
     "/project/specification/**": allow
+    "/project/session-log.md": allow
   read:
     "/code/**": allow
     "/project/requirements/**": allow

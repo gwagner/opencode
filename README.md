@@ -37,7 +37,7 @@
 | frontmatter-fixer | Repairs Markdown frontmatter. |
 | htmx | Implements server-fragment requests and safe swap ownership. |
 | gap-risk-analysis | Identifies gaps, risks, and assumptions. |
-| git-auto-commit | Automatically commits agent-owned, validated Git changes with a verbose rationale. |
+| git-auto-commit | Creates an explicit-request commit for validated agent-owned changes. |
 | go-code-standards | Applies focused Go standards. |
 | graphify | Efficiently queries and updates an existing code knowledge graph. |
 | grillme | Clarifies open design questions. |

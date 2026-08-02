@@ -200,17 +200,7 @@ When an agent reorganizes OKF content:
 
 ### Validation After Reorganization
 
-After reorganizing, check:
-
-1. Every non-reserved `.md` file has parseable YAML frontmatter.
-2. Every concept has a non-empty `type`.
-3. Reserved filenames are only `index.md` or `log.md`.
-4. `index.md` files follow index structure.
-5. `log.md` files use date headings in `YYYY-MM-DD`.
-6. Internal links affected by moves were updated.
-7. No useful frontmatter, citations, examples, schema, or resource bindings were lost.
-
-Do not reject the bundle for missing optional fields, unknown types, unknown frontmatter keys, broken links, or missing indexes.
+Use the canonical validation rules in `okf-formatter`. Also confirm affected links were updated and useful frontmatter, citations, examples, schema, and resource bindings were preserved.
 
 ### User-Facing Summary
 

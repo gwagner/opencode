@@ -21,7 +21,7 @@ Create PostgreSQL schema migrations as immutable, forward-only SQL files in:
 3. Never reuse an existing migration filename.
 4. If an existing migration is incorrect, create a new migration that corrects or reverses it.
 5. Before writing a migration, list and inspect `/code/migrations` to understand the current migration history.
-6. Treat a migration as immutable immediately after its file is created.
+6. Treat a migration as immutable after validation or commit.
 7. Write only schema-migration SQL to `/code/migrations`. Do not place application code or generated artifacts there.
 8. Do not execute migrations against a database unless the user explicitly asks you to do so.
 

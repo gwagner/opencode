@@ -1,6 +1,6 @@
 ---
 name: specification-reconciliation
-description: Compares an authoritative application specification with a code-derived specification, identifies behavioral and structural gaps, and creates a traceable reconciliation plan.
+description: Compares requirements and consistent approved specifications with code-derived behavior to create a traceable reconciliation plan.
 compatibility: opencode
 metadata:
   domain: specification-reconciliation
@@ -65,6 +65,8 @@ Do not treat extra implementation as correct merely because it exists.
 Do not modify `/project/specification/` to make a difference disappear.
 
 ## Reconciliation report
+
+Use `okf-formatter` for the report and regenerated code-derived documents. The report must use OKF frontmatter with `type: reconciliation-report`.
 
 Write the report to:
 

@@ -4,6 +4,10 @@ description: Ingests a web page into an Obsidian or OKF vault as a structured, d
 mode: all
 permission:
   bash: deny
+  webfetch: allow
+  glob: allow
+  grep: allow
+  list: allow
   external_directory:
     "/project/**": allow
   read:

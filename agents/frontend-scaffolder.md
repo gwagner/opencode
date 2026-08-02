@@ -17,11 +17,14 @@ permission:
     "git status *": allow
     "git diff *": allow
     "git ls-files *": allow
+    "git add *": allow
+    "git commit --only *": allow
     "rg *": allow
   external_directory:
     "/code/**": allow
     "/project/specification/**": allow
     "/project/requirements/**": allow
+    "/project/session-log.md": allow
   read:
     "/code/**": allow
     "/project/specification/**": allow

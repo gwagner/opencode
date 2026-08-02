@@ -1,18 +1,16 @@
 ---
 name: frontmatter-fixer
-description: fix frontmatter so that it is valid
+description: Validates and repairs YAML frontmatter, including required OKF concept fields when applicable.
 ---
 
-# What I Do
+# Frontmatter validation
 
-Write or rewrite frontmatter description fields. Use when creating or updating any markdown document that has a frontmatter when:
-- A field exceeds 1024 characters
-- A field uses forbidden YAML multiline indicators (>-, |-)
-- A field contains colons that trigger quoting
-- Ensure fields are single-line, complete, informative, front-loaded with critical information.
-- Do not change field types when making corrections
-- Consider each field in a frontmatter independently
+Use when creating or repairing Markdown frontmatter.
 
-The goal is to make sure that a frontmatter is made up of valid YAML that adheres to the YAML spec.
-
+1. Confirm opening and closing `---` delimiters and parseable YAML.
+2. Preserve unknown keys and existing field types unless correcting invalid YAML.
+3. Quote values when YAML syntax requires it; do not use forbidden multiline indicators when repository policy forbids them.
+4. Keep descriptions single-line, complete, informative, and front-loaded.
+5. For an OKF concept, require a non-empty `type`; do not require `type` for agent, skill, config, index, or log files.
+6. Report repaired fields and any unresolved invalid value.
 

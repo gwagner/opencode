@@ -4,6 +4,9 @@ description: Reverse-engineers an existing codebase into an evidence-backed appl
 mode: primary
 temperature: 0.1
 permission:
+  external_directory:
+    "/code/**": allow
+    "/project/session-log.md": allow
   read:
     "/code/**": allow
   glob: allow

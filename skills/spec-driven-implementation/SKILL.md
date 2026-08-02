@@ -1,6 +1,6 @@
 ---
 name: spec-driven-implementation
-description: Implements code changes required to align a codebase with an authoritative application specification, including tests, migrations, validation, and regenerated code-derived documentation.
+description: Implements code changes aligning a codebase with requirements and consistent approved specifications, including tests, migrations, validation, and regenerated documentation.
 compatibility: opencode
 metadata:
   domain: implementation
