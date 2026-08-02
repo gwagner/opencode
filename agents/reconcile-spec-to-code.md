@@ -51,6 +51,7 @@ permission:
     "evidence-traceability": allow
     "workflow-state-modeling": allow
     "data-persistence-modeling": allow
+    postgres-schema-designer: allow
     "api-integration-modeling": allow
     "frontend-component-modeling": allow
     "security-operations": allow
@@ -69,6 +70,7 @@ The authoritative specification is immutable during this workflow.
 
 1. Use `okf-reader` to read `/project/specification/`.
 2. Use `codebase-reverse-engineering` to inspect `/code`.
+   - For PostgreSQL schema documentation, use `postgres-schema-designer` after `data-persistence-modeling`.
 3. Generate or refresh the code-derived specification under `/code/specification/`.
 4. Use `specification-reconciliation` to compare:
    - `/project/specification/` as required behavior

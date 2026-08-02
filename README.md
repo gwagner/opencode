@@ -13,7 +13,6 @@ OpenCode assets are loaded from `.opencode/`. Root `agents/` and `skills/` mirro
 | code-implementor | Implements focused, evidence-based code changes. |
 | code-spec-engineer | Produces implementation-ready feature specifications. |
 | opencode-optimizer | Audits OpenCode agents and skills. |
-| postgres-schema-designer | Designs PostgreSQL schema specifications. |
 | prd-strategist | Creates and refines OKF requirements. |
 | reconcile-spec-to-code | Reconciles specifications with implementation. |
 | reverse-engineer-app-spec | Recovers an evidence-backed specification from code. |
@@ -44,6 +43,7 @@ OpenCode assets are loaded from `.opencode/`. Root `agents/` and `skills/` mirro
 | okf-reader | Reads OKF knowledge bundles. |
 | okf-reorganizer | Reorganizes an OKF bundle. |
 | postgres-migration | Creates forward-only PostgreSQL migrations. |
+| postgres-schema-designer | Designs PostgreSQL schema specification documents. |
 | product-modeling | Models product objectives and workflows. |
 | requirements-analysis | Analyzes product requirements. |
 | safe-code-change | Performs focused, collaborative-safe code changes. |
