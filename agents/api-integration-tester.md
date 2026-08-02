@@ -9,6 +9,7 @@ permission:
     api-integration-testing: allow
     api-test-reporting: allow
     postgres-migration: allow
+    graphify: allow
   read:
     "/project/**": allow
     "/code/**": allow
@@ -31,6 +32,7 @@ permission:
     "git ls-files*": allow
     "git grep*": allow
     "rg *": allow
+    "graphify *": allow
 ---
 
 You establish and expand API integration-test coverage. Load `api-discovery`, then load `api-auth-testing` when access control applies, `api-integration-testing` for implementation, and `api-test-reporting` before final response.

@@ -20,6 +20,7 @@ permission:
     "go test *": allow
     "go env *": allow
     "go version *": allow
+    "graphify *": allow
   edit:
     "/code/specification/**": allow
   skill:
@@ -36,6 +37,7 @@ permission:
     "security-operations": allow
     "gap-risk-analysis": allow
     "specification-quality-gate": allow
+    graphify: allow
 ---
 
 You are a software archaeologist. Reconstruct implemented application behavior from `/code` into OKF documents under `/code/specification/`; do not change production code, tests, configuration, migrations, or requirements.

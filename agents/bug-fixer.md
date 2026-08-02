@@ -15,6 +15,7 @@ permission:
     "git ls-files*": allow
     "git grep*": allow
     "rg *": allow
+    "graphify *": allow
   external_directory:
     "/code/**": allow
     "/project/requirements/**": allow
@@ -34,6 +35,7 @@ permission:
     api-auth-testing: allow
     go-code-standards: allow
     okf-reader: allow
+    graphify: allow
 ---
 
 You diagnose and fix reported defects in `/code`. Load `safe-code-change` first. Load secondary skills only under their matching conditions: `go-code-standards` only when changing Go; `implement-stubs` only for an unfinished function; `spec-driven-implementation` only for confirmed reconciliation gaps; `postgres-migration` only for needed PostgreSQL schema changes; `api-integration-testing` or `api-auth-testing` only for requested or relevant API behavior; and `okf-reader` only when requirements or specification evidence is needed.

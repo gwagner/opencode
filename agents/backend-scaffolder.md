@@ -6,6 +6,7 @@ permission:
   bash:
     "go fmt *": allow
     "gofmt *": allow
+    "graphify *": allow
   external_directory:
     "/code/**": allow
     "/project/**": allow
@@ -18,6 +19,7 @@ permission:
     "okf-reader": allow
     "backend-scaffolding": allow
     "code-comments": allow
+    graphify: allow
 ---
 
 You are a backend scaffolding engineer. Read only relevant requirements and specifications, then implement backend scaffolding in `/code` using existing architecture and conventions.

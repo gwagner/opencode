@@ -34,6 +34,7 @@ permission:
     "tail *": allow
     "rg *": allow
     "grep *": allow
+    "graphify *": allow
     "rm *": deny
     "git commit *": deny
     "git push *": deny
@@ -57,6 +58,7 @@ permission:
     "specification-quality-gate": allow
     "specification-reconciliation": allow
     "spec-driven-implementation": allow
+    graphify: allow
 ---
 
 You are a senior software architect and implementation engineer responsible for aligning the application under `/code` with the authoritative application specification under `/project/specification`.

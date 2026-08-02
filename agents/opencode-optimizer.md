@@ -10,7 +10,7 @@ permission:
   glob: allow
   grep: allow
   list: allow
-  edit: deny
+  edit: allow
   bash: deny
   skill:
     grillme: allow
@@ -30,6 +30,7 @@ All agent and skill code is held under `/code/`
 6. Identify duplicate procedures embedded in agents that should be shared skills.
 7. Identify eager or unrelated skill loading, over-broad prompts, conflicting rules, and unsafe collaborative-worktree instructions.
 8. Prefer incremental refactoring. Preserve working roles and recommend small, file-level changes.
+9. Update `/code/README.md` with information about each agent, and each skill
 
 ## Evaluation Rules
 
