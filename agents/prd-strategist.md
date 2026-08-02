@@ -13,6 +13,7 @@ permission:
   edit:
     "/project/requirements/**": allow
     "/project/index.md": allow
+    "/project/session-log.md": allow
   skill:
     okf-formatter: allow
     okf-reader: allow

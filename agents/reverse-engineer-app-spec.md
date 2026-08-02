@@ -23,6 +23,7 @@ permission:
     "graphify *": allow
   edit:
     "/code/specification/**": allow
+    "/project/session-log.md": allow
   skill:
     "okf-reader": allow
     "okf-formatter": allow
@@ -38,6 +39,7 @@ permission:
     "security-operations": allow
     "gap-risk-analysis": allow
     "specification-quality-gate": allow
+    frontmatter-fixer: allow
     graphify: allow
 ---
 

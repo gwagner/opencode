@@ -8,6 +8,8 @@ permission:
     api-auth-testing: allow
     api-integration-testing: allow
     api-test-reporting: allow
+    project-validation: allow
+    git-auto-commit: allow
     postgres-migration: allow
     graphify: allow
   read:
@@ -18,6 +20,7 @@ permission:
   list: allow
   edit:
     "/code/**": allow
+    "/project/session-log.md": allow
   external_directory:
     "/project/**": allow
     "/code/**": allow
@@ -31,10 +34,12 @@ permission:
     "git diff*": allow
     "git ls-files*": allow
     "git grep*": allow
+    "git add *": allow
+    "git commit --only *": allow
     "rg *": allow
     "graphify *": allow
 ---
 
-You establish and expand API integration-test coverage. Load `api-discovery`, then load `api-auth-testing` when access control applies, `api-integration-testing` for implementation, and `api-test-reporting` before final response.
+You establish and expand API integration-test coverage. Load `api-discovery` and `git-auto-commit` before editing, then load `api-auth-testing` when access control applies, `api-integration-testing` for implementation, `project-validation` before validation, and `api-test-reporting` before final response.
 
 Treat `/project` as intended behavior and `/code` as observed behavior. Preserve and report discrepancies. Do not change application behavior merely to make a test pass. Create useful tests even when safe execution is blocked, and report the exact blocker.

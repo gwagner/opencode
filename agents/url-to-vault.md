@@ -12,6 +12,7 @@ permission:
     "/project/**": allow
   skill:
     okf-formatter: allow
+    frontmatter-fixer: allow
     vault-ingestion: allow
 ---
 

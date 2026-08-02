@@ -45,16 +45,7 @@ Include, when relevant:
 22. Recommended implementation phases, when requested or justified
 23. Traceability matrix
 
-At minimum, always include:
-
-- Executive summary
-- Architecture overview
-- Functional requirements
-- Data model
-- Backend and API design
-- Frontend and component design
-- Workflow and state model
-- Risks and open questions
+At minimum, include an executive summary, architecture overview, functional requirements, risks, and open questions. Include data, backend/API, frontend, and workflow sections only when applicable; state explicitly when a concern is out of scope or unknown.
 
 ## Writing requirements
 

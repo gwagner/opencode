@@ -1,18 +1,8 @@
 ---
 name: code-comments
-description: Add comments to functions in code
+description: Adds concise native-language documentation for public contracts and non-obvious invariants.
 ---
 
-Add or update documentation blocks for code functions without changing implementation behavior.
+# Code comments
 
-For each function, document:
-
-* **Description:** What the function does and its role in the system.
-* **Parameters:** Each parameter’s name, type, purpose, constraints, and expected values.
-* **Returns:** Each return value, including type, meaning, and error conditions.
-* **Specifications and Requirements:** References to relevant standards, specifications, design documents, tickets, or requirement identifiers.
-* **Tests:** References to relevant unit, integration, compliance, or regression tests.
-* **Behavioral Notes:** Important side effects, assumptions, edge cases, invariants, or failure modes.
-
-Use the documentation convention native to the programming language. Preserve existing valid documentation, avoid unsupported claims, and mark missing references as `TODO` rather than inventing them.
-
+Document exported or public contracts and non-obvious invariants using the language's native convention. Explain purpose, constraints, side effects, and failure behavior only when code and types do not make them clear. Cite a requirement or specification only when known. Do not add boilerplate parameter, return, or test inventories; do not alter behavior.
