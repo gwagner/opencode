@@ -5,7 +5,7 @@ description: Investigates a codebase efficiently with graphify. Use when answeri
 
 # Graphify
 
-Use only when `graphify-out/graph.json` exists. Otherwise, use normal repository inspection; do not create or repair graph output unless requested.
+Use only when `/code/graphify-out/graph.json` exists. Otherwise, use normal repository inspection; do not create or repair graph output unless requested.
 
 1. Start codebase investigation with `graphify query "<question>"`.
 2. Use `graphify explain "<concept>"` for one focused concept and `graphify path "<A>" "<B>"` for a relationship.

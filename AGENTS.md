@@ -6,6 +6,8 @@ All knowledge based information must be stored in Open Knowledge Format also kno
 
 # Workspace Context
 
+At the start of every session, if `/project/handoff.md` exists, read it before beginning work.  This is context about previous work that has been done.  Once new work has been performed, make sure that `/project/handoff.md` is deleted.
+
 You have a /project folder.  In /project you will have this structure:
 - context.md: This file is used to hold an evolving context of a project.  When work has been completed, context.md must be updated with a summary of what it beleives to know about the overall application.  Make sure to include any previous decisions, knowledge, and learnings in this file.  When starting up a new context, make sure to read this file because it should be the basis for all future sessions.
 - requirements/: this folder holds all requirements for a project.  Requirements files must be focused so that they are highly reusable in future sessions.  
