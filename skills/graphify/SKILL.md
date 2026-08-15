@@ -5,6 +5,8 @@ description: Investigates a codebase efficiently with graphify. Use when answeri
 
 # Graphify
 
+The root directory of any graphify operation is always in `/code/`
+
 Use only when `/code/graphify-out/graph.json` exists. Otherwise, use normal repository inspection; do not create or repair graph output unless requested.
 
 1. Start codebase investigation with `graphify query "<question>"`.

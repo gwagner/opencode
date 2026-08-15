@@ -38,6 +38,7 @@ permission:
     "python -m pytest *": allow
     "git status*": allow
     "git diff*": allow
+    "ls *": allow
     "git ls-files*": allow
     "git grep*": allow
     "git add *": allow

@@ -18,6 +18,7 @@ permission:
     "git log *": allow
     "git show *": allow
     "git diff *": allow
+    "ls *": allow
     "git ls-files *": allow
     "go list *": allow
     "go test *": allow

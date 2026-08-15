@@ -22,6 +22,7 @@ permission:
     "make build*": allow
     "git status *": allow
     "git diff *": allow
+    "ls *": allow
     "git add *": allow
     "git commit --only *": allow
     "graphify *": allow

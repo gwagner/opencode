@@ -16,6 +16,7 @@ permission:
     "npm run lint *": allow
     "git status *": allow
     "git diff *": allow
+    "ls *": allow
     "git ls-files *": allow
     "git add *": allow
     "git commit --only *": allow

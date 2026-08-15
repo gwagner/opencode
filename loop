@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROMPT="Do your job. $3  If there is absolutely no further work to be done, reply strictly with <promise>DONE</promise>."
+PROMPT="do your job.  $3  If there is absolutely no further work to be done, reply strictly with <promise>DONE</promise>."
 
 MAX_LOOPS=15
 

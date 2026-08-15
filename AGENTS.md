@@ -28,11 +28,14 @@ You have a /project folder.  In /project you will have this structure:
     - Any unresolved or open questions
 
 You also have a /code folder.  In /code you will have this structure:
-- src/: This folder is used for storing applicaiton source code
+- /code is the root of all code and no code is stored outside of /code
+- /code/src/: This folder is used for storing applicaiton source code
 - README.md: This is a readme file that should
     - Describe the proejct
     - Describe how to use, test, and run the application
     - Provide tables of any environment variables
+- If a `/graphify` skill or `graphify` command is used, the root directory is always `/code/`
+    - `graphify-out/graph.json`, if it exists, would be directly under the `/code` file path
 
 # Goals
 
