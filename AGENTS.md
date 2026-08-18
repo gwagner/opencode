@@ -44,6 +44,7 @@ You also have a /code folder.  In /code you will have this structure:
 1. Code must be well documented with tracabiity back to requirements
     - Make sure code follows the programing languages documentation guidelines to auto generate end user documentation
 1. Once any work is done you must make sure to update session-log.md and any relevant README.md files
+    - README.md should be stylized and human readable
 
 ## Graphify
 

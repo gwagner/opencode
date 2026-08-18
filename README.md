@@ -1,6 +1,15 @@
 # OpenCode configuration
 
-`/code` is the canonical asset tree; the active `.opencode/` tree mirrors it through shared links.
+## Asset tree model
+
+`/code` is the source of truth for this OpenCode configuration bundle.
+
+| Path | Role |
+| --- | --- |
+| `/code` | Canonical, editable asset tree for agents, skills, scripts, plugins, docs, and tests. |
+| `/project/.opencode` | Active runtime tree that OpenCode reads. It mirrors `/code` through shared links. |
+
+Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect those files through links, so runtime behavior stays aligned with the canonical copy. After changing agents, skills, plugins, commands, or config-time files, restart OpenCode so the running process reloads the mirrored configuration.
 
 ## Agents
 
@@ -68,14 +77,36 @@ Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exi
 
 ## Loop runner
 
-`./loop <project> <agent> [git-repo]` checks for `todo.md` at the target Git repository root, reads unchecked markdown tasks (`- [ ] task`), runs OpenCode on the next task until it returns `<task>DONE</task>`, marks that task complete, then continues. The default repo is `/code`. `loop` resolves its sibling `run` helper from the script location, so it works even when started outside `/code`. It calls OpenCode as `opencode run "<prompt>" --agent "<agent>"`. Use `./loop --test <project> <agent> [git-repo]` to print detected tasks, commands, prompts, and a summary without running OpenCode or editing the todo file. Todo-loop prompts instruct agents to use `todo-upkeep` when they discover required follow-up tasks for `/code/todo.md`, `git-auto-commit` before returning `<task>DONE</task>`, and `/project/handoff.md` when continuing in another loop iteration.
+Run unchecked `todo.md` tasks through OpenCode until each task reports a loop sentinel.
 
-Before running tasks, `./loop` checks the target Git repository for tracked uncommitted Git changes. If found during preflight, it prompts to open an OpenCode `code-implementor` session for the selected project to choose a commit message and commit the work. The loop then requires a clean worktree before task execution so task-owned changes can be safely handled. When a task returns `<task>DONE</task>`, worktree changes trigger the commit session before the todo is marked complete; todo progress is committed separately when Git is available. If the worktree is dirty between completed todos, the loop stashes it with a message containing the completed todo line number before moving to the next todo. When a task returns `<task>BLOCKED</task>`, the loop leaves the todo unchecked and reverts task-owned changes with `git reset --hard` and `git clean -fd`. If a task needs another loop iteration, the prompt tells the agent to write `/project/handoff.md`; the loop does not author the handoff itself.
+```sh
+./loop <project> <agent> [git-repo]
+./loop --test <project> <agent> [git-repo]
+```
 
-## Frontend build model
+| Item | Behavior |
+| --- | --- |
+| Todo source | Reads unchecked markdown tasks (`- [ ] task`) from `[git-repo]/todo.md`; default repo is `/code`. |
+| Runner call | Resolves sibling `run` from the script directory and calls `opencode run "<prompt>" --agent "<agent>"`. |
+| Progress UI | Prints colored status at startup and during progress: project, agent, repo, todo file, counts, max loops, current line/task, and attempt. |
+| Dry run | `--test` prints detected tasks, commands, prompts, and summary without OpenCode runs or file edits. |
 
-Frontend source is under `/code/src/frontend/`. TypeScript compiles without a bundler; the Tailwind standalone CLI generates CSS scanned from TypeScript and server templates. The backend serves compiled JavaScript and CSS as static assets. Lit owns presentation-only interaction islands; HTMX owns forms, requests, server fragments, and swaps outside Lit-owned DOM.
+### Task outcomes
 
-## Specification gaps
+| Sentinel | Result |
+| --- | --- |
+| `<task>DONE</task>` | Opens a commit session if worktree changes remain, marks the todo complete, commits todo progress when Git is available, then moves to the next todo. |
+| `<task>BLOCKED</task>` | Leaves the todo unchecked, reverts task-owned changes with `git reset --hard` and `git clean -fd`, then exits `2`. |
+| No sentinel | Repeats the same todo until `MAX_LOOPS`; the prompt requires the agent to write `/project/handoff.md` before continuing. |
+| Ctrl+C | Lets the active OpenCode run finish, processes its result, then exits `130` before another retry or todo starts. |
 
-`/code/specification-gaps.md` is append-only. `code-spec-engineer` owns entries and status updates; forward-design agents resolve authoritative gaps in their permitted specification scope, while reverse and reconciliation agents classify and route gaps. Requirements override conflicting specifications.
+### Git safety
+
+- Preflight prompts for a `code-implementor` commit session when tracked changes already exist.
+- The loop requires a clean worktree before task execution so BLOCKED can safely revert task-owned changes.
+- Dirty worktrees between completed todos are stashed with the completed todo line number in the stash message.
+- Todo-loop prompts require `todo-upkeep` for discovered follow-ups, `git-auto-commit` before DONE, and `/project/handoff.md` for continuation.
+
+### Output safety
+
+Runner output is captured through a temporary file. NUL bytes are stripped before printing and sentinel detection to avoid shell command-substitution warnings from binary or malformed subprocess output.

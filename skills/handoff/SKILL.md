@@ -14,11 +14,12 @@ Overwrite or update the current handoff; do not append.
 Include only:
 - Goal/current state.
 - Completed changes with paths.
+- Changed files requiring ownership pickup, especially uncommitted files the next agent may need to review, stage, or commit with `git-auto-commit`.
 - Next concrete steps.
 - Decisions/constraints.
 - Blockers/open questions.
 - Exact validation status.
 
-Cite paths and commands briefly. Exclude narrative, copied logs, and irrelevant history.
+When Git is available, inspect status before writing the handoff and separate already-committed work from uncommitted changed files. For each uncommitted file, note the intended ownership/action: review, continue editing, stage, commit, leave untouched, or verify with the user. Cite paths and commands briefly. Exclude narrative, copied logs, and irrelevant history.
 
 If no meaningful continuation is needed, say so instead of creating a file.

@@ -42,6 +42,7 @@ MAX_LOOPS="${MAX_LOOPS:-5}"
 DONE_TOKEN="<task>DONE</task>"
 BLOCKED_TOKEN="<task>BLOCKED</task>"
 TEST_PREFLIGHT_ACTION="not checked"
+STOP_REQUESTED=false
 
 if { [ -t 1 ] || [ "${FORCE_COLOR:-}" = "1" ]; } && [ -z "${NO_COLOR:-}" ]; then
   BOLD='\033[1m'
@@ -100,6 +101,22 @@ count_unchecked_tasks() {
   fi
 }
 
+count_checked_tasks() {
+  if [ -f "$TASK_SOURCE" ]; then
+    grep -cE '^[[:space:]]*[-*] \[x\] ' "$TASK_SOURCE" || true
+  else
+    printf '0\n'
+  fi
+}
+
+count_all_tasks() {
+  if [ -f "$TASK_SOURCE" ]; then
+    grep -cE '^[[:space:]]*[-*] \[[ x]\] ' "$TASK_SOURCE" || true
+  else
+    printf '0\n'
+  fi
+}
+
 next_task_line() {
   grep -nE '^[[:space:]]*[-*] \[ \] ' "$TASK_SOURCE" | head -n 1 | cut -d: -f1 || true
 }
@@ -111,6 +128,34 @@ all_task_lines() {
 task_text() {
   line="$1"
   sed -n "${line}p" "$TASK_SOURCE" | sed -E 's/^[[:space:]]*[-*] \[ \] //'
+}
+
+loop_status() {
+  phase="$1"
+  current_line="${2:-}"
+  current_task="${3:-}"
+  run_number="${4:-}"
+  completed_count="$(count_checked_tasks)"
+  remaining_count="$(count_unchecked_tasks)"
+  total_count="$(count_all_tasks)"
+
+  printf '\n%b%s%b %b%s%b\n' "$BOLD$MAGENTA" 'Loop status' "$RESET" "$YELLOW" "$phase" "$RESET"
+  hr
+  test_field 'Project' "$PROJECT"
+  test_field 'Agent' "$AGENT"
+  test_field 'Git repo' "$REPO_PATH"
+  test_field 'Todo file' "$TASK_SOURCE"
+  test_field 'Progress' "$completed_count completed / $remaining_count remaining / $total_count total"
+  test_field 'Max loops/task' "$MAX_LOOPS"
+  if [ -n "$current_line" ]; then
+    test_field 'Current line' "$current_line"
+  fi
+  if [ -n "$run_number" ]; then
+    test_field 'Task loop' "$run_number of $MAX_LOOPS"
+  fi
+  if [ -n "$current_task" ]; then
+    test_block 'Current task' "$current_task"
+  fi
 }
 
 todo_prompt_path() {
@@ -154,6 +199,44 @@ PROMPT
 run_opencode() {
   prompt="$1"
   "$RUNNER" "$PROJECT" run "$prompt" --agent "$AGENT"
+}
+
+request_stop() {
+  STOP_REQUESTED=true
+  printf '\n%bCtrl+C received; finishing the current loop before stopping.%b\n' "$YELLOW" "$RESET"
+}
+
+run_opencode_to_file() {
+  prompt="$1"
+  output_file="$2"
+  run_status=0
+
+  (trap '' INT; run_opencode "$prompt") > "$output_file" 2>&1 &
+  run_pid=$!
+
+  while true; do
+    wait "$run_pid" || run_status=$?
+    if [ "$run_status" -ge 128 ] && kill -0 "$run_pid" 2>/dev/null; then
+      run_status=0
+      continue
+    fi
+    break
+  done
+
+  return "$run_status"
+}
+
+output_has_token() {
+  output_file="$1"
+  token="$2"
+  tr -d '\000' < "$output_file" | grep -Fq "$token"
+}
+
+stop_if_requested() {
+  if [ "$STOP_REQUESTED" = true ]; then
+    loop_status 'stopping after current loop'
+    exit 130
+  fi
 }
 
 git_available() {
@@ -245,7 +328,9 @@ stash_between_todos() {
 }
 
 clear_loop_handoff() {
-  [ -f /project/handoff.md ] && rm -f /project/handoff.md
+  if [ -f /project/handoff.md ]; then
+    rm -f /project/handoff.md
+  fi
 }
 
 warn_dirty_worktree() {
@@ -424,9 +509,12 @@ Then it would move to todo line $next_after_task."
     return 0
   fi
 
+  loop_status 'starting'
+
   while true; do
     line="$(next_task_line || true)"
     if [ -z "$line" ]; then
+      loop_status 'complete'
       echo "All todo tasks completed."
       warn_dirty_worktree
       return 0
@@ -439,30 +527,42 @@ Then it would move to todo line $next_after_task."
 
     completed=false
     for i in $(seq 1 "$MAX_LOOPS"); do
+      loop_status 'running task' "$line" "$task" "$i"
       echo "Starting task loop #$i..."
-      output=$(run_opencode "$prompt")
-      echo "$output"
+      output_file="${TMPDIR:-/tmp}/loop-output.$$.$i"
+      run_status=0
+      run_opencode_to_file "$prompt" "$output_file" || run_status=$?
+      tr -d '\000' < "$output_file"
 
-      case "$output" in
-      *"$DONE_TOKEN"*)
+      if [ "$run_status" -ne 0 ]; then
+        rm -f "$output_file"
+        exit "$run_status"
+      fi
+
+      if output_has_token "$output_file" "$DONE_TOKEN"; then
         clear_loop_handoff
         auto_commit_tracked_changes
         mark_done "$line"
         echo "Marked task complete."
         commit_todo_progress
+        loop_status 'task completed' "$line" "$task" "$i"
         completed=true
+        rm -f "$output_file"
+        stop_if_requested
         break
-        ;;
-      esac
+      fi
 
-      case "$output" in
-      *"$BLOCKED_TOKEN"*)
+      if output_has_token "$output_file" "$BLOCKED_TOKEN"; then
         clear_loop_handoff
+        rm -f "$output_file"
         echo "Task blocked. Leaving todo unchecked."
         revert_to_clean_worktree
         exit 2
-        ;;
-      esac
+      fi
+
+      rm -f "$output_file"
+
+      stop_if_requested
 
       if [ "$i" -lt "$MAX_LOOPS" ]; then
         echo "Task continuing. Expecting agent-authored /project/handoff.md for next iteration."
@@ -478,8 +578,12 @@ Then it would move to todo line $next_after_task."
     if [ -n "$(next_task_line || true)" ]; then
       stash_between_todos "$line"
     fi
+
+    stop_if_requested
   done
 }
+
+trap request_stop INT
 
 prompt_commit_tracked_changes
 ensure_clean_worktree
