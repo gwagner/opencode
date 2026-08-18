@@ -4,15 +4,14 @@ set -eu
 usage() {
   cat <<'USAGE'
 Usage:
-  ./loop [--test|--dry-run] <project> <agent> [todo-file]
-  ./loop <project> <agent> "<prompt>"              # legacy mode
+  ./loop [--test|--dry-run] <project> <agent> [git-repo]
 
-Todo mode reads the next unchecked markdown checkbox from todo-file
-(default: todo.md), runs OpenCode until that task is done, marks it done,
+Todo mode reads the next unchecked markdown checkbox from git-repo/todo.md
+(default repo: /code), runs OpenCode until that task is done, marks it done,
 then continues until all tasks are complete.
 
 Test mode prints the detected tasks, loop commands, and prompts without
-running OpenCode or editing the todo file.
+running OpenCode, committing, or editing the todo file.
 
 Environment:
   MAX_LOOPS  Maximum OpenCode runs per task. Default: 15.
@@ -34,10 +33,12 @@ fi
 
 PROJECT="$1"
 AGENT="$2"
-TASK_SOURCE="${3:-todo.md}"
-MAX_LOOPS="${MAX_LOOPS:-15}"
+REPO_PATH="${3:-/code}"
+TASK_SOURCE="$REPO_PATH/todo.md"
+MAX_LOOPS="${MAX_LOOPS:-5}"
 DONE_TOKEN="<task>DONE</task>"
 BLOCKED_TOKEN="<task>BLOCKED</task>"
+TEST_PREFLIGHT_ACTION="not checked"
 
 if { [ -t 1 ] || [ "${FORCE_COLOR:-}" = "1" ]; } && [ -z "${NO_COLOR:-}" ]; then
   BOLD='\033[1m'
@@ -88,12 +89,20 @@ is_todo_file() {
   [ -f "$TASK_SOURCE" ]
 }
 
+count_unchecked_tasks() {
+  if [ -f "$TASK_SOURCE" ]; then
+    grep -cE '^[[:space:]]*[-*] \[ \] ' "$TASK_SOURCE" || true
+  else
+    printf '0\n'
+  fi
+}
+
 next_task_line() {
-  grep -nE '^[[:space:]]*[-*] \[ \] ' "$TASK_SOURCE" | head -n 1 | cut -d: -f1
+  grep -nE '^[[:space:]]*[-*] \[ \] ' "$TASK_SOURCE" | head -n 1 | cut -d: -f1 || true
 }
 
 all_task_lines() {
-  grep -nE '^[[:space:]]*[-*] \[ \] ' "$TASK_SOURCE" | cut -d: -f1
+  grep -nE '^[[:space:]]*[-*] \[ \] ' "$TASK_SOURCE" | cut -d: -f1 || true
 }
 
 task_text() {
@@ -102,10 +111,7 @@ task_text() {
 }
 
 todo_prompt_path() {
-  case "$TASK_SOURCE" in
-    /*) printf '%s\n' "$TASK_SOURCE" ;;
-    *) printf '%s\n' "/project/$TASK_SOURCE" ;;
-  esac
+  printf '%s\n' "/code/todo.md"
 }
 
 mark_done() {
@@ -119,9 +125,14 @@ build_prompt() {
   task="$1"
   todo_path="$(todo_prompt_path)"
   cat <<PROMPT
+TODO_LOOP_MODE=true
+TODO_FILE=/code/todo.md
+
 Read $todo_path. Complete exactly this unchecked task and no other todo task:
 
 $task
+
+If you discover additional required follow-up work while doing this task, load and use the todo-upkeep skill because TODO_LOOP_MODE=true. Append new unchecked tasks to /code/todo.md. Do not perform those newly added tasks in this iteration.
 
 When the task is fully complete and validated, reply strictly with:
 $DONE_TOKEN
@@ -136,31 +147,94 @@ run_opencode() {
   ./run "$PROJECT" run --agent "$AGENT" "$prompt"
 }
 
-run_legacy_loop() {
-  prompt="do your job.  $TASK_SOURCE  If there is absolutely no further work to be done, reply strictly with <promise>DONE</promise>."
+git_available() {
+  command -v git >/dev/null 2>&1
+}
 
-  if [ "$TEST_MODE" = true ]; then
-    test_header "TEST MODE · legacy loop"
-    test_field "Project" "$PROJECT"
-    test_field "Agent" "$AGENT"
-    test_field "Max loops" "$MAX_LOOPS"
-    test_block "Command" "./run \"$PROJECT\" run --agent \"$AGENT\" \"<prompt>\""
-    test_block "Prompt" "$prompt"
-    printf '%b✓ No OpenCode runs executed.%b\n' "$GREEN" "$RESET"
+inside_git_repo() {
+  git_available && git -C "$REPO_PATH" rev-parse --is-inside-work-tree >/dev/null 2>&1
+}
+
+has_uncommitted_tracked_changes() {
+  ! git -C "$REPO_PATH" diff --quiet --ignore-submodules -- || ! git -C "$REPO_PATH" diff --cached --quiet --ignore-submodules --
+}
+
+build_commit_prompt() {
+  cat <<PROMPT
+Inspect /code tracked uncommitted changes only. /code is the OpenCode container mount for $REPO_PATH. Do not include untracked files unless they are required to explain the state.
+
+Determine a concise, accurate commit message for the tracked uncommitted work, then commit that tracked work.
+
+Required process:
+1. Inspect git status, tracked diffs, staged diffs, and recent commit style.
+2. Load git-auto-commit because this prompt explicitly requests a commit.
+3. Stage only tracked modified/deleted files, for example with git add -u. Do not stage untracked files.
+4. Commit with the chosen message.
+5. Report the commit hash and message, or explain why no commit was created.
+PROMPT
+}
+
+test_summary() {
+  task_count="$(count_unchecked_tasks)"
+  test_header "TEST MODE · summary"
+  test_field "Git repo" "$REPO_PATH"
+  test_field "Todo file" "$TASK_SOURCE"
+  test_field "Commit prompt" "$TEST_PREFLIGHT_ACTION"
+  test_field "Todo tasks" "would run $task_count unchecked task(s), up to $MAX_LOOPS OpenCode run(s) each"
+  test_field "Todo edits" "would mark completed tasks in $TASK_SOURCE only after $DONE_TOKEN"
+  test_field "OpenCode runs" "none executed in test mode"
+  printf '%b✓ TEST MODE: no OpenCode runs executed, no commits made, and no todo file edits made.%b\n' "$GREEN" "$RESET"
+}
+
+prompt_commit_tracked_changes() {
+  if ! git_available; then
+    TEST_PREFLIGHT_ACTION="would skip commit prompt: git unavailable"
     return 0
   fi
 
-  for i in $(seq 1 "$MAX_LOOPS"); do
-    echo "Starting execution loop #$i..."
-    output=$(run_opencode "$prompt")
-    echo "$output"
-    case "$output" in
-    *"<promise>DONE</promise>"*)
-      echo "Task successfully completed! Exiting loop."
-      return 0
+  if ! inside_git_repo; then
+    TEST_PREFLIGHT_ACTION="would skip commit prompt: target is not a git repo"
+    return 0
+  fi
+
+  if ! has_uncommitted_tracked_changes; then
+    TEST_PREFLIGHT_ACTION="would not run commit session: no tracked uncommitted changes"
+    return 0
+  fi
+
+  commit_prompt="$(build_commit_prompt)"
+  TEST_PREFLIGHT_ACTION="would ask to open code-implementor commit session"
+
+  if [ "$TEST_MODE" = true ]; then
+    test_header "TEST MODE · tracked-change commit prompt"
+    test_field "Git repo" "$REPO_PATH"
+    test_field "Project" "$PROJECT"
+    test_field "Agent" "code-implementor"
+    test_block "Command" "./run \"$PROJECT\" run --agent \"code-implementor\" \"<prompt>\""
+    test_block "Prompt" "$commit_prompt"
+    printf '%b✓ Would ask before opening this commit session.%b\n' "$GREEN" "$RESET"
+    return 0
+  fi
+
+  printf '%bTracked uncommitted changes detected.%b\n' "$YELLOW" "$RESET"
+  if [ ! -t 0 ]; then
+    printf 'No interactive stdin available; skipping commit prompt.\n'
+    return 0
+  fi
+
+  printf 'Open an opencode commit-message/commit session with code-implementor? [y/N] '
+  read answer
+  case "$answer" in
+    y|Y|yes|YES)
+      ./run "$PROJECT" run --agent "code-implementor" "$commit_prompt"
+      if has_uncommitted_tracked_changes; then
+        printf '%bTracked changes remain after commit session.%b\n' "$YELLOW" "$RESET"
+      fi
       ;;
-    esac
-  done
+    *)
+      printf 'Skipping commit prompt. Continuing loop.\n'
+      ;;
+  esac
 }
 
 run_todo_loop() {
@@ -168,6 +242,7 @@ run_todo_loop() {
     test_header "TEST MODE · todo loop"
     test_field "Project" "$PROJECT"
     test_field "Agent" "$AGENT"
+    test_field "Git repo" "$REPO_PATH"
     test_field "Todo file" "$TASK_SOURCE"
     test_field "Max loops/task" "$MAX_LOOPS"
     hr
@@ -179,9 +254,11 @@ run_todo_loop() {
       test_block "Command" "./run \"$PROJECT\" run --agent \"$AGENT\" \"<prompt>\""
       test_block "Prompt" "$prompt"
       printf '%b✓ Would mark line %s complete only after %s.%b\n' "$GREEN" "$line" "$DONE_TOKEN" "$RESET"
+      printf '%b✓ Would run post-task tracked-change commit prompt after %s or before exiting after %s.%b\n' "$GREEN" "$DONE_TOKEN" "$BLOCKED_TOKEN" "$RESET"
+      prompt_commit_tracked_changes
       hr
     done
-    printf '%b✓ TEST MODE: no OpenCode runs executed and no todo file edits made.%b\n' "$GREEN" "$RESET"
+    test_summary
     return 0
   fi
 
@@ -207,6 +284,7 @@ run_todo_loop() {
       *"$DONE_TOKEN"*)
         mark_done "$line"
         echo "Marked task complete."
+        prompt_commit_tracked_changes
         completed=true
         break
         ;;
@@ -215,6 +293,7 @@ run_todo_loop() {
       case "$output" in
       *"$BLOCKED_TOKEN"*)
         echo "Task blocked. Leaving todo unchecked."
+        prompt_commit_tracked_changes
         exit 2
         ;;
       esac
@@ -227,8 +306,18 @@ run_todo_loop() {
   done
 }
 
+prompt_commit_tracked_changes
+
 if is_todo_file; then
   run_todo_loop
 else
-  run_legacy_loop
+  if [ "$TEST_MODE" = true ]; then
+    test_header "TEST MODE · todo loop"
+    test_field "Git repo" "$REPO_PATH"
+    test_field "Todo file" "$TASK_SOURCE"
+    test_field "Todo status" "todo.md not found; no todo tasks would run"
+    test_summary
+    exit 0
+  fi
+  echo "No todo.md found at $TASK_SOURCE. Nothing to run."
 fi

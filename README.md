@@ -54,6 +54,8 @@
 | safe-code-change | Performs focused, collaborative-safe code changes. |
 | security-operations | Reviews security and operational behavior. |
 | tailwind | Configures standalone Tailwind CLI builds and static output. |
+| todo-capture | Captures deferred non-loop coding todos and unfixed bugs in `/code/todo.md`. |
+| todo-upkeep | Appends loop-discovered follow-up tasks to `/code/todo.md` for later iterations. |
 | spec-driven-implementation | Implements authoritative specifications. |
 | specification-quality-gate | Reviews specification readiness. |
 | specification-reconciliation | Compares code-derived and authoritative specifications. |
@@ -66,7 +68,9 @@ Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exi
 
 ## Loop runner
 
-`./loop <project> <agent> [todo.md]` reads unchecked markdown tasks (`- [ ] task`), runs OpenCode on the next task until it returns `<task>DONE</task>`, marks that task complete, then continues. Use `./loop --test <project> <agent> [todo.md]` to print detected tasks, commands, and prompts without running OpenCode or editing the todo file.
+`./loop <project> <agent> [git-repo]` checks for `todo.md` at the target Git repository root, reads unchecked markdown tasks (`- [ ] task`), runs OpenCode on the next task until it returns `<task>DONE</task>`, marks that task complete, then continues. The default repo is `/code`. Use `./loop --test <project> <agent> [git-repo]` to print detected tasks, commands, prompts, and a summary without running OpenCode or editing the todo file. Todo-loop prompts instruct agents to use `todo-upkeep` when they discover required follow-up tasks for `/code/todo.md`.
+
+Before running tasks, `./loop` checks the target Git repository for tracked uncommitted Git changes. If found, it prompts to open an OpenCode `code-implementor` session for the selected project to choose a commit message and commit only tracked changes. Untracked files alone do not trigger this prompt.
 
 ## Frontend build model
 
