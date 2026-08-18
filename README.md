@@ -64,6 +64,10 @@
 
 Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exists. The skill selects focused graph queries before broad reports or raw source search, and updates the graph after relevant code changes.
 
+## Loop runner
+
+`./loop <project> <agent> [todo.md]` reads unchecked markdown tasks (`- [ ] task`), runs OpenCode on the next task until it returns `<task>DONE</task>`, marks that task complete, then continues. Use `./loop --test <project> <agent> [todo.md]` to print detected tasks, commands, and prompts without running OpenCode or editing the todo file.
+
 ## Frontend build model
 
 Frontend source is under `/code/src/frontend/`. TypeScript compiles without a bundler; the Tailwind standalone CLI generates CSS scanned from TypeScript and server templates. The backend serves compiled JavaScript and CSS as static assets. Lit owns presentation-only interaction islands; HTMX owns forms, requests, server fragments, and swaps outside Lit-owned DOM.

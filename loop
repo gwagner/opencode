@@ -1,22 +1,234 @@
-#!/bin/bash
+#!/bin/sh
+set -eu
 
-PROMPT="do your job.  $3  If there is absolutely no further work to be done, reply strictly with <promise>DONE</promise>."
+usage() {
+  cat <<'USAGE'
+Usage:
+  ./loop [--test|--dry-run] <project> <agent> [todo-file]
+  ./loop <project> <agent> "<prompt>"              # legacy mode
 
-MAX_LOOPS=15
+Todo mode reads the next unchecked markdown checkbox from todo-file
+(default: todo.md), runs OpenCode until that task is done, marks it done,
+then continues until all tasks are complete.
 
-# Limit to 10-20 iterations to avoid runaway API costs
-for i in $(seq 1 "$MAX_LOOPS");
-do
-  echo "Starting execution loop #$i..."
-  
-  # Run opencode non-interactively and save the output
-  OUTPUT=$(./run $1 run --agent "$2" "$PROMPT")
-  echo "$OUTPUT"
-  
-  # Check if the model explicitly claimed it is finished
-  if [[ "$OUTPUT" == *"<promise>DONE</promise>"* ]]; then
-    echo "Task successfully completed! Exiting loop."
-    break
+Test mode prints the detected tasks, loop commands, and prompts without
+running OpenCode or editing the todo file.
+
+Environment:
+  MAX_LOOPS  Maximum OpenCode runs per task. Default: 15.
+USAGE
+}
+
+TEST_MODE=false
+case "${1:-}" in
+  --test|--dry-run)
+    TEST_MODE=true
+    shift
+    ;;
+esac
+
+if [ "$#" -lt 2 ]; then
+  usage
+  exit 1
+fi
+
+PROJECT="$1"
+AGENT="$2"
+TASK_SOURCE="${3:-todo.md}"
+MAX_LOOPS="${MAX_LOOPS:-15}"
+DONE_TOKEN="<task>DONE</task>"
+BLOCKED_TOKEN="<task>BLOCKED</task>"
+
+if { [ -t 1 ] || [ "${FORCE_COLOR:-}" = "1" ]; } && [ -z "${NO_COLOR:-}" ]; then
+  BOLD='\033[1m'
+  DIM='\033[2m'
+  BLUE='\033[34m'
+  CYAN='\033[36m'
+  GREEN='\033[32m'
+  MAGENTA='\033[35m'
+  YELLOW='\033[33m'
+  RESET='\033[0m'
+else
+  BOLD=''
+  DIM=''
+  BLUE=''
+  CYAN=''
+  GREEN=''
+  MAGENTA=''
+  YELLOW=''
+  RESET=''
+fi
+
+hr() {
+  printf '%b%s%b\n' "$DIM" '────────────────────────────────────────────────────────────' "$RESET"
+}
+
+test_header() {
+  title="$1"
+  printf '\n%b%s%b\n' "$BOLD$MAGENTA" "$title" "$RESET"
+  hr
+}
+
+test_field() {
+  label="$1"
+  value="$2"
+  printf '%b%-20s%b %s\n' "$CYAN" "$label:" "$RESET" "$value"
+}
+
+test_block() {
+  label="$1"
+  body="$2"
+  printf '%b%s%b\n' "$YELLOW" "$label" "$RESET"
+  printf '%s\n' "$body" | while IFS= read -r block_line; do
+    printf '%b│%b %s\n' "$DIM" "$RESET" "$block_line"
+  done
+}
+
+is_todo_file() {
+  [ -f "$TASK_SOURCE" ]
+}
+
+next_task_line() {
+  grep -nE '^[[:space:]]*[-*] \[ \] ' "$TASK_SOURCE" | head -n 1 | cut -d: -f1
+}
+
+all_task_lines() {
+  grep -nE '^[[:space:]]*[-*] \[ \] ' "$TASK_SOURCE" | cut -d: -f1
+}
+
+task_text() {
+  line="$1"
+  sed -n "${line}p" "$TASK_SOURCE" | sed -E 's/^[[:space:]]*[-*] \[ \] //'
+}
+
+todo_prompt_path() {
+  case "$TASK_SOURCE" in
+    /*) printf '%s\n' "$TASK_SOURCE" ;;
+    *) printf '%s\n' "/project/$TASK_SOURCE" ;;
+  esac
+}
+
+mark_done() {
+  line="$1"
+  tmp_file="${TASK_SOURCE}.tmp.$$"
+  sed "${line}s/^\([[:space:]]*[-*] \)\[ \]/\1[x]/" "$TASK_SOURCE" > "$tmp_file"
+  mv "$tmp_file" "$TASK_SOURCE"
+}
+
+build_prompt() {
+  task="$1"
+  todo_path="$(todo_prompt_path)"
+  cat <<PROMPT
+Read $todo_path. Complete exactly this unchecked task and no other todo task:
+
+$task
+
+When the task is fully complete and validated, reply strictly with:
+$DONE_TOKEN
+
+If blocked, reply strictly with:
+$BLOCKED_TOKEN followed by a short reason.
+PROMPT
+}
+
+run_opencode() {
+  prompt="$1"
+  ./run "$PROJECT" run --agent "$AGENT" "$prompt"
+}
+
+run_legacy_loop() {
+  prompt="do your job.  $TASK_SOURCE  If there is absolutely no further work to be done, reply strictly with <promise>DONE</promise>."
+
+  if [ "$TEST_MODE" = true ]; then
+    test_header "TEST MODE · legacy loop"
+    test_field "Project" "$PROJECT"
+    test_field "Agent" "$AGENT"
+    test_field "Max loops" "$MAX_LOOPS"
+    test_block "Command" "./run \"$PROJECT\" run --agent \"$AGENT\" \"<prompt>\""
+    test_block "Prompt" "$prompt"
+    printf '%b✓ No OpenCode runs executed.%b\n' "$GREEN" "$RESET"
+    return 0
   fi
-done
 
+  for i in $(seq 1 "$MAX_LOOPS"); do
+    echo "Starting execution loop #$i..."
+    output=$(run_opencode "$prompt")
+    echo "$output"
+    case "$output" in
+    *"<promise>DONE</promise>"*)
+      echo "Task successfully completed! Exiting loop."
+      return 0
+      ;;
+    esac
+  done
+}
+
+run_todo_loop() {
+  if [ "$TEST_MODE" = true ]; then
+    test_header "TEST MODE · todo loop"
+    test_field "Project" "$PROJECT"
+    test_field "Agent" "$AGENT"
+    test_field "Todo file" "$TASK_SOURCE"
+    test_field "Max loops/task" "$MAX_LOOPS"
+    hr
+    all_task_lines | while IFS= read -r line; do
+      task="$(task_text "$line")"
+      prompt="$(build_prompt "$task")"
+      printf '\n%bTask line %s%b\n' "$BOLD$BLUE" "$line" "$RESET"
+      test_field "Task" "$task"
+      test_block "Command" "./run \"$PROJECT\" run --agent \"$AGENT\" \"<prompt>\""
+      test_block "Prompt" "$prompt"
+      printf '%b✓ Would mark line %s complete only after %s.%b\n' "$GREEN" "$line" "$DONE_TOKEN" "$RESET"
+      hr
+    done
+    printf '%b✓ TEST MODE: no OpenCode runs executed and no todo file edits made.%b\n' "$GREEN" "$RESET"
+    return 0
+  fi
+
+  while true; do
+    line="$(next_task_line || true)"
+    if [ -z "$line" ]; then
+      echo "All todo tasks completed."
+      return 0
+    fi
+
+    task="$(task_text "$line")"
+    prompt="$(build_prompt "$task")"
+
+    echo "Next task on line $line: $task"
+
+    completed=false
+    for i in $(seq 1 "$MAX_LOOPS"); do
+      echo "Starting task loop #$i..."
+      output=$(run_opencode "$prompt")
+      echo "$output"
+
+      case "$output" in
+      *"$DONE_TOKEN"*)
+        mark_done "$line"
+        echo "Marked task complete."
+        completed=true
+        break
+        ;;
+      esac
+
+      case "$output" in
+      *"$BLOCKED_TOKEN"*)
+        echo "Task blocked. Leaving todo unchecked."
+        exit 2
+        ;;
+      esac
+    done
+
+    if [ "$completed" != true ]; then
+      echo "Max loops reached for task. Leaving todo unchecked."
+      exit 3
+    fi
+  done
+}
+
+if is_todo_file; then
+  run_todo_loop
+else
+  run_legacy_loop
+fi
