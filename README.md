@@ -68,9 +68,9 @@ Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exi
 
 ## Loop runner
 
-`./loop <project> <agent> [git-repo]` checks for `todo.md` at the target Git repository root, reads unchecked markdown tasks (`- [ ] task`), runs OpenCode on the next task until it returns `<task>DONE</task>`, marks that task complete, then continues. The default repo is `/code`. Use `./loop --test <project> <agent> [git-repo]` to print detected tasks, commands, prompts, and a summary without running OpenCode or editing the todo file. Todo-loop prompts instruct agents to use `todo-upkeep` when they discover required follow-up tasks for `/code/todo.md`.
+`./loop <project> <agent> [git-repo]` checks for `todo.md` at the target Git repository root, reads unchecked markdown tasks (`- [ ] task`), runs OpenCode on the next task until it returns `<task>DONE</task>`, marks that task complete, then continues. The default repo is `/code`. `loop` resolves its sibling `run` helper from the script location, so it works even when started outside `/code`. It calls OpenCode as `opencode run "<prompt>" --agent "<agent>"`. Use `./loop --test <project> <agent> [git-repo]` to print detected tasks, commands, prompts, and a summary without running OpenCode or editing the todo file. Todo-loop prompts instruct agents to use `todo-upkeep` when they discover required follow-up tasks for `/code/todo.md`.
 
-Before running tasks, `./loop` checks the target Git repository for tracked uncommitted Git changes. If found, it prompts to open an OpenCode `code-implementor` session for the selected project to choose a commit message and commit only tracked changes. Untracked files alone do not trigger this prompt.
+Before running tasks, `./loop` checks the target Git repository for tracked uncommitted Git changes. If found during preflight, it prompts to open an OpenCode `code-implementor` session for the selected project to choose a commit message and commit only tracked changes. After each completed or blocked task, tracked uncommitted changes trigger that commit session automatically without a second prompt. Untracked files alone do not trigger these commit sessions.
 
 ## Frontend build model
 

@@ -11,4 +11,5 @@ RUN uv tool install graphifyy
 RUN /root/.local/bin/graphify opencode install
 
 RUN npm install -g tailwindcss @tailwindcss/cli typescript
-RUN npx update-browserslist-db@latest
+# RUN npx update-browserslist-db@latest
+RUN apk add shellcheck
