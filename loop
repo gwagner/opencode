@@ -14,7 +14,7 @@ Test mode prints the detected tasks, loop commands, and prompts without
 running OpenCode, committing, or editing the todo file.
 
 Environment:
-  MAX_LOOPS  Maximum OpenCode runs per task. Default: 15.
+  MAX_LOOPS  Maximum OpenCode runs per task. Default: 5.
 USAGE
 }
 
@@ -37,6 +37,7 @@ PROJECT="$1"
 AGENT="$2"
 REPO_PATH="${3:-/code}"
 TASK_SOURCE="$REPO_PATH/todo.md"
+TASK_REPO_FILE="todo.md"
 MAX_LOOPS="${MAX_LOOPS:-5}"
 DONE_TOKEN="<task>DONE</task>"
 BLOCKED_TOKEN="<task>BLOCKED</task>"
@@ -136,6 +137,12 @@ $task
 
 If you discover additional required follow-up work while doing this task, load and use the todo-upkeep skill because TODO_LOOP_MODE=true. Append new unchecked tasks to /code/todo.md. Do not perform those newly added tasks in this iteration.
 
+Before replying $DONE_TOKEN, all code changes for this task must be validated and committed. Load git-auto-commit because this prompt explicitly requests a commit. Commit only this task's required files; do not commit unrelated files or later todo work. If no commit is needed, explain why before the final token.
+
+If this task is not done but should continue in another loop iteration, leave a concise handoff file at /project/handoff.md describing current state, completed work, next steps, blockers, and validation status. Then reply without $DONE_TOKEN or $BLOCKED_TOKEN so the loop can continue.
+
+If blocked and replying $BLOCKED_TOKEN, do not commit partial work. The loop runner will revert the task worktree to clean.
+
 When the task is fully complete and validated, reply strictly with:
 $DONE_TOKEN
 
@@ -161,16 +168,110 @@ has_uncommitted_tracked_changes() {
   ! git -C "$REPO_PATH" diff --quiet --ignore-submodules -- || ! git -C "$REPO_PATH" diff --cached --quiet --ignore-submodules --
 }
 
+has_worktree_changes() {
+  [ -n "$(git -C "$REPO_PATH" status --porcelain)" ]
+}
+
+ensure_clean_worktree() {
+  if ! git_available || ! inside_git_repo; then
+    return 0
+  fi
+
+  if ! has_worktree_changes; then
+    return 0
+  fi
+
+  if [ "$TEST_MODE" = true ]; then
+    test_header "TEST MODE · clean-worktree preflight"
+    test_field "Git repo" "$REPO_PATH"
+    printf '%b✓ Would require a clean worktree before task execution so BLOCKED can safely revert task-owned changes.%b\n' "$GREEN" "$RESET"
+    return 0
+  fi
+
+  printf '%bTarget repo still has uncommitted or untracked changes after preflight; refusing to start loop.%b\n' "$YELLOW" "$RESET"
+  printf 'Commit, stash, or remove these changes first so BLOCKED can revert to a clean tree safely.\n'
+  git -C "$REPO_PATH" status --short
+  exit 4
+}
+
+revert_to_clean_worktree() {
+  if ! git_available || ! inside_git_repo; then
+    return 0
+  fi
+
+  if [ "$TEST_MODE" = true ]; then
+    test_header "TEST MODE · blocked cleanup"
+    test_field "Git repo" "$REPO_PATH"
+    printf '%b✓ Would run git reset --hard and git clean -fd after %s.%b\n' "$GREEN" "$BLOCKED_TOKEN" "$RESET"
+    return 0
+  fi
+
+  if has_worktree_changes; then
+    printf '%bTask blocked; reverting task changes to a clean worktree.%b\n' "$YELLOW" "$RESET"
+    git -C "$REPO_PATH" reset --hard
+    git -C "$REPO_PATH" clean -fd
+  fi
+}
+
+stash_between_todos() {
+  task_line="$1"
+
+  if ! git_available || ! inside_git_repo; then
+    return 0
+  fi
+
+  if ! has_worktree_changes; then
+    return 0
+  fi
+
+  stash_message="todo line $task_line completed before next todo"
+
+  if [ "$TEST_MODE" = true ]; then
+    test_header "TEST MODE · between-todo stash"
+    test_field "Git repo" "$REPO_PATH"
+    test_field "Stash message" "$stash_message"
+    printf '%b✓ Would stash dirty worktree with git stash push -u -m before moving to the next todo.%b\n' "$GREEN" "$RESET"
+    return 0
+  fi
+
+  printf '%bDirty worktree between todos; stashing before moving to next todo.%b\n' "$YELLOW" "$RESET"
+  git -C "$REPO_PATH" stash push -u -m "$stash_message"
+
+  if has_worktree_changes; then
+    printf '%bWorktree remains dirty after stash; cannot continue safely.%b\n' "$YELLOW" "$RESET"
+    git -C "$REPO_PATH" status --short
+    exit 7
+  fi
+}
+
+clear_loop_handoff() {
+  [ -f /project/handoff.md ] && rm -f /project/handoff.md
+}
+
+warn_dirty_worktree() {
+  if ! git_available || ! inside_git_repo; then
+    return 0
+  fi
+
+  if has_worktree_changes; then
+    printf '\n%b%s%b\n' "$BOLD$YELLOW" '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' "$RESET"
+    printf '%bWARNING: loop finished with a dirty working tree.%b\n' "$BOLD$YELLOW" "$RESET"
+    printf '%bReview, commit, stash, or clean these changes before continuing.%b\n' "$YELLOW" "$RESET"
+    git -C "$REPO_PATH" status --short
+    printf '%b%s%b\n\n' "$BOLD$YELLOW" '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' "$RESET"
+  fi
+}
+
 build_commit_prompt() {
   cat <<PROMPT
-Inspect /code tracked uncommitted changes only. /code is the OpenCode container mount for $REPO_PATH. Do not include untracked files unless they are required to explain the state.
+Inspect /code uncommitted changes. /code is the OpenCode container mount for $REPO_PATH. Include untracked files when they are required for the completed task.
 
-Determine a concise, accurate commit message for the tracked uncommitted work, then commit that tracked work.
+Determine a concise, accurate commit message for the completed task work, then commit that work before the loop marks the todo item done.
 
 Required process:
 1. Inspect git status, tracked diffs, staged diffs, and recent commit style.
 2. Load git-auto-commit because this prompt explicitly requests a commit.
-3. Stage only tracked modified/deleted files, for example with git add -u. Do not stage untracked files.
+3. Stage only files required for the completed task, including required untracked files. Do not stage unrelated files.
 4. Commit with the chosen message.
 5. Report the commit hash and message, or explain why no commit was created.
 PROMPT
@@ -183,7 +284,11 @@ test_summary() {
   test_field "Todo file" "$TASK_SOURCE"
   test_field "Commit prompt" "$TEST_PREFLIGHT_ACTION"
   test_field "Todo tasks" "would run $task_count unchecked task(s), up to $MAX_LOOPS OpenCode run(s) each"
-  test_field "Todo edits" "would mark completed tasks in $TASK_SOURCE only after $DONE_TOKEN"
+  test_field "DONE path" "prompt requires commit first; script would mark todo done and commit todo.md progress"
+  test_field "BLOCKED path" "would leave todo unchecked, revert task worktree, and exit 2"
+  test_field "Continue path" "prompt requires agent-authored /project/handoff.md before next same-task iteration"
+  test_field "Between todos" "would stash dirty worktree before moving to next todo, with todo line in stash message"
+  test_field "Final state" "would warn loudly if all todos finish with a dirty worktree"
   test_field "OpenCode runs" "none executed in test mode"
   printf '%b✓ TEST MODE: no OpenCode runs executed, no commits made, and no todo file edits made.%b\n' "$GREEN" "$RESET"
 }
@@ -248,14 +353,14 @@ auto_commit_tracked_changes() {
     return 0
   fi
 
-  if ! has_uncommitted_tracked_changes; then
+  if ! has_worktree_changes; then
     return 0
   fi
 
   commit_prompt="$(build_commit_prompt)"
 
   if [ "$TEST_MODE" = true ]; then
-    test_header "TEST MODE · tracked-change auto commit session"
+    test_header "TEST MODE · worktree auto commit session"
     test_field "Git repo" "$REPO_PATH"
     test_field "Project" "$PROJECT"
     test_field "Agent" "code-implementor"
@@ -265,10 +370,21 @@ auto_commit_tracked_changes() {
     return 0
   fi
 
-  printf '%bTracked uncommitted changes detected; opening automatic commit session.%b\n' "$YELLOW" "$RESET"
+  printf '%bWorktree changes detected; opening automatic commit session.%b\n' "$YELLOW" "$RESET"
   "$RUNNER" "$PROJECT" run "$commit_prompt" --agent "code-implementor"
-  if has_uncommitted_tracked_changes; then
-    printf '%bTracked changes remain after automatic commit session.%b\n' "$YELLOW" "$RESET"
+  if has_worktree_changes; then
+    printf '%bWorktree changes remain after automatic commit session.%b\n' "$YELLOW" "$RESET"
+  fi
+}
+
+commit_todo_progress() {
+  if ! git_available || ! inside_git_repo; then
+    return 0
+  fi
+
+  if ! git -C "$REPO_PATH" diff --quiet -- "$TASK_REPO_FILE"; then
+    git -C "$REPO_PATH" add -- "$TASK_REPO_FILE"
+    git -C "$REPO_PATH" commit -m "Mark completed todo task"
   fi
 }
 
@@ -284,12 +400,23 @@ run_todo_loop() {
     all_task_lines | while IFS= read -r line; do
       task="$(task_text "$line")"
       prompt="$(build_prompt "$task")"
+      next_after_task="$(awk -v current="$line" '/^[[:space:]]*[-*] \[ \] / && NR > current { print NR; exit }' "$TASK_SOURCE")"
       printf '\n%bTask line %s%b\n' "$BOLD$BLUE" "$line" "$RESET"
       test_field "Task" "$task"
       test_block "Command" "$RUNNER \"$PROJECT\" run \"<prompt>\" --agent \"$AGENT\""
       test_block "Prompt" "$prompt"
-      printf '%b✓ Would mark line %s complete only after %s.%b\n' "$GREEN" "$line" "$DONE_TOKEN" "$RESET"
-      printf '%b✓ Would run post-task tracked-change commit session automatically after %s or before exiting after %s.%b\n' "$GREEN" "$DONE_TOKEN" "$BLOCKED_TOKEN" "$RESET"
+      test_block "DONE path" "Agent prompt requires validation and git-auto-commit before $DONE_TOKEN.
+Script would clear /project/handoff.md, open a fallback commit session if worktree remains dirty, mark line $line complete, and commit todo.md progress."
+      test_block "BLOCKED path" "Script would clear /project/handoff.md, leave line $line unchecked, run git reset --hard plus git clean -fd, and exit 2."
+      test_block "Continue path" "Agent prompt requires writing /project/handoff.md before omitting DONE/BLOCKED.
+Script would not write a handoff; it would run the same todo again until MAX_LOOPS=$MAX_LOOPS."
+      if [ -n "$next_after_task" ]; then
+        test_block "Between-todo path" "If the worktree is dirty after completing line $line, script would run:
+git stash push -u -m \"todo line $line completed before next todo\"
+Then it would move to todo line $next_after_task."
+      else
+        test_block "Final-todo path" "No later unchecked todo exists. Script would not stash between todos; at final completion it would print a prominent dirty-worktree warning if needed."
+      fi
       auto_commit_tracked_changes
       hr
     done
@@ -301,6 +428,7 @@ run_todo_loop() {
     line="$(next_task_line || true)"
     if [ -z "$line" ]; then
       echo "All todo tasks completed."
+      warn_dirty_worktree
       return 0
     fi
 
@@ -317,9 +445,11 @@ run_todo_loop() {
 
       case "$output" in
       *"$DONE_TOKEN"*)
+        clear_loop_handoff
+        auto_commit_tracked_changes
         mark_done "$line"
         echo "Marked task complete."
-        auto_commit_tracked_changes
+        commit_todo_progress
         completed=true
         break
         ;;
@@ -327,21 +457,32 @@ run_todo_loop() {
 
       case "$output" in
       *"$BLOCKED_TOKEN"*)
+        clear_loop_handoff
         echo "Task blocked. Leaving todo unchecked."
-        auto_commit_tracked_changes
+        revert_to_clean_worktree
         exit 2
         ;;
       esac
+
+      if [ "$i" -lt "$MAX_LOOPS" ]; then
+        echo "Task continuing. Expecting agent-authored /project/handoff.md for next iteration."
+      fi
     done
 
     if [ "$completed" != true ]; then
+      clear_loop_handoff
       echo "Max loops reached for task. Leaving todo unchecked."
       exit 3
+    fi
+
+    if [ -n "$(next_task_line || true)" ]; then
+      stash_between_todos "$line"
     fi
   done
 }
 
 prompt_commit_tracked_changes
+ensure_clean_worktree
 
 if is_todo_file; then
   run_todo_loop
