@@ -89,7 +89,7 @@ Run unchecked `todo.md` tasks through OpenCode until each task reports a loop se
 | --- | --- |
 | Todo source | Reads unchecked markdown tasks (`- [ ] task`) from `[git-repo]/todo.md`; default repo is `/code`. Indented metadata immediately below the selected task travels with that task in the loop prompt. |
 | Runner call | Resolves sibling `run` from the script directory and calls `opencode run "<prompt>" --agent "<agent>"`. |
-| Progress UI | Prints colored status at startup and during progress: project, agent, repo, todo file, counts, max loops, current line/task, and attempt. |
+| Progress UI | Prints colored status at startup and during progress: project, agent, repo, todo file, counts, max loops, current line/task, attempt, loop start timestamp, and loop duration. |
 | Dry run | `--test` prints detected tasks, commands, prompts, and summary without OpenCode runs or file edits. |
 
 ### Task outcomes

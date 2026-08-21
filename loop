@@ -172,6 +172,24 @@ loop_status() {
   fi
 }
 
+loop_timestamp() {
+  date -u '+%Y-%m-%dT%H:%M:%SZ'
+}
+
+loop_epoch() {
+  date '+%s'
+}
+
+print_loop_duration() {
+  loop_start_epoch="$1"
+  loop_end_epoch="$(loop_epoch)"
+  loop_duration_seconds=$((loop_end_epoch - loop_start_epoch))
+  if [ "$loop_duration_seconds" -lt 0 ]; then
+    loop_duration_seconds=0
+  fi
+  test_field 'Loop duration' "${loop_duration_seconds}s"
+}
+
 todo_prompt_path() {
   printf '%s\n' "/code/todo.md"
 }
@@ -543,12 +561,16 @@ Then it would move to todo line $next_after_task."
 
     completed=false
     for i in $(seq 1 "$MAX_LOOPS"); do
+      loop_started_at="$(loop_timestamp)"
+      loop_start_epoch="$(loop_epoch)"
       loop_status 'running task' "$line" "$task_context" "$i"
-      echo "Starting task loop #$i..."
+      test_field 'Loop started at' "$loop_started_at"
+      echo "Starting task loop #$i at $loop_started_at..."
       output_file="${TMPDIR:-/tmp}/loop-output.$$.$i"
       run_status=0
       run_opencode_to_file "$prompt" "$output_file" || run_status=$?
       tr -d '\000' < "$output_file"
+      print_loop_duration "$loop_start_epoch"
 
       if [ "$run_status" -ne 0 ]; then
         rm -f "$output_file"

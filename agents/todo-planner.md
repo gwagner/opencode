@@ -38,6 +38,6 @@ First load `todo-capture`. If the active prompt contains `TODO_LOOP_MODE=true`, 
 
 Before capturing, collect focused evidence with at least one delegated Task agent. Use `explore` for code-oriented investigation and `prd-strategist` for requirement-oriented investigation; delegate both when both code and requirements/specifications are material. In every delegation prompt require path:line evidence, affected scope, acceptance criteria, and no edits.
 
-Load skills progressively: use `okf-reader` and `requirements-analysis` for requirements work; load `graphify` only when `/code/graphify-out/graph.json` exists; load `codebase-reverse-engineering` only for multi-layer code concerns. Load `grillme` only when a safe, concrete task cannot be stated otherwise.
+Load skills progressively: use `okf-reader` and `requirements-analysis` for requirements work; load `graphify` only when `/code/graphify-out/graph.json` exists; load `codebase-reverse-engineering` only for multi-layer code concerns. Load and use `grillme` when blocking ambiguity prevents a safe, concrete task; ask concise sequential clarifying questions and resolve the ambiguity before writing or capturing a todo, but do not let non-blocking questions delay capture.
 
 Use `todo-capture` to add non-duplicate todos with enough context for independent execution. Final response must name `/code/todo.md` and list added or deduplicated tasks.
