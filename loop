@@ -130,6 +130,20 @@ task_text() {
   sed -n "${line}p" "$TASK_SOURCE" | sed -E 's/^[[:space:]]*[-*] \[ \] //'
 }
 
+task_block() {
+  line="$1"
+  awk -v current="$line" '
+    NR == current { print; in_block = 1; next }
+    in_block {
+      if ($0 ~ /^[[:space:]]+[^[:space:]]/) {
+        print
+        next
+      }
+      exit
+    }
+  ' "$TASK_SOURCE"
+}
+
 loop_status() {
   phase="$1"
   current_line="${2:-}"
@@ -483,8 +497,9 @@ run_todo_loop() {
     test_field "Max loops/task" "$MAX_LOOPS"
     hr
     all_task_lines | while IFS= read -r line; do
-      task="$(task_text "$line")"
-      prompt="$(build_prompt "$task")"
+    task="$(task_text "$line")"
+    task_context="$(task_block "$line")"
+    prompt="$(build_prompt "$task_context")"
       next_after_task="$(awk -v current="$line" '/^[[:space:]]*[-*] \[ \] / && NR > current { print NR; exit }' "$TASK_SOURCE")"
       printf '\n%bTask line %s%b\n' "$BOLD$BLUE" "$line" "$RESET"
       test_field "Task" "$task"
@@ -520,14 +535,15 @@ Then it would move to todo line $next_after_task."
       return 0
     fi
 
-    task="$(task_text "$line")"
-    prompt="$(build_prompt "$task")"
+      task="$(task_text "$line")"
+      task_context="$(task_block "$line")"
+      prompt="$(build_prompt "$task_context")"
 
     echo "Next task on line $line: $task"
 
     completed=false
     for i in $(seq 1 "$MAX_LOOPS"); do
-      loop_status 'running task' "$line" "$task" "$i"
+      loop_status 'running task' "$line" "$task_context" "$i"
       echo "Starting task loop #$i..."
       output_file="${TMPDIR:-/tmp}/loop-output.$$.$i"
       run_status=0
@@ -545,7 +561,7 @@ Then it would move to todo line $next_after_task."
         mark_done "$line"
         echo "Marked task complete."
         commit_todo_progress
-        loop_status 'task completed' "$line" "$task" "$i"
+        loop_status 'task completed' "$line" "$task_context" "$i"
         completed=true
         rm -f "$output_file"
         stop_if_requested

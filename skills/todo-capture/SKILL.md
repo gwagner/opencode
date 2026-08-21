@@ -1,6 +1,6 @@
 ---
 name: todo-capture
-description: Captures deferred work in /code/todo.md during normal non-loop coding when the active prompt does not contain TODO_LOOP_MODE=true.
+description: Captures deferred work in /code/todo.md as loop-compatible todo blocks during normal non-loop coding when the active prompt does not contain TODO_LOOP_MODE=true.
 ---
 
 # Todo Capture
@@ -22,17 +22,23 @@ Always append to `/code/todo.md`. Create `/code/todo.md` if it does not exist.
 
 ## Format
 
-Append todos as markdown checkboxes:
+Append todos as compact, readable, loop-compatible markdown blocks. The first line must be a top-level unchecked checkbox action:
 
 ```markdown
 - [ ] Task description
 ```
 
-If the todo comes from a bug, include enough reproduction context:
+Add indented metadata bullets when useful for independent execution. All metadata fields are optional, but include enough context to make the task actionable without re-discovery:
 
 ```markdown
-- [ ] Fix bug: <symptom>; observed while <command/action>; suspected area: <file/component>
+- [ ] Fix bug: save button ignores validation errors
+  - Scope: `src/checkout.ts` validation flow and related tests.
+  - Why: Users can submit invalid checkout data.
+  - Evidence: `src/checkout.ts:42` returns success after validation failure.
+  - Acceptance: Invalid submission shows an error and does not call the save API.
 ```
+
+Use only these metadata labels when adding context: `Scope:`, `Why:`, `Evidence:`, `Acceptance:`.
 
 ## Rules
 
@@ -41,12 +47,7 @@ If the todo comes from a bug, include enough reproduction context:
 3. Do not perform the captured todo unless the user explicitly asks.
 4. Keep the current focused task unchanged.
 5. Preserve existing checked/unchecked task state and ordering.
-6. Add at most one concise context line below a todo when needed:
-
-```markdown
-- [ ] Fix bug: save button ignores validation errors
-  - Context: Found during checkout form validation; see `src/checkout.ts`.
-```
+6. Keep metadata concise; prefer path:line evidence when available.
 
 ## Before finishing
 

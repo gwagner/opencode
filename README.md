@@ -26,6 +26,7 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | prd-strategist | Creates and refines OKF requirements. |
 | reconcile-spec-to-code | Reconciles specifications with implementation. |
 | reverse-engineer-app-spec | Recovers an evidence-backed specification from code. |
+| todo-planner | Researches code and requirements, then captures implementation-ready todos. |
 | url-to-vault | Ingests URLs into an OKF or Obsidian vault. |
 
 ## Skills
@@ -63,7 +64,7 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | safe-code-change | Performs focused, collaborative-safe code changes. |
 | security-operations | Reviews security and operational behavior. |
 | tailwind | Configures standalone Tailwind CLI builds and static output. |
-| todo-capture | Captures deferred non-loop coding todos and unfixed bugs in `/code/todo.md`. |
+| todo-capture | Captures deferred non-loop coding todos as contextual, loop-compatible blocks in `/code/todo.md`. |
 | todo-upkeep | Appends loop-discovered follow-up tasks to `/code/todo.md` for later iterations. |
 | spec-driven-implementation | Implements authoritative specifications. |
 | specification-quality-gate | Reviews specification readiness. |
@@ -86,7 +87,7 @@ Run unchecked `todo.md` tasks through OpenCode until each task reports a loop se
 
 | Item | Behavior |
 | --- | --- |
-| Todo source | Reads unchecked markdown tasks (`- [ ] task`) from `[git-repo]/todo.md`; default repo is `/code`. |
+| Todo source | Reads unchecked markdown tasks (`- [ ] task`) from `[git-repo]/todo.md`; default repo is `/code`. Indented metadata immediately below the selected task travels with that task in the loop prompt. |
 | Runner call | Resolves sibling `run` from the script directory and calls `opencode run "<prompt>" --agent "<agent>"`. |
 | Progress UI | Prints colored status at startup and during progress: project, agent, repo, todo file, counts, max loops, current line/task, and attempt. |
 | Dry run | `--test` prints detected tasks, commands, prompts, and summary without OpenCode runs or file edits. |
