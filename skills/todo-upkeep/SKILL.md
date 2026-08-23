@@ -19,12 +19,15 @@ Always append to `/code/todo.md`. Create `/code/todo.md` if it does not exist.
 
 1. Add only concrete, actionable tasks that are necessary to finish the current objective or safely handle newly discovered follow-up work.
 2. Do not add speculative, nice-to-have, duplicate, or unrelated tasks.
-3. Append new tasks as unchecked markdown checkboxes in `/code/todo.md`:
+3. Append new tasks as loop-compatible unchecked markdown checkbox blocks in `/code/todo.md`:
    - `- [ ] Task description`
-4. Keep task text short but specific enough for a later loop iteration to execute independently.
-5. If a task is blocked, add the unblock action rather than vague blocked status.
-6. Do not mark the active task complete yourself unless explicitly instructed by the loop prompt or user.
-7. Preserve existing task order and existing checked/unchecked status.
+4. Add indented metadata bullets when useful. Use only these metadata labels: `Scope:`, `Why:`, `Evidence:`, `Acceptance:`, `Handoff:`.
+5. `Handoff:` is optional, but include it when a downstream agent should handle the follow-up. Allowed values are exactly `prd-strategist`, `code-spec-engineer`, `code-implementor`.
+6. Classify handoffs as: requirements/intent change -> `prd-strategist`; approved requirements but missing or ambiguous implementation contract -> `code-spec-engineer`; approved, implementation-ready work -> `code-implementor`.
+7. Keep task text short but specific enough for a later loop iteration to execute independently.
+8. If a task is blocked, add the unblock action rather than vague blocked status.
+9. Do not mark the active task complete yourself unless explicitly instructed by the loop prompt or user.
+10. Preserve existing task order and existing checked/unchecked status.
 
 ## Placement
 

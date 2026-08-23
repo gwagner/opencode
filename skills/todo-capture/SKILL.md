@@ -36,9 +36,12 @@ Add indented metadata bullets when useful for independent execution. All metadat
   - Why: Users can submit invalid checkout data.
   - Evidence: `src/checkout.ts:42` returns success after validation failure.
   - Acceptance: Invalid submission shows an error and does not call the save API.
+  - Handoff: code-implementor
 ```
 
-Use only these metadata labels when adding context: `Scope:`, `Why:`, `Evidence:`, `Acceptance:`.
+Use only these metadata labels when adding context: `Scope:`, `Why:`, `Evidence:`, `Acceptance:`, `Handoff:`.
+
+`Handoff:` is optional, but include it when a downstream agent should handle the captured task. Allowed values are exactly `prd-strategist`, `code-spec-engineer`, `code-implementor`. Classify as: requirements/intent change -> `prd-strategist`; approved requirements but missing or ambiguous implementation contract -> `code-spec-engineer`; approved, implementation-ready work -> `code-implementor`.
 
 ## Rules
 
