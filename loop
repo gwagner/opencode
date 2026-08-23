@@ -39,6 +39,7 @@ REPO_PATH="${3:-/code}"
 TASK_SOURCE="$REPO_PATH/todo.md"
 TASK_REPO_FILE="todo.md"
 MAX_LOOPS="${MAX_LOOPS:-5}"
+CONTINUE_TOKEN="<task>CONTINUE</task>"
 DONE_TOKEN="<task>DONE</task>"
 BLOCKED_TOKEN="<task>BLOCKED</task>"
 TEST_PREFLIGHT_ACTION="not checked"
@@ -201,30 +202,64 @@ mark_done() {
   mv "$tmp_file" "$TASK_SOURCE"
 }
 
+handoff_prompt_block() {
+  if [ ! -f /project/handoff.md ]; then
+    return 0
+  fi
+
+  cat <<'PROMPT'
+
+Continuation context from /project/handoff.md for this same task:
+
+PROMPT
+  cat /project/handoff.md
+}
+
 build_prompt() {
   task="$1"
+  attempt="$2"
   todo_path="$(todo_prompt_path)"
   cat <<PROMPT
-TODO_LOOP_MODE=true
-TODO_FILE=/code/todo.md
+# Metadata: 
 
-Read $todo_path. Complete exactly this unchecked task and no other todo task:
+TODO_LOOP_MODE=true
+Loop attempt: $attempt of $MAX_LOOPS.
+
+# Task:
 
 $task
+
+# Instructions:
+
+This is another iteration of the same task unless the attempt is 1.
+PROMPT
+  handoff_prompt_block
+  cat <<PROMPT
+
+Do one safe, meaningful increment of work toward finishing this task. Do not force full completion in one pass.
+
+Before replying, run the relevant validation for the changes made in this iteration. Do not leave the repository in a knowingly failing state between iterations.
+
+Once the todo is completed and validation has been run, use what you have learned to perform a curiosity pass across the todo, requirements, code spec, and code base.  This pass is used to survey the broader codebase for other hot paths that may not have been considered in the original todo.
 
 If you discover additional required follow-up work while doing this task, load and use the todo-upkeep skill because TODO_LOOP_MODE=true. Append new unchecked tasks to /code/todo.md. Do not perform those newly added tasks in this iteration.
 
 Before replying $DONE_TOKEN, all code changes for this task must be validated and committed. Load git-auto-commit because this prompt explicitly requests a commit. Commit only this task's required files; do not commit unrelated files or later todo work. If no commit is needed, explain why before the final token.
 
-If this task is not done but should continue in another loop iteration, leave a concise handoff file at /project/handoff.md describing current state, completed work, next steps, blockers, and validation status. Then reply without $DONE_TOKEN or $BLOCKED_TOKEN so the loop can continue.
+If this task is not fully complete but can continue in another iteration, you must leave /project/handoff.md with concise continuation context: current state, completed work, remaining work, blockers, and validation status. Then reply strictly with:
+$CONTINUE_TOKEN
+
+Use $CONTINUE_TOKEN only when more task work remains and the repository is left in a validated passing state for the relevant checks run in this iteration.
 
 If blocked and replying $BLOCKED_TOKEN, do not commit partial work. The loop runner will revert the task worktree to clean.
 
-When the task is fully complete and validated, reply strictly with:
+When the task is fully complete, validated, and there is no leftover work to complete reply strictly with:
 $DONE_TOKEN
 
 If blocked, reply strictly with:
 $BLOCKED_TOKEN followed by a short reason.
+
+Do not reply without one of these task tokens.
 PROMPT
 }
 
@@ -403,7 +438,7 @@ test_summary() {
   test_field "Todo tasks" "would run $task_count unchecked task(s), up to $MAX_LOOPS OpenCode run(s) each"
   test_field "DONE path" "prompt requires commit first; script would mark todo done and commit todo.md progress"
   test_field "BLOCKED path" "would leave todo unchecked, revert task worktree, and exit 2"
-  test_field "Continue path" "prompt requires agent-authored /project/handoff.md before next same-task iteration"
+  test_field "Continue path" "prompt requires $CONTINUE_TOKEN plus agent-authored /project/handoff.md; each iteration must validate before retry"
   test_field "Between todos" "would stash dirty worktree before moving to next todo, with todo line in stash message"
   test_field "Final state" "would warn loudly if all todos finish with a dirty worktree"
   test_field "OpenCode runs" "none executed in test mode"
@@ -555,12 +590,11 @@ Then it would move to todo line $next_after_task."
 
       task="$(task_text "$line")"
       task_context="$(task_block "$line")"
-      prompt="$(build_prompt "$task_context")"
-
     echo "Next task on line $line: $task"
 
     completed=false
     for i in $(seq 1 "$MAX_LOOPS"); do
+      prompt="$(build_prompt "$task_context" "$i")"
       loop_started_at="$(loop_timestamp)"
       loop_start_epoch="$(loop_epoch)"
       loop_status 'running task' "$line" "$task_context" "$i"
@@ -598,13 +632,27 @@ Then it would move to todo line $next_after_task."
         exit 2
       fi
 
-      rm -f "$output_file"
+      if output_has_token "$output_file" "$CONTINUE_TOKEN"; then
+        if [ ! -f /project/handoff.md ]; then
+          rm -f "$output_file"
+          echo "Task requested continuation without /project/handoff.md. Refusing unsafe retry."
+          exit 6
+        fi
 
-      stop_if_requested
+        rm -f "$output_file"
+        stop_if_requested
 
-      if [ "$i" -lt "$MAX_LOOPS" ]; then
-        echo "Task continuing. Expecting agent-authored /project/handoff.md for next iteration."
+        if [ "$i" -lt "$MAX_LOOPS" ]; then
+          echo "Task continuing with validated handoff for next iteration."
+          continue
+        fi
+
+        break
       fi
+
+      rm -f "$output_file"
+      echo "Task reply missing required token. Refusing unsafe retry."
+      exit 5
     done
 
     if [ "$completed" != true ]; then

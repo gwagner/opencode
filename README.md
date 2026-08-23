@@ -97,8 +97,9 @@ Run unchecked `todo.md` tasks through OpenCode until each task reports a loop se
 | Sentinel | Result |
 | --- | --- |
 | `<task>DONE</task>` | Opens a commit session if worktree changes remain, marks the todo complete, commits todo progress when Git is available, then moves to the next todo. |
+| `<task>CONTINUE</task>` | Repeats the same todo on the next loop only when the agent also writes `/project/handoff.md`; the prompt requires relevant validation to pass before continuing. |
 | `<task>BLOCKED</task>` | Leaves the todo unchecked, reverts task-owned changes with `git reset --hard` and `git clean -fd`, then exits `2`. |
-| No sentinel | Repeats the same todo until `MAX_LOOPS`; the prompt requires the agent to write `/project/handoff.md` before continuing. |
+| Missing token or missing handoff | Refuses the retry and exits nonzero instead of guessing continuation state. |
 | Ctrl+C | Lets the active OpenCode run finish, processes its result, then exits `130` before another retry or todo starts. |
 
 ### Git safety
@@ -106,7 +107,7 @@ Run unchecked `todo.md` tasks through OpenCode until each task reports a loop se
 - Preflight prompts for a `code-implementor` commit session when tracked changes already exist.
 - The loop requires a clean worktree before task execution so BLOCKED can safely revert task-owned changes.
 - Dirty worktrees between completed todos are stashed with the completed todo line number in the stash message.
-- Todo-loop prompts require `todo-upkeep` for discovered follow-ups, `git-auto-commit` before DONE, and `/project/handoff.md` for continuation.
+- Todo-loop prompts require `todo-upkeep` for discovered follow-ups, `git-auto-commit` before DONE, and both `/project/handoff.md` plus passing relevant validation before CONTINUE.
 
 ### Output safety
 
