@@ -2,6 +2,7 @@
 name: api-integration-tester
 description: Builds API integration tests from specifications and application code, including authentication and authorization behavior.
 mode: all
+model: "openai/gpt-5.6-sol"
 permission:
   skill:
     api-discovery: allow

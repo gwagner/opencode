@@ -22,10 +22,10 @@ Always append to `/code/todo.md`. Create `/code/todo.md` if it does not exist.
 3. Append new tasks as loop-compatible unchecked markdown checkbox blocks in `/code/todo.md`:
    - `- [ ] Task description`
 4. Add indented metadata bullets when useful. Use only these metadata labels: `Scope:`, `Why:`, `Evidence:`, `Acceptance:`, `Handoff:`.
-5. `Handoff:` is optional, but include it when a downstream agent should handle the follow-up. Allowed values are exactly `prd-strategist`, `code-spec-engineer`, `code-implementor`.
-6. Classify handoffs as: requirements/intent change -> `prd-strategist`; approved requirements but missing or ambiguous implementation contract -> `code-spec-engineer`; approved, implementation-ready work -> `code-implementor`.
+5. `Handoff:` is optional. Allowed values are exactly `bug-fixer` and `code-implementor`; never use a handoff for clarification or document updates.
+6. Route a reported or reproducible defect needing diagnosis or a fix to `bug-fixer`; route every other implementation-ready change to `code-implementor`.
 7. Keep task text short but specific enough for a later loop iteration to execute independently.
-8. If a task is blocked, add the unblock action rather than vague blocked status.
+8. Before adding `Handoff:`, resolve every execution-blocking product, contract, scope, or acceptance question. Because loop mode is non-interactive, if an answer is unavailable, do not create a routed todo; report the blocker. Non-blocking questions must not delay capture.
 9. Do not mark the active task complete yourself unless explicitly instructed by the loop prompt or user.
 10. Preserve existing task order and existing checked/unchecked status.
 

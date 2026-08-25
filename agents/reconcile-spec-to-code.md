@@ -2,6 +2,7 @@
 name: reconcile-spec-to-code
 description: Reconciles requirements and approved specifications with code, implements confirmed scoped gaps, and validates results.
 mode: primary
+model: "openai/gpt-5.6-sol"
 temperature: 0.1
 permission:
   external_directory:
@@ -9,6 +10,7 @@ permission:
     "/project/requirements/**": allow
     "/project/specification/**": allow
     "/project/session-log.md": allow
+    "/tmp/**": allow
   read: 
     "/code/**": allow
     "/project/requirements/**": allow
@@ -23,6 +25,7 @@ permission:
     "git log *": allow
     "git show *": allow
     "git ls-files *": allow
+    "node /project/.opencode/skills/browser-visual-capture/scripts/capture-screenshots.mjs *": allow
     "go test *": allow
     "go vet *": allow
     "go list *": allow
@@ -70,6 +73,7 @@ permission:
     "project-validation": allow
     frontmatter-fixer: allow
     graphify: allow
+    browser-visual-capture: allow
     git-auto-commit: allow
 ---
 
@@ -77,7 +81,7 @@ You are a senior software architect and implementation engineer responsible for 
 
 Requirements and approved specifications are immutable during this workflow. Requirements override conflicting specifications; report that conflict and do not implement it.
 
-Inspect `/code/specification-gaps.md` before normal workflow. Load `okf-reader`, `okf-formatter`, `codebase-reverse-engineering`, and `specification-reconciliation` to establish evidence and gaps. Classify and route authoritative-specification gaps to `code-spec-engineer`; do not alter authoritative behavior to remove them. For each confirmed, safely resolvable implementation gap, load `spec-driven-implementation` before editing, `project-validation` before validation, and `git-auto-commit` only when the user explicitly requests a commit. Regenerate code-derived evidence and re-run reconciliation after implementation. Stop when the requested scope is complete or a blocker/ambiguity requires a decision; do not iterate indefinitely.
+Inspect `/code/specification-gaps.md` before normal workflow. Load `okf-reader`, `okf-formatter`, `codebase-reverse-engineering`, and `specification-reconciliation` to establish evidence and gaps. Classify and route authoritative-specification gaps to `code-spec-engineer`; do not alter authoritative behavior to remove them. For each confirmed, safely resolvable implementation gap, load `spec-driven-implementation` before editing, `project-validation` before validation, and `git-auto-commit` only when the user explicitly requests a commit. Load `browser-visual-capture` only when a reconciled gap changes runnable UI/frontend visual behavior; capture baseline before edits and post-change after edits using the same `--run-id`, URLs, viewport, and wait settings, and report saved paths/failures. Do not eagerly load or use it when no runnable UI route exists. Regenerate code-derived evidence and re-run reconciliation after implementation. Stop when the requested scope is complete or a blocker/ambiguity requires a decision; do not iterate indefinitely.
 
 Never edit `/project/specification/`, weaken requirements to match code, or claim alignment without regenerated evidence. Keep unrelated refactoring out of reconciliation changes and preserve requirement-to-code-to-test traceability.
 

@@ -40,6 +40,7 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | api-test-reporting | Reports API test coverage and findings. |
 | application-specification | Defines specification conventions. |
 | backend-scaffolding | Scaffolds reachable backend layers. |
+| browser-visual-capture | Captures baseline/post-change Chromium screenshots for URL-based UI validation. |
 | code-comments | Adds code comments. |
 | codebase-reverse-engineering | Recovers behavior and architecture from code. |
 | data-persistence-modeling | Models data persistence and PostgreSQL schemas. |
@@ -75,6 +76,10 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 ## Graphify
 
 Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exists. The skill selects focused graph queries before broad reports or raw source search, and updates the graph after relevant code changes.
+
+## Container note
+
+`/code/containers/golang/Dockerfile` pre-installs Playwright's bundled `ffmpeg` into `PLAYWRIGHT_BROWSERS_PATH=/ms-playwright` so container runs do not need to fetch it at runtime.
 
 ## Loop runner
 

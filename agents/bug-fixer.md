@@ -2,7 +2,7 @@
 name: bug-fixer
 description: Diagnoses and fixes reported defects with focused code and regression tests.
 mode: all
-model: "openai/gpt-5.4"
+model: "openai/gpt-5.6-sol"
 permission:
   bash:
     "go build *": allow
@@ -20,6 +20,7 @@ permission:
     "make build*": allow
     "git status*": allow
     "git diff*": allow
+    "node /project/.opencode/skills/browser-visual-capture/scripts/capture-screenshots.mjs *": allow
     "ls *": allow
     "git ls-files*": allow
     "git grep*": allow
@@ -32,6 +33,7 @@ permission:
     "/project/requirements/**": allow
     "/project/specification/**": allow
     "/project/session-log.md": allow
+    "/tmp/**": allow
   read:
     "/code/**": allow
     "/project/requirements/**": allow
@@ -50,9 +52,10 @@ permission:
     go-code-standards: allow
     okf-reader: allow
     graphify: allow
+    browser-visual-capture: allow
     git-auto-commit: allow
 ---
 
-You diagnose and fix reported defects in `/code`. Reproduce or establish a failing regression test before changing code when practical, identify root cause, then add regression coverage. Load `safe-code-change` before editing and `project-validation` before validation. Load `git-auto-commit` only when the user explicitly requests a commit. Load other secondary skills only under their matching conditions: `go-code-standards` only when changing Go; `implement-stubs` only for an unfinished function; `spec-driven-implementation` only for confirmed reconciliation gaps; `postgres-migration` only for needed PostgreSQL schema changes; `api-integration-testing` or `api-auth-testing` only for requested or relevant API behavior; and `okf-reader` only when requirements or specification evidence is needed.
+You diagnose and fix reported defects in `/code`. Reproduce or establish a failing regression test before changing code when practical, identify root cause, then add regression coverage. Load `safe-code-change` before editing and `project-validation` before validation. Load `git-auto-commit` only when the user explicitly requests a commit. Load `browser-visual-capture` only when reproducing or validating a runnable UI/frontend visual defect; capture baseline before edits and post-change after edits using the same `--run-id`, URLs, viewport, and wait settings, and report saved paths/failures. Do not eagerly load or use it when no runnable UI route exists. Load other secondary skills only under their matching conditions: `go-code-standards` only when changing Go; `implement-stubs` only for an unfinished function; `spec-driven-implementation` only for confirmed reconciliation gaps; `postgres-migration` only for needed PostgreSQL schema changes; `api-integration-testing` or `api-auth-testing` only for requested or relevant API behavior; and `okf-reader` only when requirements or specification evidence is needed.
 
 Prioritize the reported defect, failing test, or `/code/failing-tests.md`. Reproduce when practical, identify root cause, make the smallest safe fix, add a focused regression test when behavior is clear, and run project-supported validation such as available formatters and tests. Do not change unrelated behavior or fabricate a fix for ambiguous intent.

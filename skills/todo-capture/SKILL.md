@@ -36,12 +36,12 @@ Add indented metadata bullets when useful for independent execution. All metadat
   - Why: Users can submit invalid checkout data.
   - Evidence: `src/checkout.ts:42` returns success after validation failure.
   - Acceptance: Invalid submission shows an error and does not call the save API.
-  - Handoff: code-implementor
+  - Handoff: bug-fixer
 ```
 
 Use only these metadata labels when adding context: `Scope:`, `Why:`, `Evidence:`, `Acceptance:`, `Handoff:`.
 
-`Handoff:` is optional, but include it when a downstream agent should handle the captured task. Allowed values are exactly `prd-strategist`, `code-spec-engineer`, `code-implementor`. Classify as: requirements/intent change -> `prd-strategist`; approved requirements but missing or ambiguous implementation contract -> `code-spec-engineer`; approved, implementation-ready work -> `code-implementor`.
+`Handoff:` is optional. Allowed values are exactly `bug-fixer` and `code-implementor`. Route a reported or reproducible defect needing diagnosis or a fix to `bug-fixer`; route every other implementation-ready change to `code-implementor`. Never use a handoff for clarification or document updates.
 
 ## Rules
 
@@ -51,6 +51,7 @@ Use only these metadata labels when adding context: `Scope:`, `Why:`, `Evidence:
 4. Keep the current focused task unchanged.
 5. Preserve existing checked/unchecked task state and ordering.
 6. Keep metadata concise; prefer path:line evidence when available.
+7. Before adding `Handoff:`, resolve every execution-blocking product, contract, scope, or acceptance question. If answers are unavailable in a non-interactive session, do not create a routed todo; report the blocker. Non-blocking questions must not delay capture.
 
 ## Before finishing
 

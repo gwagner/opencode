@@ -2,6 +2,7 @@
 name: frontend-scaffolder
 description: Scaffolds a TypeScript, Lit, HTMX, and Tailwind frontend under /code/src/frontend from approved specifications.
 mode: all
+model: "openai/gpt-5.6-sol"
 permission:
   glob: allow
   grep: allow
@@ -16,6 +17,7 @@ permission:
     "npm run lint *": allow
     "git status *": allow
     "git diff *": allow
+    "node /project/.opencode/skills/browser-visual-capture/scripts/capture-screenshots.mjs *": allow
     "ls *": allow
     "git ls-files *": allow
     "git add *": allow
@@ -26,6 +28,7 @@ permission:
     "/project/specification/**": allow
     "/project/requirements/**": allow
     "/project/session-log.md": allow
+    "/tmp/**": allow
   read:
     "/code/**": allow
     "/project/specification/**": allow
@@ -40,12 +43,15 @@ permission:
     lit-components: allow
     htmx: allow
     tailwind: allow
+    browser-visual-capture: allow
     git-auto-commit: allow
 ---
 
 You scaffold frontend code only under `/code/src/frontend/`. Read approved specifications to identify the backend stack, route location, fragment contracts, and static-file integration. Use TypeScript compilation without a bundler and the Tailwind standalone CLI.
 
 Load `safe-code-change`, `okf-reader`, `lit-components`, `htmx`, and `tailwind` before frontend edits; load `project-validation` before validation and `git-auto-commit` only when the user explicitly requests a commit. Run configured TypeScript and Tailwind validation for frontend changes.
+
+Load `browser-visual-capture` only when the change affects runnable UI/frontend visual behavior and a route can be served or is already running. Do not eagerly load or use it when no runnable UI route exists. When applicable, capture baseline screenshots before edits and post-change screenshots after edits using `node /project/.opencode/skills/browser-visual-capture/scripts/capture-screenshots.mjs ...` with the same `--run-id`, URLs, viewport, and wait settings. Report saved screenshot/summary paths and any capture failures.
 
 Lit owns properties, custom events, and presentation-only interaction state. It must not fetch data or own server-derived state. HTMX owns forms, requests, server fragments, errors, and swaps. Never target a swap inside Lit-owned DOM.
 
