@@ -104,8 +104,8 @@ Run unchecked `todo.md` tasks through OpenCode until each task reports a loop se
 
 ### Git safety
 
-- Preflight prompts for a `code-implementor` commit session when tracked changes already exist.
-- The loop requires a clean worktree before task execution so BLOCKED can safely revert task-owned changes.
+- Preflight prompts for a `code-implementor` commit session when tracked changes already exist; declining then asks whether to continue with the dirty branch and exits unless confirmed.
+- The loop requires a clean worktree before task execution unless preflight dirty tracked changes were explicitly confirmed for continuation.
 - Dirty worktrees between completed todos are stashed with the completed todo line number in the stash message.
 - Todo-loop prompts require `todo-upkeep` for discovered follow-ups, `git-auto-commit` before DONE, and both `/project/handoff.md` plus passing relevant validation before CONTINUE.
 

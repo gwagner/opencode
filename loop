@@ -14,7 +14,7 @@ Test mode prints the detected tasks, loop commands, and prompts without
 running OpenCode, committing, or editing the todo file.
 
 Environment:
-  MAX_LOOPS  Maximum OpenCode runs per task. Default: 5.
+  MAX_LOOPS  Maximum OpenCode runs per task. Default: 10.
 USAGE
 }
 
@@ -38,12 +38,13 @@ AGENT="$2"
 REPO_PATH="${3:-/code}"
 TASK_SOURCE="$REPO_PATH/todo.md"
 TASK_REPO_FILE="todo.md"
-MAX_LOOPS="${MAX_LOOPS:-5}"
+MAX_LOOPS="${MAX_LOOPS:-10}"
 CONTINUE_TOKEN="<task>CONTINUE</task>"
 DONE_TOKEN="<task>DONE</task>"
 BLOCKED_TOKEN="<task>BLOCKED</task>"
 TEST_PREFLIGHT_ACTION="not checked"
 STOP_REQUESTED=false
+DIRTY_BRANCH_CONFIRMED="${DIRTY_BRANCH_CONFIRMED:-false}"
 
 if { [ -t 1 ] || [ "${FORCE_COLOR:-}" = "1" ]; } && [ -z "${NO_COLOR:-}" ]; then
   BOLD='\033[1m'
@@ -229,12 +230,19 @@ Loop attempt: $attempt of $MAX_LOOPS.
 
 $task
 
-# Instructions:
+# Handoff:
 
-This is another iteration of the same task unless the attempt is 1.
+Below is a handoff from a previous itteration of working on this task.  It may be blank depending on the state of processing:
+
 PROMPT
   handoff_prompt_block
   cat <<PROMPT
+
+# Instructions:
+
+Do NOT read /code/todo.md.  Focus only on the taks that you have been given.  Utilize /project/requirements/ and /project/specification/ as needed to complete the provided task.
+
+For code inspection, introspection, and reflection, load the graphify skill only when /code/graphify-out/graph.json exists. Otherwise use normal repository inspection.
 
 Do one safe, meaningful increment of work toward finishing this task. Do not force full completion in one pass.
 
@@ -246,7 +254,7 @@ If you discover additional required follow-up work while doing this task, load a
 
 Before replying $DONE_TOKEN, all code changes for this task must be validated and committed. Load git-auto-commit because this prompt explicitly requests a commit. Commit only this task's required files; do not commit unrelated files or later todo work. If no commit is needed, explain why before the final token.
 
-If this task is not fully complete but can continue in another iteration, you must leave /project/handoff.md with concise continuation context: current state, completed work, remaining work, blockers, and validation status. Then reply strictly with:
+If this task is not fully complete but can continue in another iteration, you must write to /project/handoff.md with concise continuation context: current state, completed work, remaining work, blockers, and validation status. Then reply strictly with:
 $CONTINUE_TOKEN
 
 Use $CONTINUE_TOKEN only when more task work remains and the repository is left in a validated passing state for the relevant checks run in this iteration.
@@ -328,6 +336,11 @@ ensure_clean_worktree() {
   fi
 
   if ! has_worktree_changes; then
+    return 0
+  fi
+
+  if [ "$DIRTY_BRANCH_CONFIRMED" = true ]; then
+    printf '%bStarting loop with confirmed dirty worktree.%b\n' "$YELLOW" "$RESET"
     return 0
   fi
 
@@ -491,7 +504,19 @@ prompt_commit_tracked_changes() {
       fi
       ;;
     *)
-      printf 'Skipping commit prompt. Continuing loop.\n'
+      printf 'Skipping commit prompt.\n'
+      printf 'Continue with a dirty branch? [y/N] '
+      read dirty_answer
+      case "$dirty_answer" in
+        y|Y|yes|YES)
+          printf 'Continuing loop with existing uncommitted changes.\n'
+          DIRTY_BRANCH_CONFIRMED=true
+          ;;
+        *)
+          printf 'Exiting. Commit, stash, or remove changes before rerunning the loop.\n'
+          exit 4
+          ;;
+      esac
       ;;
   esac
 }
@@ -552,7 +577,7 @@ run_todo_loop() {
     all_task_lines | while IFS= read -r line; do
     task="$(task_text "$line")"
     task_context="$(task_block "$line")"
-    prompt="$(build_prompt "$task_context")"
+    prompt="$(build_prompt "$task_context" "1")"
       next_after_task="$(awk -v current="$line" '/^[[:space:]]*[-*] \[ \] / && NR > current { print NR; exit }' "$TASK_SOURCE")"
       printf '\n%bTask line %s%b\n' "$BOLD$BLUE" "$line" "$RESET"
       test_field "Task" "$task"
@@ -633,11 +658,6 @@ Then it would move to todo line $next_after_task."
       fi
 
       if output_has_token "$output_file" "$CONTINUE_TOKEN"; then
-        if [ ! -f /project/handoff.md ]; then
-          rm -f "$output_file"
-          echo "Task requested continuation without /project/handoff.md. Refusing unsafe retry."
-          exit 6
-        fi
 
         rm -f "$output_file"
         stop_if_requested
