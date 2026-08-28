@@ -41,6 +41,13 @@ grep -q 'delegate to `prd-strategist`' "$resolver"
 grep -q 'delegate to `code-spec-engineer`' "$resolver"
 grep -q 'Remove the promoted entry from `/code/blocked-todos.md` only after' "$resolver"
 grep -q 'Blocked entries use `Blocked by:` and `Required to unblock:` instead' "$resolver"
+grep -q 'Do not require a code checkout, restore code, inspect code' "$resolver"
+grep -q 'the blocked entry is the sole prerequisite input' "$resolver"
+
+if grep -q 'Read relevant requirements, specifications, and code evidence' "$resolver"; then
+  printf '%s\n' 'blocked todo resolution still requires repository research' >&2
+  exit 1
+fi
 
 grep -q 'exactly one nonempty `Branch:`' "$capture"
 grep -q 'exactly one nonempty `Branch:`' "$upkeep"

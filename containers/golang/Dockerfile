@@ -17,4 +17,4 @@ RUN uv tool install "graphifyy[sql]"
 RUN /root/.local/bin/graphify opencode install
 
 RUN npm install -g tailwindcss @tailwindcss/cli typescript playwright
-RUN mkdir -p "$PLAYWRIGHT_BROWSERS_PATH" && npx playwright install ffmpeg
+RUN mkdir -p "$PLAYWRIGHT_BROWSERS_PATH" && npx playwright install

@@ -319,7 +319,7 @@ Do NOT read /code/todo.md.  Focus only on the taks that you have been given.  Ut
 
 For code inspection, introspection, and reflection, load the graphify skill only when /code/graphify-out/graph.json exists. Otherwise use normal repository inspection.
 
-Do one safe, meaningful increment of work toward finishing this task. Do not force full completion in one pass.
+Load git-auto-commit before the first edit because this prompt explicitly requests iteration commits. Do one safe, meaningful increment of work toward finishing this task. Do not force full completion in one pass.
 
 Before replying, run the relevant validation for the changes made in this iteration. Do not leave the repository in a knowingly failing state between iterations.
 
@@ -327,7 +327,7 @@ Once the todo is completed and validation has been run, use what you have learne
 
 If you discover additional required follow-up work while doing this task, load and use the todo-upkeep skill because TODO_LOOP_MODE=true. Append new unchecked tasks to /code/todo.md. Do not perform those newly added tasks in this iteration.
 
-Before replying $DONE_TOKEN, all code changes for this task must be validated and committed. Load git-auto-commit because this prompt explicitly requests a commit. Commit only this task's required files; do not commit unrelated files or later todo work. If no commit is needed, explain why before the final token.
+Before replying $CONTINUE_TOKEN or $DONE_TOKEN, validate and commit this iteration's code changes. Commit only this task's required files; do not commit unrelated files or later todo work. If no commit is needed, explain why before the final token. The loop creates a safety checkpoint on the task branch if changes remain, preventing work loss between iterations.
 
 If this task is not fully complete but can continue in another iteration, you must write to /project/handoff.md with concise continuation context: current state, completed work, remaining work, blockers, and validation status. Then reply strictly with:
 $CONTINUE_TOKEN
@@ -460,16 +460,6 @@ current_branch() {
 switch_to_task_branch() {
   branch="$1"
   if git -C "$REPO_PATH" show-ref --verify --quiet -- "refs/heads/$branch"; then
-    if [ ! -t 0 ]; then
-      printf 'Task branch %s already exists; interactive confirmation is unavailable. Stopping safely.\n' "$branch" >&2
-      exit 9
-    fi
-    printf 'Task branch %s already exists. Resume it? [y/N] ' "$branch"
-    read answer
-    case "$answer" in
-      y|Y|yes|YES) ;;
-      *) printf 'Existing task branch left unchanged.\n'; exit 9 ;;
-    esac
     if [ "$(current_branch 2>/dev/null || true)" != "$branch" ] && has_worktree_changes; then
       printf 'Cannot switch to existing task branch with worktree changes; commit or stash them manually.\n' >&2
       exit 4
@@ -503,8 +493,27 @@ require_untracked_loop_files() {
 
 merge_task_branch() {
   branch="$1"
+  task="$2"
+  merge_stdout="${TMPDIR:-/tmp}/loop-merge-stdout.$$"
+  merge_stderr="${TMPDIR:-/tmp}/loop-merge-stderr.$$"
+  merge_status=0
   git -C "$REPO_PATH" switch -- main
-  git -C "$REPO_PATH" merge --ff-only -- "$branch"
+  git -C "$REPO_PATH" merge --squash -- "$branch" > "$merge_stdout" 2> "$merge_stderr" || merge_status=$?
+  if [ "$merge_status" -eq 0 ]; then
+    sed '/^Automatic merge went well; stopped before committing as requested$/d' "$merge_stdout"
+    sed '/^Automatic merge went well; stopped before committing as requested$/d' "$merge_stderr" >&2
+  else
+    cat "$merge_stdout"
+    cat "$merge_stderr" >&2
+  fi
+  rm -f "$merge_stdout" "$merge_stderr"
+  if [ "$merge_status" -ne 0 ]; then
+    return "$merge_status"
+  fi
+  if ! git -C "$REPO_PATH" diff --cached --quiet; then
+    git -C "$REPO_PATH" commit -m "Complete todo: $task"
+    git -C "$REPO_PATH" branch -D -- "$branch"
+  fi
 }
 
 return_to_main() {
@@ -531,67 +540,40 @@ warn_dirty_worktree() {
   fi
 }
 
-build_commit_prompt() {
-  cat <<PROMPT
-Inspect /code uncommitted changes. /code is the OpenCode container mount for $REPO_PATH. Include untracked files when they are required for the completed task.
-
-Determine a concise, accurate commit message for the completed task work, then commit that work before the loop marks the todo item done.
-
-Required process:
-1. Inspect git status, tracked diffs, staged diffs, and recent commit style.
-2. Load git-auto-commit because this prompt explicitly requests a commit.
-3. Stage only files required for the completed task, including required untracked files. Do not stage unrelated files.
-4. Commit with the chosen message.
-5. Report the commit hash and message, or explain why no commit was created.
-PROMPT
-}
-
 test_summary() {
   task_count="$(count_unchecked_tasks)"
   test_header "TEST MODE · summary"
   test_field "Git repo" "$REPO_PATH"
   test_field "Todo file" "$TASK_SOURCE"
   test_field "Todo tasks" "would run $task_count unchecked task(s), up to $MAX_LOOPS OpenCode run(s) each"
-  test_field "DONE path" "prompt requires commit first; script would mark todo done and commit todo.md progress"
+  test_field "DONE path" "prompt requires an iteration commit; script checkpoints leftovers, marks todo done, and squash-merges one commit into main"
   test_field "BLOCKED path" "would move the task with Blocked by and Required to unblock metadata to blocked-todos.md, remove Handoff routing, commit partial work on the task branch, return to main without merging, and continue"
   test_field "Continue path" "prompt requests agent-authored /project/handoff.md; a missing handoff triggers a recovery run before retry; exhaustion follows the BLOCKED path"
-  test_field "Branches" "each task runs on its Branch metadata branch; DONE fast-forwards local main and keeps the task branch"
+  test_field "Branches" "each task runs on its Branch metadata branch; DONE squash-merges one commit into local main and deletes the completed task branch"
   test_field "Final state" "would warn loudly if all todos finish with a dirty worktree"
   test_field "Blocked summary" "final output would report how many todos moved to blocked-todos.md"
   test_field "OpenCode runs" "none executed in test mode"
   printf '%b✓ TEST MODE: no OpenCode runs executed, no commits made, and no todo file edits made.%b\n' "$GREEN" "$RESET"
 }
 
-auto_commit_tracked_changes() {
-  if ! git_available; then
-    return 0
-  fi
-
-  if ! inside_git_repo; then
-    return 0
-  fi
+commit_iteration_checkpoint() {
+  attempt="$1"
+  reason="$2"
 
   if ! has_worktree_changes; then
     return 0
   fi
 
-  commit_prompt="$(build_commit_prompt)"
-
-  if [ "$TEST_MODE" = true ]; then
-    test_header "TEST MODE · worktree auto commit session"
-    test_field "Git repo" "$REPO_PATH"
-    test_field "Project" "$PROJECT"
-    test_field "Agent" "code-implementor"
-    test_block "Command" "$RUNNER \"$PROJECT\" run \"<prompt>\" --agent \"code-implementor\""
-    test_block "Prompt" "$commit_prompt"
-    printf '%b✓ Would automatically open this commit session without asking.%b\n' "$GREEN" "$RESET"
-    return 0
+  printf '%bUncommitted work detected; preserving it on the task branch.%b\n' "$YELLOW" "$RESET"
+  git -C "$REPO_PATH" status --short
+  git -C "$REPO_PATH" add -A
+  if ! git -C "$REPO_PATH" diff --cached --quiet; then
+    git -C "$REPO_PATH" commit -m "Checkpoint todo iteration $attempt: $reason"
   fi
 
-  printf '%bWorktree changes detected; opening automatic commit session.%b\n' "$YELLOW" "$RESET"
-  "$RUNNER" "$PROJECT" run "$commit_prompt" --agent "code-implementor"
   if has_worktree_changes; then
-    printf '%bWorktree changes remain after automatic commit session.%b\n' "$YELLOW" "$RESET"
+    printf 'Unable to preserve iteration work; refusing to leave the task branch.\n' >&2
+    exit 11
   fi
 }
 
@@ -662,17 +644,16 @@ run_todo_loop() {
       test_field "Branch" "$branch"
       test_block "Command" "$RUNNER \"$PROJECT\" run \"<prompt>\" --agent \"$AGENT\""
       test_block "Prompt" "$prompt"
-      test_block "DONE path" "Agent prompt requires validation and git-auto-commit before $DONE_TOKEN.
-Script would clear /project/handoff.md, open a fallback commit session if worktree remains dirty, mark line $line complete, commit todo.md progress on $branch, switch to main, and run git merge --ff-only $branch."
+      test_block "DONE path" "Agent prompt requires validation and an iteration commit before $DONE_TOKEN.
+Script would checkpoint remaining work on $branch, mark line $line complete, commit todo.md progress, switch to main, and squash all task-branch commits into one commit."
       test_block "BLOCKED path" "Script would append the task plus Blocked by and Required to unblock metadata to blocked-todos.md, remove Handoff routing and the task from todo.md, commit partial work on $branch, clear /project/handoff.md, switch to main without merging, and continue."
-      test_block "Continue path" "Agent prompt requires writing /project/handoff.md before omitting DONE/BLOCKED.
-If absent, the sibling runner would inspect staged changes and write a recovery handoff. Script would run the same todo again until MAX_LOOPS=$MAX_LOOPS, then follow the BLOCKED path."
+      test_block "Continue path" "Agent prompt requires writing /project/handoff.md and committing the iteration before omitting DONE/BLOCKED.
+If changes remain, the loop checkpoints them on the task branch. If the handoff is absent, the sibling runner writes a recovery handoff. The same todo runs again until MAX_LOOPS=$MAX_LOOPS, then follows the BLOCKED path."
       if [ -n "$next_after_task" ]; then
-        test_block "Between-todo path" "After fast-forwarding main, script would move to todo line $next_after_task."
+        test_block "Between-todo path" "After squash-merging the completed task into main, script would move to todo line $next_after_task."
       else
         test_block "Final-todo path" "No later unchecked todo exists. Script would not stash between todos; at final completion it would print a prominent dirty-worktree warning if needed."
       fi
-      auto_commit_tracked_changes
       hr
     done
     test_summary
@@ -700,6 +681,7 @@ If absent, the sibling runner would inspect staged changes and write a recovery 
     require_git_main
     switch_to_task_branch "$branch"
     require_task_branch "$branch"
+    commit_iteration_checkpoint "0" "preserve resumed task work"
 
     completed=false
     for i in $(seq 1 "$MAX_LOOPS"); do
@@ -723,12 +705,7 @@ If absent, the sibling runner would inspect staged changes and write a recovery 
       if output_has_token "$output_file" "$DONE_TOKEN"; then
         require_task_branch "$branch"
         clear_loop_handoff
-        auto_commit_tracked_changes
-        if has_worktree_changes; then
-          rm -f "$output_file"
-          printf 'DONE requires all task changes committed; worktree changes remain.\n' >&2
-          exit 11
-        fi
+        commit_iteration_checkpoint "$i" "complete task work"
         mark_done "$line"
         echo "Marked task complete."
         commit_todo_progress
@@ -737,7 +714,7 @@ If absent, the sibling runner would inspect staged changes and write a recovery 
           printf 'Unable to commit todo progress; refusing to merge.\n' >&2
           exit 11
         fi
-        merge_task_branch "$branch"
+        merge_task_branch "$branch" "$task"
         loop_status 'task completed' "$line" "$task_context" "$i"
         completed=true
         rm -f "$output_file"
@@ -772,6 +749,8 @@ If absent, the sibling runner would inspect staged changes and write a recovery 
           fi
           stop_if_requested
         fi
+
+        commit_iteration_checkpoint "$i" "continue task work"
 
         if [ "$i" -lt "$MAX_LOOPS" ]; then
           rm -f "$output_file"

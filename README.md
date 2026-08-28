@@ -41,7 +41,7 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | application-specification | Defines specification conventions. |
 | backend-scaffolding | Scaffolds reachable backend layers. |
 | browser-visual-capture | Captures baseline/post-change Chromium screenshots for URL-based UI validation. |
-| blocked-todo-resolution | Clarifies blocked todos, coordinates authoritative updates, and promotes resolved work. |
+| blocked-todo-resolution | Resolves self-contained blocked todos without code access, coordinates authoritative updates, and promotes resolved work. |
 | code-comments | Adds code comments. |
 | codebase-reverse-engineering | Recovers behavior and architecture from code. |
 | data-persistence-modeling | Models data persistence and PostgreSQL schemas. |
@@ -103,8 +103,8 @@ Run unchecked `todo.md` tasks through OpenCode until each task reports a loop se
 
 | Sentinel | Result |
 | --- | --- |
-| `<task>DONE</task>` | Requires task changes committed (retaining the fallback commit session), marks and commits todo progress on the task branch, switches to local `main`, and fast-forward merges with `git merge --ff-only`. The task branch remains. |
-| `<task>CONTINUE</task>` | Repeats the same todo on its task branch. Host file operations use `DOCS_MOUNT/handoff.md`; container-facing prompts retain literal `/project/handoff.md`. If the handoff is absent, the loop invokes its sibling `run` helper with the same project and agent to inspect staged changes, determine next steps from the selected todo, and write a recovery handoff before retrying. If `MAX_LOOPS` is exhausted, the task follows the BLOCKED flow with an exhaustion reason. |
+| `<task>DONE</task>` | Requires validated iteration work, creates a task-branch safety checkpoint if changes remain, marks and commits todo progress, then squash-merges the task branch into one commit on local `main` and deletes the completed task branch. |
+| `<task>CONTINUE</task>` | Checkpoints any remaining iteration work and repeats the same todo from a clean task branch. Host file operations use `DOCS_MOUNT/handoff.md`; container-facing prompts retain literal `/project/handoff.md`. If the handoff is absent, the loop invokes its sibling `run` helper with the same project and agent to determine next steps from the selected todo and write a recovery handoff before retrying. If `MAX_LOOPS` is exhausted, the task follows the BLOCKED flow with an exhaustion reason. |
 | `<task>BLOCKED</task>` | Appends the task to `CODE_MOUNT/blocked-todos.md` with `Blocked by:` and `Required to unblock:` metadata, removes routing-only `Handoff:` metadata, then removes it from `todo.md`. Partial work is committed on the task branch; the runner clears the host handoff, switches to local `main` without merging, and continues. `todo.md` and `blocked-todos.md` must remain ignored/untracked so their edits persist across that switch. Final output reports the blocked count. |
 | Missing token | Refuses the retry and exits nonzero instead of guessing continuation state. A failed or empty missing-handoff recovery also exits nonzero. |
 | Ctrl+C | Lets the active OpenCode run finish, processes its result, then exits `130` before another retry or todo starts. |
@@ -112,10 +112,13 @@ Run unchecked `todo.md` tasks through OpenCode until each task reports a loop se
 ### Git safety
 
 - A missing task branch starts from current local `main`: the runner switches to `main`, then creates the validated metadata branch.
-- If a task branch already exists at fresh task start, the runner requires interactive confirmation before resuming it. Declining or unavailable stdin stops safely without deleting or modifying the branch.
-- Local `main` and exactly one nonempty Git-valid branch value are required. Branch cleanup is always manual.
-- Todo-loop prompts require `todo-upkeep` for discovered follow-ups, `git-auto-commit` before DONE, and both `/project/handoff.md` plus passing relevant validation before CONTINUE.
+- If a task branch already exists at fresh task start, the runner resumes it automatically. Worktree changes on another branch still prevent switching.
+- Local `main` and exactly one nonempty Git-valid branch value are required. Successfully committed DONE branches are deleted automatically; unmerged BLOCKED branches remain.
+- Todo-loop prompts require `todo-upkeep` for discovered follow-ups and `git-auto-commit` before the first edit. Each validated iteration must commit before CONTINUE or DONE; the loop creates a task-branch safety checkpoint when work remains uncommitted.
+- Completed task branches are squash-merged so local `main` receives one commit per todo, then deleted. BLOCKED branches retain their checkpoint history and remain unmerged.
 
 ### Output safety
 
 Runner output is captured through a temporary file. NUL bytes are stripped before printing and sentinel detection to avoid shell command-substitution warnings from binary or malformed subprocess output.
+
+Successful squash merges suppress Git's raw informational chatter; loop status remains visible, and merge errors still surface.
