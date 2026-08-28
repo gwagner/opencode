@@ -87,13 +87,14 @@ Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exi
 Run unchecked `todo.md` tasks through OpenCode until each task reports a loop sentinel.
 
 ```sh
-./loop <project> <agent> [git-repo]
-./loop --test <project> <agent> [git-repo]
+./loop <project> <agent>
+./loop --test <project> <agent>
 ```
 
 | Item | Behavior |
 | --- | --- |
-| Todo source | Reads unchecked markdown tasks (`- [ ] task`) from `[git-repo]/todo.md`; default repo is `/code`. Every implementation-ready entry requires exactly one nonempty, Git-valid `Branch:` metadata value. Indented metadata immediately below the selected task travels with that task in the loop prompt. |
+| Project mounts | `run` and `loop` source their sibling `project-mounts.sh`; the selected project is the single source of truth for host documentation/code mounts and container image. |
+| Todo source | As an outer host script, `loop` reads unchecked markdown tasks (`- [ ] task`) from the selected project's `CODE_MOUNT/todo.md`. Every implementation-ready entry requires exactly one nonempty, Git-valid `Branch:` metadata value. Indented metadata immediately below the selected task travels with that task in the loop prompt. |
 | Runner call | Resolves sibling `run` from the script directory and calls `opencode run "<prompt>" --agent "<agent>"`. |
 | Progress UI | Prints colored status at startup and during progress: project, agent, repo, todo file, counts, max loops, current line/task, attempt, loop start timestamp, and loop duration. |
 | Dry run | `--test` prints detected tasks, commands, prompts, and summary without OpenCode runs or file edits. |
@@ -103,8 +104,8 @@ Run unchecked `todo.md` tasks through OpenCode until each task reports a loop se
 | Sentinel | Result |
 | --- | --- |
 | `<task>DONE</task>` | Requires task changes committed (retaining the fallback commit session), marks and commits todo progress on the task branch, switches to local `main`, and fast-forward merges with `git merge --ff-only`. The task branch remains. |
-| `<task>CONTINUE</task>` | Repeats the same todo on its task branch using `/project/handoff.md`; the prompt requires relevant validation to pass before continuing. If the handoff is absent, the loop invokes its sibling `run` helper with the same project and agent to inspect staged changes, determine next steps from the selected todo, and write a recovery handoff before retrying. If `MAX_LOOPS` is exhausted, the task follows the BLOCKED flow with an exhaustion reason. |
-| `<task>BLOCKED</task>` | Appends the task to `[git-repo]/blocked-todos.md` with `Blocked by:` and `Required to unblock:` metadata, removes routing-only `Handoff:` metadata, then removes it from `todo.md`. Partial work is committed on the task branch; the runner clears `/project/handoff.md`, switches to local `main` without merging, and continues. `todo.md` and `blocked-todos.md` must remain ignored/untracked so their edits persist across that switch. Final output reports the blocked count. |
+| `<task>CONTINUE</task>` | Repeats the same todo on its task branch. Host file operations use `DOCS_MOUNT/handoff.md`; container-facing prompts retain literal `/project/handoff.md`. If the handoff is absent, the loop invokes its sibling `run` helper with the same project and agent to inspect staged changes, determine next steps from the selected todo, and write a recovery handoff before retrying. If `MAX_LOOPS` is exhausted, the task follows the BLOCKED flow with an exhaustion reason. |
+| `<task>BLOCKED</task>` | Appends the task to `CODE_MOUNT/blocked-todos.md` with `Blocked by:` and `Required to unblock:` metadata, removes routing-only `Handoff:` metadata, then removes it from `todo.md`. Partial work is committed on the task branch; the runner clears the host handoff, switches to local `main` without merging, and continues. `todo.md` and `blocked-todos.md` must remain ignored/untracked so their edits persist across that switch. Final output reports the blocked count. |
 | Missing token | Refuses the retry and exits nonzero instead of guessing continuation state. A failed or empty missing-handoff recovery also exits nonzero. |
 | Ctrl+C | Lets the active OpenCode run finish, processes its result, then exits `130` before another retry or todo starts. |
 

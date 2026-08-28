@@ -4,10 +4,10 @@ set -eu
 usage() {
   cat <<'USAGE'
 Usage:
-  ./loop [--test|--dry-run] <project> <agent> [git-repo]
+  ./loop [--test|--dry-run] <project> <agent>
 
-Todo mode reads the next unchecked markdown checkbox from git-repo/todo.md
-(default repo: /code), runs OpenCode until that task is done or blocked,
+Todo mode reads the next unchecked markdown checkbox from the project's
+configured code mount, runs OpenCode until that task is done or blocked,
 records the outcome, then continues until no todo tasks remain.
 
 Test mode prints the detected tasks, loop commands, and prompts without
@@ -21,6 +21,13 @@ USAGE
 TEST_MODE=false
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "$0")" && pwd)
 RUNNER="$SCRIPT_DIR/run"
+MOUNT_RESOLVER="$SCRIPT_DIR/project-mounts.sh"
+if [ ! -r "$MOUNT_RESOLVER" ]; then
+  printf 'Project mount resolver not found: %s\n' "$MOUNT_RESOLVER" >&2
+  exit 1
+fi
+# shellcheck source=project-mounts.sh
+. "$MOUNT_RESOLVER"
 case "${1:-}" in
   --test|--dry-run)
     TEST_MODE=true
@@ -28,14 +35,16 @@ case "${1:-}" in
     ;;
 esac
 
-if [ "$#" -lt 2 ]; then
+if [ "$#" -ne 2 ]; then
   usage
   exit 1
 fi
 
 PROJECT="$1"
 AGENT="$2"
-REPO_PATH="${3:-/code}"
+resolve_project_mounts "$PROJECT" || exit 1
+REPO_PATH="$CODE_MOUNT"
+HANDOFF_FILE="${DOCS_MOUNT%/}/handoff.md"
 TASK_SOURCE="$REPO_PATH/todo.md"
 TASK_REPO_FILE="todo.md"
 BLOCKED_TASK_SOURCE="$REPO_PATH/blocked-todos.md"
@@ -270,7 +279,7 @@ move_task_to_blocked() {
 }
 
 handoff_prompt_block() {
-  if [ ! -f /project/handoff.md ]; then
+  if [ ! -f "$HANDOFF_FILE" ]; then
     return 0
   fi
 
@@ -279,7 +288,7 @@ handoff_prompt_block() {
 Continuation context from /project/handoff.md for this same task:
 
 PROMPT
-  cat /project/handoff.md
+  cat "$HANDOFF_FILE"
 }
 
 build_prompt() {
@@ -400,7 +409,7 @@ recover_missing_handoff() {
   if [ "$recovery_status" -ne 0 ]; then
     return "$recovery_status"
   fi
-  if [ ! -s /project/handoff.md ]; then
+  if [ ! -s "$HANDOFF_FILE" ]; then
     echo "Recovery run did not write a nonempty /project/handoff.md. Refusing unsafe retry."
     return 6
   fi
@@ -503,8 +512,8 @@ return_to_main() {
 }
 
 clear_loop_handoff() {
-  if [ -f /project/handoff.md ]; then
-    rm -f /project/handoff.md
+  if [ -f "$HANDOFF_FILE" ]; then
+    rm -f "$HANDOFF_FILE"
   fi
 }
 
@@ -611,8 +620,8 @@ finish_blocked_task() {
   output_file="$4"
   attempt="$5"
 
-  if [ -s /project/handoff.md ]; then
-    handoff_context="$(cat /project/handoff.md)"
+  if [ -s "$HANDOFF_FILE" ]; then
+    handoff_context="$(cat "$HANDOFF_FILE")"
   else
     handoff_context="No handoff context provided."
   fi
@@ -754,7 +763,7 @@ If absent, the sibling runner would inspect staged changes and write a recovery 
         fi
         stop_if_requested
 
-        if [ ! -f /project/handoff.md ]; then
+        if [ ! -f "$HANDOFF_FILE" ]; then
           rm -f "$output_file"
           recovery_status=0
           recover_missing_handoff "$task_context" "$i" "$output_file" || recovery_status=$?
