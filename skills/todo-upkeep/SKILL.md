@@ -1,60 +1,60 @@
 ---
 name: todo-upkeep
-description: Maintains /code/todo.md only when the active prompt contains TODO_LOOP_MODE=true and a looped task discovers required follow-up work for later loop iterations.
+description: Maintains detailed loop follow-ups in /code/todo.md and unresolved blockers in /code/blocked-todos.md when TODO_LOOP_MODE=true.
 ---
 
 # Todo Upkeep
 
-Use this skill only when the active prompt contains `TODO_LOOP_MODE=true`. That marker means the agent is executing one task from `/code/todo.md` through the loop runner.
+Use this skill only when the active prompt contains `TODO_LOOP_MODE=true`. Use `todo-capture` during normal non-loop work.
 
-This skill preserves newly discovered required follow-up work for later loop iterations.
+## Target files
 
-If the active prompt does not contain `TODO_LOOP_MODE=true`, do not use this skill. For todos discovered during normal, non-loop coding or deferred bug triage, use `todo-capture` instead.
+- Append implementation-ready follow-up work to `/code/todo.md`.
+- Append unresolved execution blockers to `/code/blocked-todos.md`.
+- Create either file when needed.
 
-## Target file
+## Authoritative updates
 
-Always append to `/code/todo.md`. Create `/code/todo.md` if it does not exist.
+Before capture, determine whether the follow-up requires a requirements or specification creation, correction, or clarification. Delegate authoritative requirement updates to `prd-strategist` and specification updates to `code-spec-engineer`. Complete those updates before writing either a normal or blocked todo. Do not substitute todo metadata for required authoritative documentation.
 
 ## Rules
 
-1. Add only concrete, actionable tasks that are necessary to finish the current objective or safely handle newly discovered follow-up work.
-2. Do not add speculative, nice-to-have, duplicate, or unrelated tasks.
-3. Append new tasks as loop-compatible unchecked markdown checkbox blocks in `/code/todo.md`:
-   - `- [ ] Task description`
-4. Add indented metadata bullets when useful. Use only these metadata labels: `Scope:`, `Why:`, `Evidence:`, `Acceptance:`, `Handoff:`.
-5. `Handoff:` is optional. Allowed values are exactly `bug-fixer` and `code-implementor`; never use a handoff for clarification or document updates.
-6. Route a reported or reproducible defect needing diagnosis or a fix to `bug-fixer`; route every other implementation-ready change to `code-implementor`.
-7. Keep task text short but specific enough for a later loop iteration to execute independently.
-8. Before adding `Handoff:`, resolve every execution-blocking product, contract, scope, or acceptance question. Because loop mode is non-interactive, if an answer is unavailable, do not create a routed todo; report the blocker. Non-blocking questions must not delay capture.
-9. Do not mark the active task complete yourself unless explicitly instructed by the loop prompt or user.
-10. Preserve existing task order and existing checked/unchecked status.
+1. Add only concrete work necessary to finish the current objective or safely handle a newly discovered follow-up.
+2. Do not add speculative, duplicate, or unrelated work.
+3. Use one unchecked checkbox for one independently executable and reviewable outcome. Split separately executable outcomes into separate entries.
+4. Every implementation-ready entry must include exactly one nonempty `Branch:` plus `Scope:`, `Why:`, `Actions:`, `Evidence:`, and `Acceptance:`. Derive a deterministic Git-valid name from the task outcome and do not reuse it for unrelated work. Blocked entries omit `Branch:` until promoted.
+5. Acceptance must state observable outcomes and relevant validation.
+6. Use only these metadata labels: `Branch:`, `Scope:`, `Why:`, `Actions:`, `Evidence:`, `Acceptance:`, `Assumptions:`, `Blocked by:`, `Required to unblock:`, `Questions:`, `Handoff:`.
+7. `Handoff:` is allowed only for implementation-ready work. Its value is exactly `bug-fixer` or `code-implementor`.
+8. If an execution-critical question remains unanswered, add a detailed entry to `/code/blocked-todos.md`; do not add a routed todo.
+9. Keep titles concise, but never omit actions or required execution context to shorten an entry.
+10. Use path:line evidence when available; otherwise identify the authoritative source or state why direct evidence is unavailable.
+11. Record material assumptions explicitly.
+12. Do not mark the active task complete unless the loop prompt or user explicitly instructs it.
+13. Preserve existing task order and checked/unchecked state.
+
+## Blocked format
+
+```markdown
+- [ ] Define missing validation behavior
+  - Scope: `src/api/create-user.ts` and its API contract.
+  - Why: Validation rules are required before implementation can be completed.
+  - Actions:
+    - Decide whether the boundary is inclusive.
+    - Update the authoritative contract after the decision.
+  - Evidence: `src/api/create-user.ts:31` accepts an unspecified boundary value.
+  - Acceptance: Approved sources define boundary behavior and required validation coverage.
+  - Blocked by: Missing contract decision.
+  - Required to unblock:
+    - Decide whether the boundary is inclusive.
+    - Update the authoritative contract.
+  - Questions: Is the boundary inclusive or exclusive?
+```
 
 ## Placement
 
-- Append new tasks after the existing list unless the file already has a clearly labeled backlog/follow-up section.
-- If adding multiple tasks, group them under:
-
-```markdown
-## Follow-up tasks
-
-- [ ] First discovered task
-- [ ] Second discovered task
-```
-
-## Task wording
-
-Prefer:
-
-- `- [ ] Add regression test for invalid API token response`
-- `- [ ] Update README with loop runner todo-mode usage`
-- `- [ ] Investigate missing Tailwind build script before frontend validation`
-
-Avoid:
-
-- `- [ ] Fix stuff`
-- `- [ ] Maybe improve tests`
-- `- [ ] Continue`
+Append new entries after the existing list unless the file has a clearly labeled backlog or follow-up section. Group multiple entries under `## Follow-up tasks` when appropriate.
 
 ## Before finishing
 
-When you add todos, mention the added task count and `/code/todo.md` in your final response.
+Report each target file and the number of entries added.

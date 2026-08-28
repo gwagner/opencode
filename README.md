@@ -26,7 +26,7 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | prd-strategist | Creates and refines OKF requirements. |
 | reconcile-spec-to-code | Reconciles specifications with implementation. |
 | reverse-engineer-app-spec | Recovers an evidence-backed specification from code. |
-| todo-planner | Researches code and requirements, then captures implementation-ready todos. |
+| todo-planner | Researches work, coordinates authoritative document updates, and captures detailed executable or blocked todos. |
 | url-to-vault | Ingests URLs into an OKF or Obsidian vault. |
 
 ## Skills
@@ -41,6 +41,7 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | application-specification | Defines specification conventions. |
 | backend-scaffolding | Scaffolds reachable backend layers. |
 | browser-visual-capture | Captures baseline/post-change Chromium screenshots for URL-based UI validation. |
+| blocked-todo-resolution | Clarifies blocked todos, coordinates authoritative updates, and promotes resolved work. |
 | code-comments | Adds code comments. |
 | codebase-reverse-engineering | Recovers behavior and architecture from code. |
 | data-persistence-modeling | Models data persistence and PostgreSQL schemas. |
@@ -65,8 +66,8 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | safe-code-change | Performs focused, collaborative-safe code changes. |
 | security-operations | Reviews security and operational behavior. |
 | tailwind | Configures standalone Tailwind CLI builds and static output. |
-| todo-capture | Captures deferred non-loop coding todos as contextual, loop-compatible blocks in `/code/todo.md`. |
-| todo-upkeep | Appends loop-discovered follow-up tasks to `/code/todo.md` for later iterations. |
+| todo-capture | Captures detailed deferred work in `/code/todo.md` or unresolved work in `/code/blocked-todos.md`. |
+| todo-upkeep | Captures detailed loop follow-ups or blockers for later iterations. |
 | spec-driven-implementation | Implements authoritative specifications. |
 | specification-quality-gate | Reviews specification readiness. |
 | specification-reconciliation | Compares code-derived and authoritative specifications. |
@@ -92,7 +93,7 @@ Run unchecked `todo.md` tasks through OpenCode until each task reports a loop se
 
 | Item | Behavior |
 | --- | --- |
-| Todo source | Reads unchecked markdown tasks (`- [ ] task`) from `[git-repo]/todo.md`; default repo is `/code`. Indented metadata immediately below the selected task travels with that task in the loop prompt. |
+| Todo source | Reads unchecked markdown tasks (`- [ ] task`) from `[git-repo]/todo.md`; default repo is `/code`. Every implementation-ready entry requires exactly one nonempty, Git-valid `Branch:` metadata value. Indented metadata immediately below the selected task travels with that task in the loop prompt. |
 | Runner call | Resolves sibling `run` from the script directory and calls `opencode run "<prompt>" --agent "<agent>"`. |
 | Progress UI | Prints colored status at startup and during progress: project, agent, repo, todo file, counts, max loops, current line/task, attempt, loop start timestamp, and loop duration. |
 | Dry run | `--test` prints detected tasks, commands, prompts, and summary without OpenCode runs or file edits. |
@@ -101,17 +102,17 @@ Run unchecked `todo.md` tasks through OpenCode until each task reports a loop se
 
 | Sentinel | Result |
 | --- | --- |
-| `<task>DONE</task>` | Opens a commit session if worktree changes remain, marks the todo complete, commits todo progress when Git is available, then moves to the next todo. |
-| `<task>CONTINUE</task>` | Repeats the same todo on the next loop only when the agent also writes `/project/handoff.md`; the prompt requires relevant validation to pass before continuing. |
-| `<task>BLOCKED</task>` | Leaves the todo unchecked, reverts task-owned changes with `git reset --hard` and `git clean -fd`, then exits `2`. |
-| Missing token or missing handoff | Refuses the retry and exits nonzero instead of guessing continuation state. |
+| `<task>DONE</task>` | Requires task changes committed (retaining the fallback commit session), marks and commits todo progress on the task branch, switches to local `main`, and fast-forward merges with `git merge --ff-only`. The task branch remains. |
+| `<task>CONTINUE</task>` | Repeats the same todo on its task branch using `/project/handoff.md`; the prompt requires relevant validation to pass before continuing. If the handoff is absent, the loop invokes its sibling `run` helper with the same project and agent to inspect staged changes, determine next steps from the selected todo, and write a recovery handoff before retrying. If `MAX_LOOPS` is exhausted, the task follows the BLOCKED flow with an exhaustion reason. |
+| `<task>BLOCKED</task>` | Appends the task to `[git-repo]/blocked-todos.md` with `Blocked by:` and `Required to unblock:` metadata, removes routing-only `Handoff:` metadata, then removes it from `todo.md`. Partial work is committed on the task branch; the runner clears `/project/handoff.md`, switches to local `main` without merging, and continues. `todo.md` and `blocked-todos.md` must remain ignored/untracked so their edits persist across that switch. Final output reports the blocked count. |
+| Missing token | Refuses the retry and exits nonzero instead of guessing continuation state. A failed or empty missing-handoff recovery also exits nonzero. |
 | Ctrl+C | Lets the active OpenCode run finish, processes its result, then exits `130` before another retry or todo starts. |
 
 ### Git safety
 
-- Preflight prompts for a `code-implementor` commit session when tracked changes already exist; declining then asks whether to continue with the dirty branch and exits unless confirmed.
-- The loop requires a clean worktree before task execution unless preflight dirty tracked changes were explicitly confirmed for continuation.
-- Dirty worktrees between completed todos are stashed with the completed todo line number in the stash message.
+- A missing task branch starts from current local `main`: the runner switches to `main`, then creates the validated metadata branch.
+- If a task branch already exists at fresh task start, the runner requires interactive confirmation before resuming it. Declining or unavailable stdin stops safely without deleting or modifying the branch.
+- Local `main` and exactly one nonempty Git-valid branch value are required. Branch cleanup is always manual.
 - Todo-loop prompts require `todo-upkeep` for discovered follow-ups, `git-auto-commit` before DONE, and both `/project/handoff.md` plus passing relevant validation before CONTINUE.
 
 ### Output safety

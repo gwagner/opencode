@@ -7,8 +7,8 @@ Usage:
   ./loop [--test|--dry-run] <project> <agent> [git-repo]
 
 Todo mode reads the next unchecked markdown checkbox from git-repo/todo.md
-(default repo: /code), runs OpenCode until that task is done, marks it done,
-then continues until all tasks are complete.
+(default repo: /code), runs OpenCode until that task is done or blocked,
+records the outcome, then continues until no todo tasks remain.
 
 Test mode prints the detected tasks, loop commands, and prompts without
 running OpenCode, committing, or editing the todo file.
@@ -38,13 +38,12 @@ AGENT="$2"
 REPO_PATH="${3:-/code}"
 TASK_SOURCE="$REPO_PATH/todo.md"
 TASK_REPO_FILE="todo.md"
+BLOCKED_TASK_SOURCE="$REPO_PATH/blocked-todos.md"
 MAX_LOOPS="${MAX_LOOPS:-10}"
 CONTINUE_TOKEN="<task>CONTINUE</task>"
 DONE_TOKEN="<task>DONE</task>"
 BLOCKED_TOKEN="<task>BLOCKED</task>"
-TEST_PREFLIGHT_ACTION="not checked"
 STOP_REQUESTED=false
-DIRTY_BRANCH_CONFIRMED="${DIRTY_BRANCH_CONFIRMED:-false}"
 
 if { [ -t 1 ] || [ "${FORCE_COLOR:-}" = "1" ]; } && [ -z "${NO_COLOR:-}" ]; then
   BOLD='\033[1m'
@@ -146,6 +145,25 @@ task_block() {
   ' "$TASK_SOURCE"
 }
 
+task_branch() {
+  block="$1"
+  branch_lines="$(printf '%s\n' "$block" | sed -n 's/^[[:space:]]*-[[:space:]]*Branch:[[:space:]]*//p')"
+  branch_count="$(printf '%s\n' "$branch_lines" | awk 'NF { count++ } END { print count + 0 }')"
+  all_branch_count="$(printf '%s\n' "$block" | grep -cE '^[[:space:]]*-[[:space:]]*Branch:' || true)"
+
+  if [ "$all_branch_count" -ne 1 ] || [ "$branch_count" -ne 1 ]; then
+    printf '%bTask must contain exactly one nonempty Branch metadata value.%b\n' "$YELLOW" "$RESET" >&2
+    return 1
+  fi
+
+  branch="$(printf '%s\n' "$branch_lines" | awk 'NF { print; exit }')"
+  if ! git check-ref-format --branch "$branch" >/dev/null 2>&1; then
+    printf '%bInvalid Git branch name in task metadata: %s%b\n' "$YELLOW" "$branch" "$RESET" >&2
+    return 1
+  fi
+  printf '%s\n' "$branch"
+}
+
 loop_status() {
   phase="$1"
   current_line="${2:-}"
@@ -201,6 +219,54 @@ mark_done() {
   tmp_file="${TASK_SOURCE}.tmp.$$"
   sed "${line}s/^\([[:space:]]*[-*] \)\[ \]/\1[x]/" "$TASK_SOURCE" > "$tmp_file"
   mv "$tmp_file" "$TASK_SOURCE"
+}
+
+blocked_reason() {
+  output_file="$1"
+  tr -d '\000' < "$output_file" | awk -v token="$BLOCKED_TOKEN" '
+    index($0, token) {
+      reason = substr($0, index($0, token) + length(token))
+      sub(/^[[:space:]]+/, "", reason)
+      sub(/[[:space:]]+$/, "", reason)
+      print reason
+      exit
+    }
+  '
+}
+
+move_task_to_blocked() {
+  line="$1"
+  block="$2"
+  handoff_context="$3"
+  reason="$4"
+  todo_tmp="${TASK_SOURCE}.tmp.$$"
+  blocked_tmp="${BLOCKED_TASK_SOURCE}.tmp.$$"
+
+  if [ -f "$BLOCKED_TASK_SOURCE" ]; then
+    cp "$BLOCKED_TASK_SOURCE" "$blocked_tmp"
+  else
+    : > "$blocked_tmp"
+  fi
+
+  if [ -s "$blocked_tmp" ]; then
+    printf '\n' >> "$blocked_tmp"
+  fi
+  {
+    printf '%s\n' "$block" | sed '/^[[:space:]]*-[[:space:]]*Handoff:/d'
+    printf '  - Blocked by: %s\n' "$reason"
+    printf '  - Required to unblock: |-\n'
+    printf '%s\n' "$handoff_context" | sed 's/^/      /'
+  } >> "$blocked_tmp"
+
+  awk -v current="$line" '
+    NR < current { print; next }
+    NR == current { removing = 1; next }
+    removing && $0 ~ /^[[:space:]]+[^[:space:]]/ { next }
+    { removing = 0; print }
+  ' "$TASK_SOURCE" > "$todo_tmp"
+
+  mv "$blocked_tmp" "$BLOCKED_TASK_SOURCE"
+  mv "$todo_tmp" "$TASK_SOURCE"
 }
 
 handoff_prompt_block() {
@@ -259,7 +325,7 @@ $CONTINUE_TOKEN
 
 Use $CONTINUE_TOKEN only when more task work remains and the repository is left in a validated passing state for the relevant checks run in this iteration.
 
-If blocked and replying $BLOCKED_TOKEN, do not commit partial work. The loop runner will revert the task worktree to clean.
+If blocked, write /project/handoff.md with the specific actions, decisions, information, or authoritative updates required to unblock the task, then reply $BLOCKED_TOKEN followed by a short reason describing what blocks progress. Do not commit partial work yourself. The loop runner records these as Required to unblock and Blocked by metadata in blocked-todos.md, removes implementation routing metadata, commits partial work to the task branch, returns to main without merging that branch, and continues with the next todo.
 
 When the task is fully complete, validated, and there is no leftover work to complete reply strictly with:
 $DONE_TOKEN
@@ -268,6 +334,23 @@ If blocked, reply strictly with:
 $BLOCKED_TOKEN followed by a short reason.
 
 Do not reply without one of these task tokens.
+PROMPT
+}
+
+build_handoff_recovery_prompt() {
+  task="$1"
+  attempt="$2"
+  cat <<PROMPT
+TODO_LOOP_MODE=true
+Loop attempt: $attempt of $MAX_LOOPS.
+
+The previous run requested $CONTINUE_TOKEN but did not create /project/handoff.md.
+
+Inspect what code changes are currently staged in /code and determine the next steps based on this todo:
+
+$task
+
+Do not continue implementation or commit changes during this recovery run. Preserve the current branch and worktree, then write /project/handoff.md for the next loop iteration with concise continuation context: current state, staged changes, remaining steps, blockers, and validation status.
 PROMPT
 }
 
@@ -301,6 +384,30 @@ run_opencode_to_file() {
   return "$run_status"
 }
 
+recover_missing_handoff() {
+  task="$1"
+  attempt="$2"
+  output_file="$3"
+  recovery_output_file="${output_file}.recovery"
+  recovery_prompt="$(build_handoff_recovery_prompt "$task" "$attempt")"
+  recovery_status=0
+
+  echo "Task requested continuation without /project/handoff.md. Starting recovery run."
+  run_opencode_to_file "$recovery_prompt" "$recovery_output_file" || recovery_status=$?
+  tr -d '\000' < "$recovery_output_file"
+  rm -f "$recovery_output_file"
+
+  if [ "$recovery_status" -ne 0 ]; then
+    return "$recovery_status"
+  fi
+  if [ ! -s /project/handoff.md ]; then
+    echo "Recovery run did not write a nonempty /project/handoff.md. Refusing unsafe retry."
+    return 6
+  fi
+
+  echo "Recovery run wrote /project/handoff.md for the next iteration."
+}
+
 output_has_token() {
   output_file="$1"
   token="$2"
@@ -322,89 +429,77 @@ inside_git_repo() {
   git_available && git -C "$REPO_PATH" rev-parse --is-inside-work-tree >/dev/null 2>&1
 }
 
-has_uncommitted_tracked_changes() {
-  ! git -C "$REPO_PATH" diff --quiet --ignore-submodules -- || ! git -C "$REPO_PATH" diff --cached --quiet --ignore-submodules --
-}
-
 has_worktree_changes() {
   [ -n "$(git -C "$REPO_PATH" status --porcelain)" ]
 }
 
-ensure_clean_worktree() {
+require_git_main() {
   if ! git_available || ! inside_git_repo; then
-    return 0
+    printf 'Todo branch workflow requires a Git repository.\n' >&2
+    exit 8
   fi
-
-  if ! has_worktree_changes; then
-    return 0
-  fi
-
-  if [ "$DIRTY_BRANCH_CONFIRMED" = true ]; then
-    printf '%bStarting loop with confirmed dirty worktree.%b\n' "$YELLOW" "$RESET"
-    return 0
-  fi
-
-  if [ "$TEST_MODE" = true ]; then
-    test_header "TEST MODE · clean-worktree preflight"
-    test_field "Git repo" "$REPO_PATH"
-    printf '%b✓ Would require a clean worktree before task execution so BLOCKED can safely revert task-owned changes.%b\n' "$GREEN" "$RESET"
-    return 0
-  fi
-
-  printf '%bTarget repo still has uncommitted or untracked changes after preflight; refusing to start loop.%b\n' "$YELLOW" "$RESET"
-  printf 'Commit, stash, or remove these changes first so BLOCKED can revert to a clean tree safely.\n'
-  git -C "$REPO_PATH" status --short
-  exit 4
-}
-
-revert_to_clean_worktree() {
-  if ! git_available || ! inside_git_repo; then
-    return 0
-  fi
-
-  if [ "$TEST_MODE" = true ]; then
-    test_header "TEST MODE · blocked cleanup"
-    test_field "Git repo" "$REPO_PATH"
-    printf '%b✓ Would run git reset --hard and git clean -fd after %s.%b\n' "$GREEN" "$BLOCKED_TOKEN" "$RESET"
-    return 0
-  fi
-
-  if has_worktree_changes; then
-    printf '%bTask blocked; reverting task changes to a clean worktree.%b\n' "$YELLOW" "$RESET"
-    git -C "$REPO_PATH" reset --hard
-    git -C "$REPO_PATH" clean -fd
+  if ! git -C "$REPO_PATH" show-ref --verify --quiet -- refs/heads/main; then
+    printf 'Required local main branch does not exist.\n' >&2
+    exit 8
   fi
 }
 
-stash_between_todos() {
-  task_line="$1"
+current_branch() {
+  git -C "$REPO_PATH" symbolic-ref --quiet --short HEAD
+}
 
-  if ! git_available || ! inside_git_repo; then
-    return 0
+switch_to_task_branch() {
+  branch="$1"
+  if git -C "$REPO_PATH" show-ref --verify --quiet -- "refs/heads/$branch"; then
+    if [ ! -t 0 ]; then
+      printf 'Task branch %s already exists; interactive confirmation is unavailable. Stopping safely.\n' "$branch" >&2
+      exit 9
+    fi
+    printf 'Task branch %s already exists. Resume it? [y/N] ' "$branch"
+    read answer
+    case "$answer" in
+      y|Y|yes|YES) ;;
+      *) printf 'Existing task branch left unchanged.\n'; exit 9 ;;
+    esac
+    if [ "$(current_branch 2>/dev/null || true)" != "$branch" ] && has_worktree_changes; then
+      printf 'Cannot switch to existing task branch with worktree changes; commit or stash them manually.\n' >&2
+      exit 4
+    fi
+    git -C "$REPO_PATH" switch -- "$branch"
+  else
+    if has_worktree_changes; then
+      printf 'Cannot start a new task branch with worktree changes; commit or stash them manually.\n' >&2
+      exit 4
+    fi
+    git -C "$REPO_PATH" switch -- main
+    git -C "$REPO_PATH" switch -c "$branch"
   fi
+}
 
-  if ! has_worktree_changes; then
-    return 0
+require_task_branch() {
+  branch="$1"
+  if [ "$(current_branch 2>/dev/null || true)" != "$branch" ]; then
+    printf 'Task must remain on branch %s; stopping safely.\n' "$branch" >&2
+    exit 10
   fi
+}
 
-  stash_message="todo line $task_line completed before next todo"
-
-  if [ "$TEST_MODE" = true ]; then
-    test_header "TEST MODE · between-todo stash"
-    test_field "Git repo" "$REPO_PATH"
-    test_field "Stash message" "$stash_message"
-    printf '%b✓ Would stash dirty worktree with git stash push -u -m before moving to the next todo.%b\n' "$GREEN" "$RESET"
-    return 0
+require_untracked_loop_files() {
+  if git -C "$REPO_PATH" ls-files --error-unmatch -- "$TASK_REPO_FILE" >/dev/null 2>&1 ||
+     git -C "$REPO_PATH" ls-files --error-unmatch -- "blocked-todos.md" >/dev/null 2>&1; then
+    printf 'BLOCKED requires todo.md and blocked-todos.md to be untracked and ignored.\n' >&2
+    exit 12
   fi
+}
 
-  printf '%bDirty worktree between todos; stashing before moving to next todo.%b\n' "$YELLOW" "$RESET"
-  git -C "$REPO_PATH" stash push -u -m "$stash_message"
+merge_task_branch() {
+  branch="$1"
+  git -C "$REPO_PATH" switch -- main
+  git -C "$REPO_PATH" merge --ff-only -- "$branch"
+}
 
-  if has_worktree_changes; then
-    printf '%bWorktree remains dirty after stash; cannot continue safely.%b\n' "$YELLOW" "$RESET"
-    git -C "$REPO_PATH" status --short
-    exit 7
-  fi
+return_to_main() {
+  git -C "$REPO_PATH" switch -- main
 }
 
 clear_loop_handoff() {
@@ -447,78 +542,15 @@ test_summary() {
   test_header "TEST MODE · summary"
   test_field "Git repo" "$REPO_PATH"
   test_field "Todo file" "$TASK_SOURCE"
-  test_field "Commit prompt" "$TEST_PREFLIGHT_ACTION"
   test_field "Todo tasks" "would run $task_count unchecked task(s), up to $MAX_LOOPS OpenCode run(s) each"
   test_field "DONE path" "prompt requires commit first; script would mark todo done and commit todo.md progress"
-  test_field "BLOCKED path" "would leave todo unchecked, revert task worktree, and exit 2"
-  test_field "Continue path" "prompt requires $CONTINUE_TOKEN plus agent-authored /project/handoff.md; each iteration must validate before retry"
-  test_field "Between todos" "would stash dirty worktree before moving to next todo, with todo line in stash message"
+  test_field "BLOCKED path" "would move the task with Blocked by and Required to unblock metadata to blocked-todos.md, remove Handoff routing, commit partial work on the task branch, return to main without merging, and continue"
+  test_field "Continue path" "prompt requests agent-authored /project/handoff.md; a missing handoff triggers a recovery run before retry; exhaustion follows the BLOCKED path"
+  test_field "Branches" "each task runs on its Branch metadata branch; DONE fast-forwards local main and keeps the task branch"
   test_field "Final state" "would warn loudly if all todos finish with a dirty worktree"
+  test_field "Blocked summary" "final output would report how many todos moved to blocked-todos.md"
   test_field "OpenCode runs" "none executed in test mode"
   printf '%b✓ TEST MODE: no OpenCode runs executed, no commits made, and no todo file edits made.%b\n' "$GREEN" "$RESET"
-}
-
-prompt_commit_tracked_changes() {
-  if ! git_available; then
-    TEST_PREFLIGHT_ACTION="would skip commit prompt: git unavailable"
-    return 0
-  fi
-
-  if ! inside_git_repo; then
-    TEST_PREFLIGHT_ACTION="would skip commit prompt: target is not a git repo"
-    return 0
-  fi
-
-  if ! has_uncommitted_tracked_changes; then
-    TEST_PREFLIGHT_ACTION="would not run commit session: no tracked uncommitted changes"
-    return 0
-  fi
-
-  commit_prompt="$(build_commit_prompt)"
-  TEST_PREFLIGHT_ACTION="would ask to open code-implementor commit session"
-
-  if [ "$TEST_MODE" = true ]; then
-    test_header "TEST MODE · tracked-change commit prompt"
-    test_field "Git repo" "$REPO_PATH"
-    test_field "Project" "$PROJECT"
-    test_field "Agent" "code-implementor"
-    test_block "Command" "$RUNNER \"$PROJECT\" run \"<prompt>\" --agent \"code-implementor\""
-    test_block "Prompt" "$commit_prompt"
-    printf '%b✓ Would ask before opening this commit session.%b\n' "$GREEN" "$RESET"
-    return 0
-  fi
-
-  printf '%bTracked uncommitted changes detected.%b\n' "$YELLOW" "$RESET"
-  if [ ! -t 0 ]; then
-    printf 'No interactive stdin available; skipping commit prompt.\n'
-    return 0
-  fi
-
-  printf 'Open an opencode commit-message/commit session with code-implementor? [y/N] '
-  read answer
-  case "$answer" in
-    y|Y|yes|YES)
-      "$RUNNER" "$PROJECT" run "$commit_prompt" --agent "code-implementor"
-      if has_uncommitted_tracked_changes; then
-        printf '%bTracked changes remain after commit session.%b\n' "$YELLOW" "$RESET"
-      fi
-      ;;
-    *)
-      printf 'Skipping commit prompt.\n'
-      printf 'Continue with a dirty branch? [y/N] '
-      read dirty_answer
-      case "$dirty_answer" in
-        y|Y|yes|YES)
-          printf 'Continuing loop with existing uncommitted changes.\n'
-          DIRTY_BRANCH_CONFIRMED=true
-          ;;
-        *)
-          printf 'Exiting. Commit, stash, or remove changes before rerunning the loop.\n'
-          exit 4
-          ;;
-      esac
-      ;;
-  esac
 }
 
 auto_commit_tracked_changes() {
@@ -565,6 +597,42 @@ commit_todo_progress() {
   fi
 }
 
+commit_blocked_work() {
+  git -C "$REPO_PATH" add -A
+  if ! git -C "$REPO_PATH" diff --cached --quiet; then
+    git -C "$REPO_PATH" commit -m "Save partial work for blocked task"
+  fi
+}
+
+finish_blocked_task() {
+  line="$1"
+  task_context="$2"
+  reason="$3"
+  output_file="$4"
+  attempt="$5"
+
+  if [ -s /project/handoff.md ]; then
+    handoff_context="$(cat /project/handoff.md)"
+  else
+    handoff_context="No handoff context provided."
+  fi
+  require_untracked_loop_files
+  move_task_to_blocked "$line" "$task_context" "$handoff_context" "$reason"
+  commit_blocked_work
+  clear_loop_handoff
+  if has_worktree_changes; then
+    rm -f "$output_file"
+    printf 'Unable to commit blocked task work; refusing to continue. Ensure todo.md and blocked-todos.md are ignored.\n' >&2
+    exit 11
+  fi
+  return_to_main
+  rm -f "$output_file"
+  blocked_count=$((blocked_count + 1))
+  echo "Task moved to blocked-todos.md. Continuing with the next todo."
+  loop_status 'task moved to blocked' "$line" "$task_context" "$attempt"
+  completed=true
+}
+
 run_todo_loop() {
   if [ "$TEST_MODE" = true ]; then
     test_header "TEST MODE · todo loop"
@@ -578,20 +646,20 @@ run_todo_loop() {
     task="$(task_text "$line")"
     task_context="$(task_block "$line")"
     prompt="$(build_prompt "$task_context" "1")"
+      branch="$(task_branch "$task_context")" || exit 8
       next_after_task="$(awk -v current="$line" '/^[[:space:]]*[-*] \[ \] / && NR > current { print NR; exit }' "$TASK_SOURCE")"
       printf '\n%bTask line %s%b\n' "$BOLD$BLUE" "$line" "$RESET"
       test_field "Task" "$task"
+      test_field "Branch" "$branch"
       test_block "Command" "$RUNNER \"$PROJECT\" run \"<prompt>\" --agent \"$AGENT\""
       test_block "Prompt" "$prompt"
       test_block "DONE path" "Agent prompt requires validation and git-auto-commit before $DONE_TOKEN.
-Script would clear /project/handoff.md, open a fallback commit session if worktree remains dirty, mark line $line complete, and commit todo.md progress."
-      test_block "BLOCKED path" "Script would clear /project/handoff.md, leave line $line unchecked, run git reset --hard plus git clean -fd, and exit 2."
+Script would clear /project/handoff.md, open a fallback commit session if worktree remains dirty, mark line $line complete, commit todo.md progress on $branch, switch to main, and run git merge --ff-only $branch."
+      test_block "BLOCKED path" "Script would append the task plus Blocked by and Required to unblock metadata to blocked-todos.md, remove Handoff routing and the task from todo.md, commit partial work on $branch, clear /project/handoff.md, switch to main without merging, and continue."
       test_block "Continue path" "Agent prompt requires writing /project/handoff.md before omitting DONE/BLOCKED.
-Script would not write a handoff; it would run the same todo again until MAX_LOOPS=$MAX_LOOPS."
+If absent, the sibling runner would inspect staged changes and write a recovery handoff. Script would run the same todo again until MAX_LOOPS=$MAX_LOOPS, then follow the BLOCKED path."
       if [ -n "$next_after_task" ]; then
-        test_block "Between-todo path" "If the worktree is dirty after completing line $line, script would run:
-git stash push -u -m \"todo line $line completed before next todo\"
-Then it would move to todo line $next_after_task."
+        test_block "Between-todo path" "After fast-forwarding main, script would move to todo line $next_after_task."
       else
         test_block "Final-todo path" "No later unchecked todo exists. Script would not stash between todos; at final completion it would print a prominent dirty-worktree warning if needed."
       fi
@@ -602,20 +670,27 @@ Then it would move to todo line $next_after_task."
     return 0
   fi
 
+  blocked_count=0
   loop_status 'starting'
 
   while true; do
     line="$(next_task_line || true)"
     if [ -z "$line" ]; then
       loop_status 'complete'
-      echo "All todo tasks completed."
+      echo "All todo tasks processed."
+      echo "Todos moved to blocked: $blocked_count."
       warn_dirty_worktree
       return 0
     fi
 
       task="$(task_text "$line")"
       task_context="$(task_block "$line")"
+      branch="$(task_branch "$task_context")" || exit 8
     echo "Next task on line $line: $task"
+
+    require_git_main
+    switch_to_task_branch "$branch"
+    require_task_branch "$branch"
 
     completed=false
     for i in $(seq 1 "$MAX_LOOPS"); do
@@ -637,11 +712,23 @@ Then it would move to todo line $next_after_task."
       fi
 
       if output_has_token "$output_file" "$DONE_TOKEN"; then
+        require_task_branch "$branch"
         clear_loop_handoff
         auto_commit_tracked_changes
+        if has_worktree_changes; then
+          rm -f "$output_file"
+          printf 'DONE requires all task changes committed; worktree changes remain.\n' >&2
+          exit 11
+        fi
         mark_done "$line"
         echo "Marked task complete."
         commit_todo_progress
+        if has_worktree_changes; then
+          rm -f "$output_file"
+          printf 'Unable to commit todo progress; refusing to merge.\n' >&2
+          exit 11
+        fi
+        merge_task_branch "$branch"
         loop_status 'task completed' "$line" "$task_context" "$i"
         completed=true
         rm -f "$output_file"
@@ -650,23 +737,40 @@ Then it would move to todo line $next_after_task."
       fi
 
       if output_has_token "$output_file" "$BLOCKED_TOKEN"; then
-        clear_loop_handoff
-        rm -f "$output_file"
-        echo "Task blocked. Leaving todo unchecked."
-        revert_to_clean_worktree
-        exit 2
+        require_task_branch "$branch"
+        reason="$(blocked_reason "$output_file")"
+        if [ -z "$reason" ]; then
+          reason="No block reason provided."
+        fi
+        finish_blocked_task "$line" "$task_context" "$reason" "$output_file" "$i"
+        stop_if_requested
+        break
       fi
 
       if output_has_token "$output_file" "$CONTINUE_TOKEN"; then
-
-        rm -f "$output_file"
+        require_task_branch "$branch"
+        if [ "$STOP_REQUESTED" = true ]; then
+          rm -f "$output_file"
+        fi
         stop_if_requested
 
+        if [ ! -f /project/handoff.md ]; then
+          rm -f "$output_file"
+          recovery_status=0
+          recover_missing_handoff "$task_context" "$i" "$output_file" || recovery_status=$?
+          if [ "$recovery_status" -ne 0 ]; then
+            exit "$recovery_status"
+          fi
+          stop_if_requested
+        fi
+
         if [ "$i" -lt "$MAX_LOOPS" ]; then
+          rm -f "$output_file"
           echo "Task continuing with validated handoff for next iteration."
           continue
         fi
 
+        finish_blocked_task "$line" "$task_context" "Maximum loop attempts exhausted after $MAX_LOOPS runs." "$output_file" "$i"
         break
       fi
 
@@ -681,18 +785,11 @@ Then it would move to todo line $next_after_task."
       exit 3
     fi
 
-    if [ -n "$(next_task_line || true)" ]; then
-      stash_between_todos "$line"
-    fi
-
     stop_if_requested
   done
 }
 
 trap request_stop INT
-
-prompt_commit_tracked_changes
-ensure_clean_worktree
 
 if is_todo_file; then
   run_todo_loop
