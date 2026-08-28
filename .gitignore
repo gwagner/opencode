@@ -1,0 +1,11 @@
+node_modules
+package.json
+package-lock.json
+bun.lock
+log/log.log
+/log
+/plugins/graphify.js
+/specification-gaps.md
+/tests/*
+!/tests/todo-planner-routing.sh
+/project-mounts.sh

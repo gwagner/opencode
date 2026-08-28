@@ -1,0 +1,31 @@
+#!/bin/bash
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck source=project-mounts.sh
+. "$SCRIPT_DIR/project-mounts.sh"
+resolve_project_mounts "${1:-}" || exit 1
+
+if [ ! -d "$DOCS_MOUNT" ]; then
+  mkdir -p "$DOCS_MOUNT"
+fi
+
+if [ ! -d "$CODE_MOUNT" ]; then
+  mkdir -p "$CODE_MOUNT"
+fi
+
+
+docker run -it --rm \
+  -w /project/ \
+  -v ~/.local/share/opencode/:/root/.local/share/opencode/ \
+  -v ~/.config/opencode/:/root/.config/opencode/ \
+  -v ~/.gitconfig:/root/.gitconfig \
+  -v $(go env GOCACHE):/root/.cache/go-build \
+  -v $(go env GOMODCACHE):/go/pkg/mod \
+  --mount type=bind,source="$DOCS_MOUNT",target=/project/ \
+  --mount type=bind,source="./",target=/project/.opencode/ \
+  --mount type=bind,source="$CODE_MOUNT",target=/code/ \
+  --mount type=bind,source="./AGENTS.md",target=/project/AGENTS.md \
+  --mount type=bind,source="./log/",target=/log/ \
+  "$CONTAINER" "${@:2}"
+
+#  --entrypoint /bin/sh \
