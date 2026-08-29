@@ -18,6 +18,7 @@ grep -q 'capture the work in `/code/blocked-todos.md`' "$planner"
 grep -q '`Branch:`, `Scope:`, `Why:`, `Actions:`, `Evidence:`, and `Acceptance:`' "$planner"
 grep -q 'Blocked entries do not receive `Branch:` until promotion' "$planner"
 grep -q 'Every blocked entry must use `Blocked by:`' "$planner"
+grep -q 'add `Depends on:` to the child' "$planner"
 
 if grep -q 'never implement todo work or auto-run downstream documentation/implementation agents' "$planner"; then
   printf '%s\n' 'planner still prohibits required clarification delegation' >&2
@@ -54,3 +55,5 @@ grep -q 'exactly one nonempty `Branch:`' "$upkeep"
 grep -q 'exactly one nonempty `Branch:`' "$resolver"
 grep -q '`Required to unblock:`' "$capture"
 grep -q '`Required to unblock:`' "$upkeep"
+grep -q '`Depends on:`' "$capture"
+grep -q '`Depends on:`' "$upkeep"

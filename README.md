@@ -94,7 +94,7 @@ Run unchecked `todo.md` tasks through OpenCode until each task reports a loop se
 | Item | Behavior |
 | --- | --- |
 | Project mounts | `run` and `loop` source their sibling `project-mounts.sh`; the selected project is the single source of truth for host documentation/code mounts and container image. |
-| Todo source | As an outer host script, `loop` reads unchecked markdown tasks (`- [ ] task`) from the selected project's `CODE_MOUNT/todo.md`. Every implementation-ready entry requires exactly one nonempty, Git-valid `Branch:` metadata value. Indented metadata immediately below the selected task travels with that task in the loop prompt. |
+| Todo source | As an outer host script, `loop` reads unchecked markdown tasks (`- [ ] task`) from the selected project's `CODE_MOUNT/todo.md`. Every implementation-ready entry requires exactly one nonempty, Git-valid `Branch:` metadata value. A child todo may use one optional `Depends on:` value referencing its parent todo's exact `Branch:` value. The parent does not list its children. Indented metadata immediately below the selected task travels with that task in the loop prompt. |
 | Runner call | Resolves sibling `run` from the script directory and calls `opencode run "<prompt>" --agent "<agent>"`. |
 | Progress UI | Prints colored status at startup and during progress: project, agent, repo, todo file, counts, max loops, current line/task, attempt, loop start timestamp, and loop duration. |
 | Dry run | `--test` prints detected tasks, commands, prompts, and summary without OpenCode runs or file edits. |
@@ -108,6 +108,8 @@ Run unchecked `todo.md` tasks through OpenCode until each task reports a loop se
 | `<task>BLOCKED</task>` | Appends the task to `CODE_MOUNT/blocked-todos.md` with `Blocked by:` and `Required to unblock:` metadata, removes routing-only `Handoff:` metadata, then removes it from `todo.md`. Partial work is committed on the task branch; the runner clears the host handoff, switches to local `main` without merging, and continues. `todo.md` and `blocked-todos.md` must remain ignored/untracked so their edits persist across that switch. Final output reports the blocked count. |
 | Missing token | Refuses the retry and exits nonzero instead of guessing continuation state. A failed or empty missing-handoff recovery also exits nonzero. |
 | Ctrl+C | Lets the active OpenCode run finish, processes its result, then exits `130` before another retry or todo starts. |
+
+Todos with any unchecked or missing `Depends on:` target emit a warning and are skipped while the loop searches for another runnable todo. When no runnable todos remain, the loop reports that it is waiting on dependencies and exits without running the dependent tasks.
 
 ### Git safety
 

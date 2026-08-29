@@ -23,11 +23,12 @@ Before capture, determine whether the work requires a requirements or specificat
 
 Use one top-level unchecked checkbox for one independently executable and reviewable outcome. Split separately executable outcomes into separate todos instead of hiding them in one summary task.
 
-Every implementation-ready entry must include exactly one nonempty `Branch:` plus `Scope:`, `Why:`, `Actions:`, `Evidence:`, and `Acceptance:`. Derive a deterministic, Git-valid branch name from the task outcome (for example, `fix/checkout-validation`); never reuse a branch for unrelated work. Acceptance must state observable outcomes and relevant validation. Use path:line evidence when available; otherwise identify the authoritative source or state why direct evidence is not yet available. Blocked entries omit `Branch:` until promoted.
+Every implementation-ready entry must include exactly one nonempty `Branch:` plus `Scope:`, `Why:`, `Actions:`, `Evidence:`, and `Acceptance:`. Derive a deterministic, Git-valid branch name from the task outcome (for example, `fix/checkout-validation`); never reuse a branch for unrelated work. If a child todo cannot start until its parent todo completes, add exactly one nonempty `Depends on:` value to the child containing the parent's exact `Branch:` value. Never add child references to the parent. The dependency must be Git-valid and must not reference the current todo. Omit `Depends on:` when there is no parent dependency. Acceptance must state observable outcomes and relevant validation. Use path:line evidence when available; otherwise identify the authoritative source or state why direct evidence is not yet available. Blocked entries omit `Branch:` until promoted.
 
 ```markdown
 - [ ] Prevent invalid checkout submission
   - Branch: fix/checkout-validation
+  - Depends on: feat/checkout-contract
   - Scope: `src/checkout.ts` validation flow and related tests.
   - Why: Invalid data currently reaches the save API.
   - Actions:
@@ -56,7 +57,7 @@ Use `/code/blocked-todos.md` when an execution blocker remains:
   - Questions: What retry limit and backoff schedule apply?
 ```
 
-Use only these metadata labels: `Branch:`, `Scope:`, `Why:`, `Actions:`, `Evidence:`, `Acceptance:`, `Assumptions:`, `Blocked by:`, `Required to unblock:`, `Questions:`, `Handoff:`.
+Use only these metadata labels: `Branch:`, `Depends on:`, `Scope:`, `Why:`, `Actions:`, `Evidence:`, `Acceptance:`, `Assumptions:`, `Blocked by:`, `Required to unblock:`, `Questions:`, `Handoff:`.
 
 `Handoff:` is allowed only for implementation-ready work. Allowed values are exactly `bug-fixer` and `code-implementor`.
 Every blocked entry must state both the obstacle in `Blocked by:` and the actions, decisions, information, or authoritative updates needed in `Required to unblock:`.

@@ -8,4 +8,5 @@ log/log.log
 /specification-gaps.md
 /tests/*
 !/tests/todo-planner-routing.sh
+!/tests/loop-todo-dependencies.sh
 /project-mounts.sh

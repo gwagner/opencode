@@ -173,6 +173,99 @@ task_branch() {
   printf '%s\n' "$branch"
 }
 
+task_dependencies() {
+  block="$1"
+  printf '%s\n' "$block" | awk '
+    /^[[:space:]]*-[[:space:]]*Depends on:/ {
+      labels++
+      dependency = $0
+      sub(/^[[:space:]]*-[[:space:]]*Depends on:[[:space:]]*/, "", dependency)
+      sub(/[[:space:]]+$/, "", dependency)
+      if (dependency == "") invalid = 1
+      print dependency
+    }
+    END {
+      if (labels > 1 || invalid) exit 2
+    }
+  '
+}
+
+dependency_is_completed() {
+  dependency="$1"
+  awk -v dependency="$dependency" '
+    /^[[:space:]]*[-*] \[[ x]\] / {
+      task_checked = ($0 ~ /^[[:space:]]*[-*] \[x\] /)
+      next
+    }
+    /^[[:space:]]*-[[:space:]]*Branch:/ {
+      branch = $0
+      sub(/^[[:space:]]*-[[:space:]]*Branch:[[:space:]]*/, "", branch)
+      sub(/[[:space:]]+$/, "", branch)
+      if (branch == dependency) {
+        matches++
+        if (task_checked) completed++
+      }
+    }
+    END { exit !(matches == 1 && completed == 1) }
+  ' "$TASK_SOURCE"
+}
+
+unmet_dependencies() {
+  block="$1"
+  dependencies="$(task_dependencies "$block")" || return $?
+  for dependency in $dependencies; do
+    if ! dependency_is_completed "$dependency"; then
+      printf '%s\n' "$dependency"
+    fi
+  done
+}
+
+validate_todo_metadata() {
+  duplicate_branches="$(awk '
+    /^[[:space:]]*-[[:space:]]*Branch:/ {
+      branch = $0
+      sub(/^[[:space:]]*-[[:space:]]*Branch:[[:space:]]*/, "", branch)
+      sub(/[[:space:]]+$/, "", branch)
+      if (branch != "" && ++seen[branch] == 2) print branch
+    }
+  ' "$TASK_SOURCE")"
+  if [ -n "$duplicate_branches" ]; then
+    printf '%bDuplicate Branch metadata cannot identify dependencies unambiguously: %s%b\n' "$YELLOW" "$(printf '%s' "$duplicate_branches" | tr '\n' ' ')" "$RESET" >&2
+    return 1
+  fi
+
+  for entry_line in $(all_task_lines); do
+    entry_block="$(task_block "$entry_line")"
+    entry_branch="$(task_branch "$entry_block")" || return 1
+    entry_dependencies="$(task_dependencies "$entry_block")" || {
+      printf '%bInvalid Depends on metadata on todo line %s. Use one optional parent Branch value.%b\n' "$YELLOW" "$entry_line" "$RESET" >&2
+      return 1
+    }
+    for dependency in $entry_dependencies; do
+      if ! git check-ref-format --branch "$dependency" >/dev/null 2>&1; then
+        printf '%bInvalid dependency Branch value on todo line %s: %s%b\n' "$YELLOW" "$entry_line" "$dependency" "$RESET" >&2
+        return 1
+      fi
+      if [ "$dependency" = "$entry_branch" ]; then
+        printf '%bTodo line %s cannot depend on its own Branch: %s%b\n' "$YELLOW" "$entry_line" "$dependency" "$RESET" >&2
+        return 1
+      fi
+    done
+  done
+}
+
+next_runnable_task_line() {
+  for candidate_line in $(all_task_lines); do
+    candidate_block="$(task_block "$candidate_line")"
+    unmet="$(unmet_dependencies "$candidate_block")" || return 1
+    if [ -z "$unmet" ]; then
+      printf '%s\n' "$candidate_line"
+      return 0
+    fi
+    printf '%bWARNING: skipping todo line %s because its dependencies are incomplete: %s%b\n' "$YELLOW" "$candidate_line" "$(printf '%s' "$unmet" | tr '\n' ' ')" "$RESET" >&2
+  done
+}
+
 loop_status() {
   phase="$1"
   current_line="${2:-}"
@@ -545,7 +638,7 @@ test_summary() {
   test_header "TEST MODE · summary"
   test_field "Git repo" "$REPO_PATH"
   test_field "Todo file" "$TASK_SOURCE"
-  test_field "Todo tasks" "would run $task_count unchecked task(s), up to $MAX_LOOPS OpenCode run(s) each"
+  test_field "Todo tasks" "$task_count unchecked task(s); dependency-blocked tasks would be skipped until their prerequisites complete"
   test_field "DONE path" "prompt requires an iteration commit; script checkpoints leftovers, marks todo done, and squash-merges one commit into main"
   test_field "BLOCKED path" "would move the task with Blocked by and Required to unblock metadata to blocked-todos.md, remove Handoff routing, commit partial work on the task branch, return to main without merging, and continue"
   test_field "Continue path" "prompt requests agent-authored /project/handoff.md; a missing handoff triggers a recovery run before retry; exhaustion follows the BLOCKED path"
@@ -625,6 +718,8 @@ finish_blocked_task() {
 }
 
 run_todo_loop() {
+  validate_todo_metadata || exit 8
+
   if [ "$TEST_MODE" = true ]; then
     test_header "TEST MODE · todo loop"
     test_field "Project" "$PROJECT"
@@ -638,10 +733,16 @@ run_todo_loop() {
     task_context="$(task_block "$line")"
     prompt="$(build_prompt "$task_context" "1")"
       branch="$(task_branch "$task_context")" || exit 8
+      unmet="$(unmet_dependencies "$task_context")" || exit 8
       next_after_task="$(awk -v current="$line" '/^[[:space:]]*[-*] \[ \] / && NR > current { print NR; exit }' "$TASK_SOURCE")"
       printf '\n%bTask line %s%b\n' "$BOLD$BLUE" "$line" "$RESET"
       test_field "Task" "$task"
       test_field "Branch" "$branch"
+      if [ -n "$unmet" ]; then
+        test_field "Dependency status" "would skip; incomplete: $(printf '%s' "$unmet" | tr '\n' ' ')"
+      else
+        test_field "Dependency status" "runnable"
+      fi
       test_block "Command" "$RUNNER \"$PROJECT\" run \"<prompt>\" --agent \"$AGENT\""
       test_block "Prompt" "$prompt"
       test_block "DONE path" "Agent prompt requires validation and an iteration commit before $DONE_TOKEN.
@@ -664,8 +765,15 @@ If changes remain, the loop checkpoints them on the task branch. If the handoff 
   loop_status 'starting'
 
   while true; do
-    line="$(next_task_line || true)"
+    line="$(next_runnable_task_line || true)"
     if [ -z "$line" ]; then
+      if [ "$(count_unchecked_tasks)" -gt 0 ]; then
+        loop_status 'waiting on dependencies'
+        printf '%bWARNING: no runnable todos remain; incomplete dependent todos were skipped.%b\n' "$YELLOW" "$RESET" >&2
+        echo "Todos moved to blocked: $blocked_count."
+        warn_dirty_worktree
+        return 0
+      fi
       loop_status 'complete'
       echo "All todo tasks processed."
       echo "Todos moved to blocked: $blocked_count."
