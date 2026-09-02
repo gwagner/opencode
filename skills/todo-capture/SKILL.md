@@ -17,13 +17,11 @@ If the active prompt contains `TODO_LOOP_MODE=true`, do not use this skill. Use 
 
 ## Authoritative updates
 
-Before capture, determine whether the work requires a requirements or specification creation, correction, or clarification. Delegate authoritative requirement updates to `prd-strategist` and specification updates to `code-spec-engineer`. Complete those updates before writing either a normal or blocked todo. Do not substitute todo metadata for required authoritative documentation.
+Before capture, determine whether authoritative documents need creation, correction, or clarification. Delegate product requirements to `prd-strategist`, shared architecture or cross-feature decisions to `app-spec-architect`, and bounded feature contracts to `code-spec-engineer`. Complete required updates before writing an implementation-ready todo. For blocked work, complete updates that are possible and list any decision-dependent authoritative update in `Required to unblock:`. Do not substitute todo metadata for authoritative documentation.
 
 ## Format
 
-Use one top-level unchecked checkbox for one independently executable and reviewable outcome. Split separately executable outcomes into separate todos instead of hiding them in one summary task.
-
-Every implementation-ready entry must include exactly one nonempty `Branch:` plus `Scope:`, `Why:`, `Actions:`, `Evidence:`, and `Acceptance:`. Derive a deterministic, Git-valid branch name from the task outcome (for example, `fix/checkout-validation`); never reuse a branch for unrelated work. If a child todo cannot start until its parent todo completes, add exactly one nonempty `Depends on:` value to the child containing the parent's exact `Branch:` value. Never add child references to the parent. The dependency must be Git-valid and must not reference the current todo. Omit `Depends on:` when there is no parent dependency. Acceptance must state observable outcomes and relevant validation. Use path:line evidence when available; otherwise identify the authoritative source or state why direct evidence is not yet available. Blocked entries omit `Branch:` until promoted.
+Load and apply `todo-entry-contract`; it is the canonical entry schema and routing policy.
 
 ```markdown
 - [ ] Prevent invalid checkout submission
@@ -57,11 +55,6 @@ Use `/code/blocked-todos.md` when an execution blocker remains:
   - Questions: What retry limit and backoff schedule apply?
 ```
 
-Use only these metadata labels: `Branch:`, `Depends on:`, `Scope:`, `Why:`, `Actions:`, `Evidence:`, `Acceptance:`, `Assumptions:`, `Blocked by:`, `Required to unblock:`, `Questions:`, `Handoff:`.
-
-`Handoff:` is allowed only for implementation-ready work. Allowed values are exactly `bug-fixer` and `code-implementor`.
-Every blocked entry must state both the obstacle in `Blocked by:` and the actions, decisions, information, or authoritative updates needed in `Required to unblock:`.
-
 ## Rules
 
 1. Capture only concrete, actionable work.
@@ -69,9 +62,7 @@ Every blocked entry must state both the obstacle in `Blocked by:` and the action
 3. Do not perform captured work unless explicitly asked.
 4. Preserve existing checked/unchecked state and ordering.
 5. Keep titles concise, but never omit actions or required execution context to shorten an entry.
-6. Record material assumptions explicitly.
-7. If an execution blocker remains, create a blocked entry instead of omitting the work or creating a routed todo.
-8. Route a reported or reproducible defect to `bug-fixer`; route every other executable change to `code-implementor`.
+6. If an execution blocker remains, create a blocked entry instead of omitting the work or creating a routed todo.
 
 ## Before finishing
 

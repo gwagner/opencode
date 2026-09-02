@@ -11,3 +11,5 @@ description: Use when adding or modifying Go to apply focused idiomatic Go code 
 - Define small interfaces only at consumer boundaries.
 - Use table-driven tests where suitable.
 - Avoid `panic` for ordinary errors and needless abstractions.
+- All go dependencies must be vendored
+ - If in a git repo, the vendor directory must be in .gitignore

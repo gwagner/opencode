@@ -6,11 +6,11 @@ All knowledge based information must be stored in Open Knowledge Format also kno
 
 # Workspace Context
 
-At the start of every session, if `/project/handoff.md` exists, read it before beginning work.  This is context about previous work that has been done.  Once new work has been performed, make sure that `/project/handoff.md` is deleted.
+At the start of every session, the primary session agent reads `/project/context.md` and, when present, `/project/handoff.md`. Delegated agents read only context needed for their task and report durable findings to the primary agent. The primary agent owns lifecycle updates: incorporate durable knowledge into `context.md`, append the work summary to `session-log.md`, and remove an incorporated handoff when its permissions and tools allow it. If lifecycle files cannot be updated safely, report the exact blocker instead of requiring every specialist to edit them.
 
 You have a /project folder.  In /project you will have this structure:
 - /project/* is NEVER a git repo and can never be committed
-- context.md: This file is used to hold an evolving context of a project.  When work has been completed, context.md must be updated with a summary of what it beleives to know about the overall application.  Make sure to include any previous decisions, knowledge, and learnings in this file.  When starting up a new context, make sure to read this file because it should be the basis for all future sessions.
+- context.md: This file holds durable project knowledge, decisions, and learnings. The primary session agent updates it only when the completed work changes that knowledge; delegated agents report relevant findings to the primary agent.
 - requirements/: this folder holds all requirements for a project.  Requirements files must be focused so that they are highly reusable in future sessions.  
     - This defines "what" this project does and is the definitive source of truth.
     - If there is divergence between requirements and specifications, requirements are the soruce of truth.
@@ -44,7 +44,7 @@ You also have a /code folder.  In /code you will have this structure:
 1. Make sure the software is written using SOLID principales and is highly modular using interface contracts
 1. Code must be well documented with tracabiity back to requirements
     - Make sure code follows the programing languages documentation guidelines to auto generate end user documentation
-1. Once any work is done you must make sure to update session-log.md and any relevant README.md files
+1. The primary session agent records completed work in session-log.md and updates relevant README.md files when usage, configuration, or operator behavior changed; delegated agents report changes for that finalization
     - README.md should be stylized and human readable
 
 ## Graphify

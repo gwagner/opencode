@@ -1,143 +1,23 @@
 ---
 name: api-test-reporting
-description: Summarize API integration-test coverage, execution results, contract mismatches, access-control findings, blockers, and remaining work.
+description: Reports API integration-test coverage, execution, contract and access-control findings, blockers, and prioritized remaining work.
 compatibility: opencode
 metadata:
-    domain: api-testing
-    phase: reporting
+  domain: api-testing
+  phase: reporting
 ---
 
-# API Integration Test Reporting
+# API integration-test reporting
 
-Use this skill after API discovery or integration-test execution.
+Use after API discovery or integration-test execution.
 
-Produce a concise report that makes coverage gaps and real API defects easy to distinguish from test or environment problems.
+Report concisely:
 
-# API discovery
+- Specification sources, implementation framework, access-control mechanisms, and test infrastructure inspected.
+- Endpoint totals and coverage by public, authenticated, and authorized classification; use `covered`, `partial`, `failing`, `blocked`, or `not started`.
+- Significant test, fixture, and helper files created or changed.
+- Exact commands executed with passing, failing, skipped, and blocked results.
+- Separate specification mismatches, authentication issues, authorization/ownership/tenant issues, API contract issues, corrected test defects, and environment blockers.
+- Risk-prioritized remaining endpoint, access-state, validation, CRUD, and edge-case work.
 
-Report:
-
-* specification sources inspected
-* implementation/framework
-* authentication mechanism
-* authorization mechanism
-* integration-test framework
-
-# Coverage
-
-Include:
-
-* endpoints discovered
-* endpoints covered
-* public endpoints covered
-* authenticated endpoints covered
-* authorization-protected endpoints covered
-
-When practical, use an endpoint matrix:
-
-| Method | Endpoint | Auth | Test status |
-| ------ | -------- | ---- | ----------- |
-
-Useful test statuses include:
-
-* covered
-* partial
-* failing
-* blocked
-* not started
-
-# Files
-
-List significant integration-test files:
-
-* created
-* modified
-* supporting fixtures/helpers added
-
-Do not clutter the report with unrelated generated or temporary files.
-
-# Execution
-
-Report the exact command used to run tests.
-
-Include:
-
-* passing
-* failing
-* skipped
-* blocked
-
-Do not describe tests as passing unless they were actually executed successfully.
-
-# Findings
-
-Separate findings into clear categories.
-
-## Specification mismatches
-
-For each mismatch state:
-
-* endpoint
-* specification behavior
-* implementation behavior
-* test impact
-
-## Authentication issues
-
-Report unexpected authentication behavior.
-
-## Authorization issues
-
-Report unexpected role, scope, ownership, or tenant behavior.
-
-## API contract issues
-
-Report:
-
-* incorrect statuses
-* incorrect response schemas
-* undocumented behavior
-* validation discrepancies
-
-## Test defects
-
-Mention test defects that were found and fixed when useful.
-
-Do not confuse resolved test bugs with application defects.
-
-## Environment blockers
-
-Report missing:
-
-* credentials
-* databases
-* dependencies
-* configuration
-* services
-* runtime requirements
-
-# Remaining work
-
-Identify uncovered:
-
-* endpoints
-* authentication states
-* authorization cases
-* validation scenarios
-* CRUD operations
-* edge cases
-
-Prioritize remaining work by API risk rather than simply listing everything.
-
-# Accuracy
-
-Never claim coverage based only on generated source files.
-
-Differentiate:
-
-* test implemented
-* test executed
-* test passed
-
-These are separate states.
-
+Distinguish tests implemented, executed, and passed. Never claim execution or coverage from generated source alone, and do not clutter the report with unrelated or temporary files.

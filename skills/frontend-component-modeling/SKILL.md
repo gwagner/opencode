@@ -9,16 +9,16 @@ metadata:
 
 # Frontend and component modeling
 
-## Actual versus preferred stack
+## Actual versus approved stack
 
-When designing from requirements, prefer:
+When designing from requirements, select a frontend stack only when approved requirements or an explicit architecture decision establishes it. When Lit, Tailwind, and server-backed flows are approved, model their boundaries using:
 
 - HTML
 - Lit web components
 - Tailwind CSS
 - Server-backed flows
 
-When reverse engineering, document the actual stack. Do not claim Lit or Tailwind if the repository uses another technology.
+When no stack is approved, record a bounded architecture decision or open question instead of silently choosing one. When reverse engineering, document the actual stack. Do not claim Lit or Tailwind if the repository uses another technology.
 
 ## Route and screen inventory
 

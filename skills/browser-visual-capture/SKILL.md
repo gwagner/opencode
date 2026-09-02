@@ -28,7 +28,7 @@ Use this skill when validating UI changes with screenshots before and after a co
 Run from any directory:
 
 ```sh
-node /project/.opencode/skills/browser-visual-capture/scripts/capture-screenshots.mjs \
+node /code/skills/browser-visual-capture/scripts/capture-screenshots.mjs \
   --phase baseline \
   --run-id checkout-button \
   https://example.test/page
@@ -37,7 +37,7 @@ node /project/.opencode/skills/browser-visual-capture/scripts/capture-screenshot
 Post-change capture with the same `--run-id` keeps results grouped for comparison:
 
 ```sh
-node /project/.opencode/skills/browser-visual-capture/scripts/capture-screenshots.mjs \
+node /code/skills/browser-visual-capture/scripts/capture-screenshots.mjs \
   --phase post-change \
   --run-id checkout-button \
   https://example.test/page
@@ -46,7 +46,7 @@ node /project/.opencode/skills/browser-visual-capture/scripts/capture-screenshot
 Multiple URLs may be positional arguments or a file with one URL per line:
 
 ```sh
-node /project/.opencode/skills/browser-visual-capture/scripts/capture-screenshots.mjs \
+node /code/skills/browser-visual-capture/scripts/capture-screenshots.mjs \
   --phase baseline \
   --urls-file /tmp/urls.txt \
   --viewport 1440x900 \

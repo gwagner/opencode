@@ -15,23 +15,17 @@ Use this skill only when the active prompt contains `TODO_LOOP_MODE=true`. Use `
 
 ## Authoritative updates
 
-Before capture, determine whether the follow-up requires a requirements or specification creation, correction, or clarification. Delegate authoritative requirement updates to `prd-strategist` and specification updates to `code-spec-engineer`. Complete those updates before writing either a normal or blocked todo. Do not substitute todo metadata for required authoritative documentation.
+Before capture, determine whether authoritative documents need creation, correction, or clarification. Delegate product requirements to `prd-strategist`, shared architecture or cross-feature decisions to `app-spec-architect`, and bounded feature contracts to `code-spec-engineer`. Complete required updates before writing an implementation-ready todo. For blocked work, complete updates that are possible and list any decision-dependent authoritative update in `Required to unblock:`. Do not substitute todo metadata for authoritative documentation.
 
 ## Rules
 
 1. Add only concrete work necessary to finish the current objective or safely handle a newly discovered follow-up.
 2. Do not add speculative, duplicate, or unrelated work.
-3. Use one unchecked checkbox for one independently executable and reviewable outcome. Split separately executable outcomes into separate entries.
-4. Every implementation-ready entry must include exactly one nonempty `Branch:` plus `Scope:`, `Why:`, `Actions:`, `Evidence:`, and `Acceptance:`. Derive a deterministic Git-valid name from the task outcome and do not reuse it for unrelated work. When a child follow-up requires its parent todo first, add exactly one nonempty `Depends on:` value to the child containing the parent's exact `Branch:` value. Never add child references to the parent. The dependency must be Git-valid and not self-referential. Omit the label when there is no parent dependency. Blocked entries omit `Branch:` until promoted.
-5. Acceptance must state observable outcomes and relevant validation.
-6. Use only these metadata labels: `Branch:`, `Depends on:`, `Scope:`, `Why:`, `Actions:`, `Evidence:`, `Acceptance:`, `Assumptions:`, `Blocked by:`, `Required to unblock:`, `Questions:`, `Handoff:`.
-7. `Handoff:` is allowed only for implementation-ready work. Its value is exactly `bug-fixer` or `code-implementor`.
-8. If an execution-critical question remains unanswered, add a detailed entry to `/code/blocked-todos.md`; do not add a routed todo.
-9. Keep titles concise, but never omit actions or required execution context to shorten an entry.
-10. Use path:line evidence when available; otherwise identify the authoritative source or state why direct evidence is unavailable.
-11. Record material assumptions explicitly.
-12. Do not mark the active task complete unless the loop prompt or user explicitly instructs it.
-13. Preserve existing task order and checked/unchecked state.
+3. Load and apply `todo-entry-contract`; it is the canonical entry schema and routing policy.
+4. If an execution-critical question remains unanswered, add a detailed entry to `/code/blocked-todos.md`; do not add a routed todo.
+5. Keep titles concise, but never omit actions or required execution context to shorten an entry.
+6. Do not mark the active task complete unless the loop prompt or user explicitly instructs it.
+7. Preserve existing task order and checked/unchecked state.
 
 ## Blocked format
 

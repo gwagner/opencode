@@ -36,6 +36,8 @@ Exclude generated output, caches, vendor directories, and build artifacts unless
 
 ## Evidence hierarchy
 
+This hierarchy determines what the implementation demonstrably does. It does not determine intended behavior and never overrides authoritative product requirements or approved specifications during gap detection or reconciliation.
+
 Resolve conflicts using this order:
 
 1. Executable behavior and tests

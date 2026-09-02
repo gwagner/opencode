@@ -14,15 +14,15 @@ Use this skill when the user asks to resolve, review, or promote work from `/cod
 3. Load `grillme` and run a focused clarification session for every unresolved execution-blocking question. Ask questions sequentially and do not revisit answers already established by the blocked entry or the user.
 4. Classify each answer by ownership:
    - Product intent, business rules, user-visible behavior, scope, or acceptance -> delegate to `prd-strategist`.
-   - Implementation contract, API, data, workflow, security, or technical behavior -> delegate to `code-spec-engineer`.
-   - Delegate to both when both authoritative layers require updates.
+   - Shared architecture, cross-feature workflow, or technology decisions -> delegate to `app-spec-architect`.
+   - Bounded feature implementation contracts, APIs, data, security, or technical behavior -> delegate to `code-spec-engineer`.
+   - Use each owner required by the resolved answers.
 5. Require each specialist to update its authoritative documents and report changed paths, path:line evidence, decisions, assumptions, and remaining questions. Specialists must not edit production code or todo files.
 6. Compare specialist reports with the blocked entry and clarification answers. Re-read only the documents changed by specialists when needed to verify that the reported updates captured those inputs.
 7. If any execution blocker remains, update its `Blocked by:` and `Required to unblock:` metadata with the current obstacle, remaining resolution requirements, new evidence, answers, remaining questions, and document links. Do not promote it.
-8. If all execution blockers are resolved, create one or more atomic, independently executable todos in `/code/todo.md`. Split separately executable outcomes.
-9. Every promoted todo must include exactly one nonempty `Branch:` plus `Scope:`, `Why:`, `Actions:`, `Evidence:`, `Acceptance:`, and `Handoff:`. Derive a deterministic Git-valid branch name from the task outcome. Acceptance must include observable outcomes and relevant validation. Record material assumptions. Entries remaining blocked do not receive `Branch:`.
-10. Route a reported or reproducible defect to `bug-fixer`; route every other implementation-ready change to `code-implementor`.
-11. Remove the promoted entry from `/code/blocked-todos.md` only after all resulting todos have been written successfully to `/code/todo.md`.
+8. If all execution blockers are resolved, load `todo-entry-contract` and create one or more atomic, independently executable todos in `/code/todo.md` using its canonical schema and routing policy.
+9. Split separately executable outcomes.
+10. Remove the promoted entry from `/code/blocked-todos.md` only after all resulting todos have been written successfully to `/code/todo.md`.
 
 ## Rules
 
@@ -31,7 +31,7 @@ Use this skill when the user asks to resolve, review, or promote work from `/cod
 - Never edit authoritative requirements or specifications directly; use their owning specialists.
 - Preserve the entry's existing evidence and traceability from the promoted todo to recorded answers and updated authoritative sources. Do not require new code evidence.
 - Resolution must remain possible without restoring or accessing application code; the blocked entry is the sole prerequisite input.
-- Keep `Handoff:` exclusive to implementation-ready routing. Blocked entries use `Blocked by:` and `Required to unblock:` instead.
+- Apply `todo-entry-contract` to every changed or promoted entry.
 - Deduplicate against existing unchecked todos before promotion.
 
 ## Final response

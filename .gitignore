@@ -9,4 +9,5 @@ log/log.log
 /tests/*
 !/tests/todo-planner-routing.sh
 !/tests/loop-todo-dependencies.sh
+!/tests/agent-skill-architecture.sh
 /project-mounts.sh

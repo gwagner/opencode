@@ -1,173 +1,21 @@
 ---
 name: api-discovery
-description: Discover API contracts, implemented routes, authentication requirements, and test infrastructure by comparing API specifications with application source code.
+description: Discovers intended API contracts, implemented routes, access control, mismatches, and reusable test infrastructure before API integration testing.
 compatibility: opencode
 metadata:
-    domain: api-testing
-    phase: discovery
+  domain: api-testing
+  phase: discovery
 ---
 
-# API Discovery
+# API discovery
 
-Use this skill before creating API integration tests.
+Use before creating API integration tests. Compare the caller-provided specification and source locations; do not assume fixed paths.
 
-The goal is to build an accurate inventory of the intended API contract and the actual implemented API surface.
+1. Inspect OpenAPI/Swagger files, endpoint documentation, requirements, acceptance criteria, authentication rules, and examples.
+2. Inspect startup and route wiring, handlers, middleware, request/response models, authentication and authorization enforcement, configuration, dependencies, and existing integration-test helpers.
+3. For each endpoint record method, path, source evidence, parameters, headers, body, response schema, success/errors, and role/scope/ownership rules.
+4. Classify access as `PUBLIC`, `AUTHENTICATED`, `AUTHORIZED`, or `UNKNOWN`; never infer access from naming alone.
+5. Compare intended and implemented method, route, fields, statuses, and access rules. Preserve both sides of every mismatch; implementation evidence does not override the contract.
+6. Identify the existing framework, startup mechanism, test runner, clients, fixtures, factories, containers, and authentication helpers. Prefer project conventions over new infrastructure.
 
-## Inputs
-
-The calling agent should identify:
-
-* the location containing specifications or requirements
-* the location containing application source code
-
-Do not assume fixed paths unless the calling agent provides them.
-
-# Discover the specification
-
-Inspect the specification source recursively.
-
-Look especially for:
-
-* `openapi.yaml`
-* `openapi.yml`
-* `openapi.json`
-* Swagger definitions
-* API documentation
-* endpoint specifications
-* architecture documents
-* requirements
-* acceptance criteria
-* authentication documentation
-* API examples
-
-Treat documented specifications as the intended contract.
-
-# Discover the implementation
-
-Inspect the application source recursively.
-
-Determine:
-
-* programming language
-* web framework
-* dependency/build system
-* application startup method
-* route definitions
-* controllers and handlers
-* middleware
-* authentication implementation
-* authorization implementation
-* request and response models
-* environment-variable requirements
-* databases and dependent services
-* existing integration tests
-* existing fixtures, factories, clients, and test helpers
-
-Treat the implementation as evidence of current application behavior, not automatically as the intended contract.
-
-# Build an endpoint inventory
-
-For every endpoint discovered, identify when possible:
-
-* HTTP method
-* route
-* description
-* specification source
-* implementation source
-* authentication requirement
-* authorization requirement
-* path parameters
-* query parameters
-* required headers
-* request body
-* expected success status
-* documented error statuses
-* response schema
-* roles, permissions, or scopes
-
-Classify each endpoint as one of:
-
-* `PUBLIC`
-* `AUTHENTICATED`
-* `AUTHORIZED`
-
-Use `UNKNOWN` when the available evidence is insufficient.
-
-Do not silently guess authentication requirements.
-
-# Compare specification and implementation
-
-Map specification endpoints to implementation routes.
-
-Identify discrepancies such as:
-
-* endpoint documented but not implemented
-* endpoint implemented but not documented
-* different route
-* different HTTP method
-* different request fields
-* different response fields
-* different HTTP status
-* different authentication requirement
-* different authorization requirement
-
-Do not automatically resolve discrepancies in favor of the implementation.
-
-The specification describes intended behavior.
-
-The implementation describes observed behavior.
-
-Preserve both when they disagree.
-
-# Discover test infrastructure
-
-Before recommending a test implementation, determine whether the codebase already uses:
-
-* an integration-test framework
-* an HTTP/API client library
-* test containers
-* database fixtures
-* mock servers
-* authentication fixtures
-* application test harnesses
-
-Prefer existing project conventions.
-
-Do not introduce a new framework when an appropriate one already exists.
-
-# Output
-
-Return a concise discovery result containing:
-
-## Application
-
-* language
-* framework
-* build system
-* test framework
-* startup mechanism
-
-## Authentication
-
-* authentication mechanisms
-* credential acquisition mechanism
-* authorization mechanisms
-
-## Endpoint inventory
-
-For each endpoint:
-
-`METHOD PATH | classification | expected success | implementation status`
-
-Include roles or scopes when relevant.
-
-## Specification mismatches
-
-Explicitly identify specification/implementation discrepancies.
-
-## Testing infrastructure
-
-Identify reusable test helpers, fixtures, clients, and conventions.
-
-The result should give another agent enough information to start writing integration tests without rediscovering the API.
-
+Return application/test infrastructure, authentication mechanisms and credential acquisition, a `METHOD PATH | classification | expected success | implementation status` inventory, and explicit specification mismatches. Include enough path/symbol evidence for test implementation without rediscovery.

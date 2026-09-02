@@ -24,8 +24,8 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | frontend-scaffolder | Scaffolds TypeScript, Lit, HTMX, and Tailwind frontend code. |
 | opencode-optimizer | Audits OpenCode agents and skills. |
 | prd-strategist | Creates and refines OKF requirements. |
-| reconcile-spec-to-code | Reconciles specifications with implementation. |
 | reverse-engineer-app-spec | Recovers an evidence-backed specification from code. |
+| spec-gap-detector | Finds implemented capabilities missing authoritative documentation and queues evidence-backed owner handoffs. |
 | todo-planner | Researches work, coordinates authoritative document updates, and captures detailed executable or blocked todos. |
 | url-to-vault | Ingests URLs into an OKF or Obsidian vault. |
 
@@ -67,9 +67,11 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | security-operations | Reviews security and operational behavior. |
 | tailwind | Configures standalone Tailwind CLI builds and static output. |
 | todo-capture | Captures detailed deferred work in `/code/todo.md` or unresolved work in `/code/blocked-todos.md`. |
+| todo-entry-contract | Defines the canonical ready/blocked todo schema, dependency rules, and handoff routing. |
 | todo-upkeep | Captures detailed loop follow-ups or blockers for later iterations. |
 | spec-driven-implementation | Implements authoritative specifications. |
 | specification-quality-gate | Reviews specification readiness. |
+| specification-gap-handoff | Classifies code-to-authority documentation gaps and defines durable owner handoffs. |
 | specification-reconciliation | Compares code-derived and authoritative specifications. |
 | vault-ingestion | Ingests web content into a vault. |
 | workflow-state-modeling | Models workflow states and transitions. |
@@ -77,6 +79,14 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 ## Graphify
 
 Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exists. The skill selects focused graph queries before broad reports or raw source search, and updates the graph after relevant code changes.
+
+## Workflow ownership
+
+- Requirements route to `prd-strategist`, shared architecture and cross-feature decisions to `app-spec-architect`, bounded feature contracts to `code-spec-engineer`, defects to `bug-fixer`, and other implementation to `code-implementor`.
+- `spec-gap-detector` compares implemented capabilities with requirements and approved specifications, writes only `/code/specification-gaps.md`, and queues one-owner documentation handoffs. Documentation owners report their changes; the detector alone verifies and closes gaps.
+- Todo skills share `todo-entry-contract`; implementation-ready entries require a single `Handoff:`, while blocked entries have no branch, dependency, or handoff metadata.
+- Code-writing agents load `safe-code-change` before edits and `project-validation` before validation. Unsupported project-native validation commands require confirmation instead of being silently unavailable.
+- Browser-capture commands and comparison behavior live in `browser-visual-capture`; agents only decide when the skill applies.
 
 ## Container note
 
@@ -94,6 +104,8 @@ Run unchecked `todo.md` tasks through OpenCode until each task reports a loop se
 | Item | Behavior |
 | --- | --- |
 | Project mounts | `run` and `loop` source their sibling `project-mounts.sh`; the selected project is the single source of truth for host documentation/code mounts and container image. |
+| Project environment | A project may set newline-delimited `CONTAINER_ENV` entries in `project-mounts.sh`. Use `NAME` to inherit an exported host value (recommended for secrets) or `NAME=value` for a literal value; `run` forwards each entry with `docker run --env`. |
+| Partner containers | A project may set `CONTAINER_NETWORK` and override `start_project_partners`. Call `ensure_container <name> <image> [docker options...]` there to create a missing named partner, start an existing stopped partner, or restart an existing running partner. `run` creates the network when needed and attaches its primary container. |
 | Todo source | As an outer host script, `loop` reads unchecked markdown tasks (`- [ ] task`) from the selected project's `CODE_MOUNT/todo.md`. Every implementation-ready entry requires exactly one nonempty, Git-valid `Branch:` metadata value. A child todo may use one optional `Depends on:` value referencing its parent todo's exact `Branch:` value. The parent does not list its children. Indented metadata immediately below the selected task travels with that task in the loop prompt. |
 | Runner call | Resolves sibling `run` from the script directory and calls `opencode run "<prompt>" --agent "<agent>"`. |
 | Progress UI | Prints colored status at startup and during progress: project, agent, repo, todo file, counts, max loops, current line/task, attempt, loop start timestamp, and loop duration. |

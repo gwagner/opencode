@@ -17,7 +17,7 @@ permission:
   list:
     "/code/.opencode/**": deny
     "/code/**": allow
-  edit: deny
+  edit: allow
   bash: deny
   skill:
     grillme: allow
