@@ -56,6 +56,8 @@ Compare:
 
 Persisted constraints are stronger evidence than unvalidated application types.
 
+When persistence access is specified, describe application operations and transaction ownership. Do not require repository contracts to expose ORM, query-builder, or database-driver types.
+
 ## Required considerations
 
 Document:

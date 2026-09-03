@@ -8,7 +8,7 @@ description: Scaffolds reachable backend routes, services, data access, contract
 1. Inspect existing language, framework, structure, conventions, and validation commands.
 2. Use `okf-reader` to load only the relevant feature, workflow, API, data, validation, authorization, and error requirements.
 3. Map the required public contract to the smallest coherent route, service, persistence, and wiring changes.
-4. Follow existing patterns. Add an interface only for a real boundary, a test seam, multiple implementations, or an existing project convention.
+4. Follow existing patterns. Load `interface-boundaries` before defining or changing a route, use case, persistence, integration, or job dependency.
 5. Keep routes thin: validate input, invoke the workflow, map errors, and return a structured response.
 6. Make incomplete scaffolding honest: define the contract, validate available input, return a typed unavailable error, and add a requirement-linked TODO. Never fake success, credentials, integrations, or persistence.
 7. Run the narrowest available formatter, build, and focused tests.

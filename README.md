@@ -21,7 +21,7 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | bug-fixer | Reproduces, diagnoses, and fixes defects with regression coverage. |
 | code-implementor | Implements approved, focused code changes. |
 | code-spec-engineer | Produces bounded implementation-ready feature contracts. |
-| frontend-scaffolder | Scaffolds TypeScript, Lit, HTMX, and Tailwind frontend code. |
+| frontend-scaffolder | Scaffolds TypeScript, HTMX, and Tailwind frontend code. |
 | opencode-optimizer | Audits OpenCode agents and skills. |
 | prd-strategist | Creates and refines OKF requirements. |
 | reverse-engineer-app-spec | Recovers an evidence-backed specification from code. |
@@ -54,7 +54,6 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | graphify | Efficiently queries and updates an existing code knowledge graph. |
 | grillme | Clarifies open design questions. |
 | implement-stubs | Safely implements unfinished functions. |
-| lit-components | Implements accessible Lit interaction components. |
 | okf-formatter | Formats content as OKF. |
 | okf-reader | Reads OKF knowledge bundles. |
 | okf-reorganizer | Reorganizes an OKF bundle. |

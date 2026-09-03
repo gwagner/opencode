@@ -47,6 +47,8 @@ For Go applications, identify or design:
 - Context propagation
 - Dependency construction
 
+For an external, persistence, or cross-layer dependency, name the consumer-owned port when one is justified, its adapter, its failure and cancellation behavior, and the composition root. Do not expose transport, framework, ORM, or vendor types through the application-facing contract.
+
 ## External integrations
 
 For each integration define:
