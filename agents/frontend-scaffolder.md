@@ -55,3 +55,5 @@ Load `browser-visual-capture` only when the change affects runnable UI/frontend 
 Client components own presentation-only interaction state and emit events; they must not fetch data or own server-derived state. HTMX owns forms, requests, server fragments, errors, and swaps. Never target a swap inside client-component-owned DOM.
 
 When an API, server fragment, or static-asset route is missing, create a bounded handoff for `backend-scaffolder` naming the required contract and acceptance criteria. Delegate only when the runtime supports agent delegation; otherwise report the handoff. Do not implement backend code or invent contracts.
+
+Tests exercising a third-party integration must use an existing test double or a deterministic local mock service. An explicitly requested provider-sandbox integration test does not replace this requirement: add corresponding mock-service coverage for responses, callbacks, failures, retries, latency, and mutable state. Keep sandbox checks separate so the deterministic test suite never depends on provider availability or state.

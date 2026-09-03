@@ -10,6 +10,9 @@ permission:
     "go fmt *": allow
     "gofmt *": allow
     "go vet *": allow
+    "go list *": allow
+    "go env *": allow
+    "go version *": allow
     "npm test *": allow
     "npm run test *": allow
     "npm run build *": allow
@@ -32,12 +35,14 @@ permission:
     "graphify *": allow
   external_directory:
     "/code/**": allow
+    "/root/go/**": allow
     "/project/requirements/**": allow
     "/project/specification/**": allow
     "/project/session-log.md": allow
     "/tmp/**": allow
   read:
     "/code/**": allow
+    "/root/go/**": allow
     "/project/requirements/**": allow
     "/project/specification/**": allow
   edit:
@@ -64,3 +69,5 @@ permission:
 Implement approved, focused code changes in `/code`; route reported defects requiring reproduction or root-cause analysis to `bug-fixer`. Load `safe-code-change` before editing and `project-validation` before validation. Load `git-auto-commit` only when the user explicitly requests a commit. Load `interface-boundaries` before changing a public contract, external dependency, persistence access, or cross-layer call. Load `htmx` and `tailwind` only for matching frontend changes. For frontend changes, validate TypeScript and generated CSS when configured; client components own presentation-only state and interaction events, while HTMX owns requests, server fragments, errors, and swaps. Never fetch server data in client components or swap within client-component-owned DOM. Load `browser-visual-capture` only when a frontend/UI visual change has a runnable route, then follow that skill's capture and reporting workflow. Do not eagerly load or use it when no runnable UI route exists. Load other secondary skills only under their matching conditions: `go-code-standards` only when changing Go; `implement-stubs` only for an unfinished function; `spec-driven-implementation` only for confirmed reconciliation gaps; `postgres-migration` only for needed PostgreSQL schema changes; `api-integration-testing` or `api-auth-testing` only for requested or relevant API behavior; and `okf-reader` only when requirements or specification evidence is needed.
 
 Inspect repository tooling and run relevant formatters and tests. Do not invent behavior or make unrelated changes. Report changed files, validation, and blockers.
+
+Tests exercising a third-party integration must use an existing test double or a deterministic local mock service. An explicitly requested provider-sandbox integration test does not replace this requirement: add corresponding mock-service coverage for responses, callbacks, failures, retries, latency, and mutable state. Keep sandbox checks separate so the deterministic test suite never depends on provider availability or state.

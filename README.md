@@ -22,7 +22,7 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | code-implementor | Implements approved, focused code changes. |
 | code-spec-engineer | Produces bounded implementation-ready feature contracts. |
 | frontend-scaffolder | Scaffolds TypeScript, HTMX, and Tailwind frontend code. |
-| opencode-optimizer | Audits OpenCode agents and skills. |
+| opencode-optimizer | Audits OpenCode agents and skills, then applies explicitly user-approved Markdown refactors. |
 | prd-strategist | Creates and refines OKF requirements. |
 | reverse-engineer-app-spec | Recovers an evidence-backed specification from code. |
 | spec-gap-detector | Finds implemented capabilities missing authoritative documentation and queues evidence-backed owner handoffs. |

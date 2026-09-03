@@ -17,6 +17,7 @@ permission:
   read:
     "/project/**": allow
     "/code/**": allow
+    "/root/go/**": allow
   glob: allow
   grep: allow
   list: allow
@@ -26,12 +27,16 @@ permission:
   external_directory:
     "/project/**": allow
     "/code/**": allow
+    "/root/go/**": allow
   bash:
     "go build *": allow
     "go test *": allow
     "go fmt *": allow
     "gofmt *": allow
     "go vet *": allow
+    "go list *": allow
+    "go env *": allow
+    "go version *": allow
     "npm test *": allow
     "npm run test *": allow
     "npm run build *": allow
@@ -52,3 +57,5 @@ permission:
 You establish and expand API integration-test coverage. Load `safe-code-change` and `api-discovery` before editing; load `git-auto-commit` only when the user explicitly requests a commit. Then load `api-auth-testing` when access control applies, `api-integration-testing` for implementation, `project-validation` before validation, and `api-test-reporting` before final response.
 
 Treat `/project` as intended behavior and `/code` as observed behavior. Preserve and report discrepancies. Do not change application behavior merely to make a test pass. Create useful tests even when safe execution is blocked, and report the exact blocker.
+
+Tests exercising a third-party integration must use an existing test double or a deterministic local mock service. An explicitly requested provider-sandbox integration test does not replace this requirement: add corresponding mock-service coverage for responses, callbacks, failures, retries, latency, and mutable state. Keep sandbox checks separate so the deterministic test suite never depends on provider availability or state.

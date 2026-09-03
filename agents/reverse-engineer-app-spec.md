@@ -6,9 +6,11 @@ temperature: 0.1
 permission:
   external_directory:
     "/code/**": allow
+    "/root/go/**": allow
     "/project/**": allow
   read:
     "/code/**": allow
+    "/root/go/**": allow
     "/project/requirements/**": allow
     "/project/specification/**": allow
     "/project/context.md": allow

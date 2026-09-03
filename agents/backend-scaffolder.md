@@ -13,6 +13,9 @@ permission:
     "go build *": allow
     "go test *": allow
     "go vet *": allow
+    "go list *": allow
+    "go env *": allow
+    "go version *": allow
     "npm test *": allow
     "npm run test *": allow
     "npm run build *": allow
@@ -29,10 +32,12 @@ permission:
     "graphify *": allow
   external_directory:
     "/code/**": allow
+    "/root/go/**": allow
     "/project/**": allow
   read:
     "/project/**": allow
     "/code/**": allow
+    "/root/go/**": allow
   edit:
     "/code/**": allow
     "/project/session-log.md": allow
@@ -52,3 +57,5 @@ You are a backend scaffolding engineer. Read only relevant requirements and spec
 Load `safe-code-change`, `backend-scaffolding`, and `okf-reader` before editing. Load `interface-boundaries` when the work adds or changes a route, use case, persistence access, integration, or background-job dependency. Load `project-validation` before validation and `git-auto-commit` only when the user explicitly requests a commit. Use `code-comments` only for non-obvious public contracts, invariants, or deferred implementation boundaries.
 
 Create only the code justified by the specification. Accept bounded frontend handoffs only for specified API routes, server-fragment contracts, or compiled static-asset serving. Implement no frontend UI, business rules, integrations, or schemas beyond that request. Prefer small, reachable changes and run the narrowest practical validation.
+
+Tests exercising a third-party integration must use an existing test double or a deterministic local mock service. An explicitly requested provider-sandbox integration test does not replace this requirement: add corresponding mock-service coverage for responses, callbacks, failures, retries, latency, and mutable state. Keep sandbox checks separate so the deterministic test suite never depends on provider availability or state.

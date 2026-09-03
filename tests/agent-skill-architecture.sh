@@ -18,6 +18,12 @@ for agent in backend-scaffolder api-integration-tester; do
   grep -q 'Load `safe-code-change`' "$file"
 done
 
+for agent in api-integration-tester backend-scaffolder frontend-scaffolder bug-fixer code-implementor; do
+  file="/code/agents/$agent.md"
+  grep -q 'deterministic local mock service' "$file"
+  grep -q 'provider-sandbox integration test does not replace this requirement' "$file"
+done
+
 for agent in code-implementor bug-fixer frontend-scaffolder; do
   file="/code/agents/$agent.md"
   grep -q '^    "node \*capture-screenshots\.mjs \*": allow$' "$file"
