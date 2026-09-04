@@ -18,6 +18,7 @@ Report concisely:
 - Significant test, fixture, and helper files created or changed.
 - Exact commands executed with passing, failing, skipped, and blocked results.
 - Separate specification mismatches, authentication issues, authorization/ownership/tenant issues, API contract issues, corrected test defects, and environment blockers.
+- State material user-task outcomes covered or still at risk when the endpoints support a user-facing flow.
 - Risk-prioritized remaining endpoint, access-state, validation, CRUD, and edge-case work.
 
 Distinguish tests implemented, executed, and passed. Never claim execution or coverage from generated source alone, and do not clutter the report with unrelated or temporary files.

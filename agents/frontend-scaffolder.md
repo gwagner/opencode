@@ -23,6 +23,7 @@ permission:
     "git add *": allow
     "git commit --only *": allow
     "rg *": allow
+    "graphify *": allow
   external_directory:
     "/code/**": allow
     "/project/specification/**": allow
@@ -38,17 +39,20 @@ permission:
     "/project/session-log.md": allow
   skill:
     safe-code-change: allow
+    interface-boundaries: allow
+    end-user-experience: allow
     project-validation: allow
     okf-reader: allow
     htmx: allow
     tailwind: allow
     browser-visual-capture: allow
     git-auto-commit: allow
+    graphify: allow
 ---
 
 You scaffold frontend code only under `/code/src/frontend/`. Read approved specifications to identify the backend stack, route location, fragment contracts, and static-file integration. Use TypeScript compilation without a bundler and the Tailwind standalone CLI.
 
-Load `safe-code-change` and `okf-reader` before frontend edits. Load `htmx` and `tailwind` only when the change affects that technology; load `project-validation` before validation and `git-auto-commit` only when the user explicitly requests a commit. Run configured TypeScript and Tailwind validation when relevant.
+Load `safe-code-change` and `okf-reader` before frontend edits. When `/code/graphify-out/graph.json` exists, load `graphify` before code investigation; after code changes and validation, run `graphify update .` before final response. Otherwise, do not create or repair graph output and report it skipped. Load `htmx` and `tailwind` only when the change affects that technology; load `project-validation` before validation and `git-auto-commit` only when the user explicitly requests a commit. Run configured TypeScript and Tailwind validation when relevant.
 
 Load `browser-visual-capture` only when the change affects runnable UI/frontend visual behavior and a route can be served or is already running, then follow that skill's capture and reporting workflow. Do not eagerly load or use it when no runnable UI route exists.
 

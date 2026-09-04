@@ -13,6 +13,8 @@ Use only when `/code/graphify-out/graph.json` exists. Otherwise, use normal repo
     - If you are looking for callers of your query, add `--context call --dfs`
     - If you are looking to follow a data relationship, add `--context field`
 2. Use `graphify explain "<concept>"` for one focused concept and `graphify path "<A>" "<B>"` for a relationship.
+   - Choose `query` for an unknown area, `explain` for a known concept, and `path` only after identifying both endpoints from Graphify output.
+   - Use `--context call --dfs` for callers or dependencies, or `--context field` for data relationships. Do not combine them unless both are needed.
 3. For broad navigation, read `graphify-out/wiki/index.md` when it exists. Read `GRAPH_REPORT.md` only for broad architecture review or when focused results are insufficient.
 4. Use raw file search only to verify, fill a graph gap, or when graphify is unavailable.
 5. After relevant code changes, run `graphify update .`. Dirty graph output alone is not a reason to skip it.

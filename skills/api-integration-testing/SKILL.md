@@ -18,7 +18,7 @@ Use after `api-discovery` establishes the endpoint contract and authentication m
    - Public: unauthenticated success.
    - Authenticated: missing and invalid credentials rejected; valid credentials succeed.
    - Authorized: unauthenticated and authenticated-unauthorized requests rejected; authorized request succeeds.
-3. Assert stable contract behavior: status, content type, required headers/fields/types, response schema, and documented error shape. Avoid volatile literals unless guaranteed.
+3. Assert stable contract behavior: status, content type, required headers/fields/types, response schema, and documented error shape. For user-facing flows, cover the documented observable success, failure, and recovery outcome. Avoid volatile literals unless guaranteed.
 4. Add prioritized negative cases for required fields, malformed values, enums, parameters, content types, and missing resources. Avoid combinatorial expansion before baseline coverage.
 5. For CRUD, create unique test data, exercise the isolated lifecycle, verify effects, and clean up owned resources. Do not depend on arbitrary records or execution order.
 6. Keep environment values configurable and reuse test-safe dependencies. Never embed credentials or redirect tests to production.

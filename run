@@ -56,6 +56,7 @@ docker run -it --rm \
   "${container_network_args[@]}" \
   -w /project/ \
   -v ~/.local/share/opencode/:/root/.local/share/opencode/ \
+  -v ~/.cache/opencode/:/root/.cache/opencode/ \
   -v ~/.config/opencode/:/root/.config/opencode/ \
   -v ~/.gitconfig:/root/.gitconfig \
   -v $(go env GOCACHE):/root/.cache/go-build \
