@@ -592,21 +592,19 @@ merge_task_branch() {
   merge_status=0
   git -C "$REPO_PATH" switch -- main
   git -C "$REPO_PATH" merge --squash -- "$branch" > "$merge_stdout" 2> "$merge_stderr" || merge_status=$?
-  if [ "$merge_status" -eq 0 ]; then
-    sed '/^Automatic merge went well; stopped before committing as requested$/d' "$merge_stdout"
-    sed '/^Automatic merge went well; stopped before committing as requested$/d' "$merge_stderr" >&2
-  else
-    cat "$merge_stdout"
-    cat "$merge_stderr" >&2
-  fi
+  cat "$merge_stdout"
+  cat "$merge_stderr" >&2
   rm -f "$merge_stdout" "$merge_stderr"
   if [ "$merge_status" -ne 0 ]; then
     return "$merge_status"
   fi
-  if ! git -C "$REPO_PATH" diff --cached --quiet; then
-    git -C "$REPO_PATH" commit -m "Complete todo: $task"
-    git -C "$REPO_PATH" branch -D -- "$branch"
+  commit_status=0
+  git -C "$REPO_PATH" commit --no-gpg-sign --allow-empty -m "Complete todo: $task" || commit_status=$?
+  if [ "$commit_status" -ne 0 ]; then
+    printf 'Unable to commit squashed task; preserving the task branch and staged merge result.\n' >&2
+    return "$commit_status"
   fi
+  git -C "$REPO_PATH" branch -D -- "$branch"
 }
 
 return_to_main() {
@@ -639,10 +637,10 @@ test_summary() {
   test_field "Git repo" "$REPO_PATH"
   test_field "Todo file" "$TASK_SOURCE"
   test_field "Todo tasks" "$task_count unchecked task(s); dependency-blocked tasks would be skipped until their prerequisites complete"
-  test_field "DONE path" "prompt requires an iteration commit; script checkpoints leftovers, marks todo done, and squash-merges one commit into main"
+  test_field "DONE path" "prompt requires an iteration commit; script checkpoints leftovers, marks todo done, and squash-commits the completed task once on main"
   test_field "BLOCKED path" "would move the task with Blocked by and Required to unblock metadata to blocked-todos.md, remove Handoff routing, commit partial work on the task branch, return to main without merging, and continue"
   test_field "Continue path" "prompt requests agent-authored /project/handoff.md; a missing handoff triggers a recovery run before retry; exhaustion follows the BLOCKED path"
-  test_field "Branches" "each task runs on its Branch metadata branch; DONE squash-merges one commit into local main and deletes the completed task branch"
+  test_field "Branches" "each task runs on its Branch metadata branch; DONE adds one squashed commit to local main and deletes the completed task branch"
   test_field "Final state" "would warn loudly if all todos finish with a dirty worktree"
   test_field "Blocked summary" "final output would report how many todos moved to blocked-todos.md"
   test_field "OpenCode runs" "none executed in test mode"
@@ -746,12 +744,12 @@ run_todo_loop() {
       test_block "Command" "$RUNNER \"$PROJECT\" run \"<prompt>\" --agent \"$AGENT\""
       test_block "Prompt" "$prompt"
       test_block "DONE path" "Agent prompt requires validation and an iteration commit before $DONE_TOKEN.
-Script would checkpoint remaining work on $branch, mark line $line complete, commit todo.md progress, switch to main, and squash all task-branch commits into one commit."
+Script would checkpoint remaining work on $branch, mark line $line complete, commit todo.md progress, switch to main, and squash all task-branch commits into one main commit."
       test_block "BLOCKED path" "Script would append the task plus Blocked by and Required to unblock metadata to blocked-todos.md, remove Handoff routing and the task from todo.md, commit partial work on $branch, clear /project/handoff.md, switch to main without merging, and continue."
       test_block "Continue path" "Agent prompt requires writing /project/handoff.md and committing the iteration before omitting DONE/BLOCKED.
 If changes remain, the loop checkpoints them on the task branch. If the handoff is absent, the sibling runner writes a recovery handoff. The same todo runs again until MAX_LOOPS=$MAX_LOOPS, then follows the BLOCKED path."
       if [ -n "$next_after_task" ]; then
-        test_block "Between-todo path" "After squash-merging the completed task into main, script would move to todo line $next_after_task."
+        test_block "Between-todo path" "After squash-committing the completed task once on main, script would move to todo line $next_after_task."
       else
         test_block "Final-todo path" "No later unchecked todo exists. Script would not stash between todos; at final completion it would print a prominent dirty-worktree warning if needed."
       fi

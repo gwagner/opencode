@@ -1,0 +1,11 @@
+- [ ] Add a runnable data-table reference preview
+  - Branch: feat/data-table-reference-preview
+  - Scope: `/code/skills/frontend-reference-examples/references/data-table.md` and a project-native local preview harness.
+  - Why: The GoHTML reference has no user-visible route or documented rendering command, so baseline and post-change browser evidence cannot be captured.
+  - Actions:
+    - Add a deterministic local harness that renders the reference Go view model through the GoHTML template.
+    - Document its local URL and startup command.
+    - Capture baseline and post-change screenshots with the browser visual-capture workflow.
+  - Evidence: `/code/skills/frontend-reference-examples/references/data-table.md` is documentation-only; no runnable preview route or harness exists in the frontend-reference-examples skill.
+  - Acceptance: Documented project tooling serves the representative populated and empty table states at stable local URLs, and baseline/post-change captures succeed for both states.
+  - Handoff: code-implementor

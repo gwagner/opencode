@@ -47,6 +47,7 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | data-persistence-modeling | Models data persistence and PostgreSQL schemas. |
 | evidence-traceability | Adds evidence and traceability to specifications. |
 | frontmatter-fixer | Repairs Markdown frontmatter. |
+| frontend-reference-examples | Progressively loads matching HTML, CSS, JavaScript, accessibility, and illustrative data references for frontend components. |
 | htmx | Implements server-fragment requests and safe swap ownership. |
 | gap-risk-analysis | Identifies gaps, risks, and assumptions. |
 | git-auto-commit | Creates an explicit-request commit for validated agent-owned changes. |
@@ -86,6 +87,7 @@ Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exi
 - Todo skills share `todo-entry-contract`; implementation-ready entries require a single `Handoff:`, while blocked entries have no branch, dependency, or handoff metadata.
 - Code-writing agents load `safe-code-change` before edits and `project-validation` before validation. Unsupported project-native validation commands require confirmation instead of being silently unavailable.
 - Browser-capture commands and comparison behavior live in `browser-visual-capture`; agents only decide when the skill applies.
+- Frontend component examples live behind `frontend-reference-examples`: agents read its catalog, then only a matching component document. References never override approved requirements, specifications, or repository conventions.
 
 ## Container note
 
@@ -114,7 +116,7 @@ Run unchecked `todo.md` tasks through OpenCode until each task reports a loop se
 
 | Sentinel | Result |
 | --- | --- |
-| `<task>DONE</task>` | Requires validated iteration work, creates a task-branch safety checkpoint if changes remain, marks and commits todo progress, then squash-merges the task branch into one commit on local `main` and deletes the completed task branch. |
+| `<task>DONE</task>` | Requires validated iteration work, creates a task-branch safety checkpoint if changes remain, marks and commits todo progress, then squash-commits the complete task exactly once on local `main` and deletes the completed task branch. |
 | `<task>CONTINUE</task>` | Checkpoints any remaining iteration work and repeats the same todo from a clean task branch. Host file operations use `DOCS_MOUNT/handoff.md`; container-facing prompts retain literal `/project/handoff.md`. If the handoff is absent, the loop invokes its sibling `run` helper with the same project and agent to determine next steps from the selected todo and write a recovery handoff before retrying. If `MAX_LOOPS` is exhausted, the task follows the BLOCKED flow with an exhaustion reason. |
 | `<task>BLOCKED</task>` | Appends the task to `CODE_MOUNT/blocked-todos.md` with `Blocked by:` and `Required to unblock:` metadata, removes routing-only `Handoff:` metadata, then removes it from `todo.md`. Partial work is committed on the task branch; the runner clears the host handoff, switches to local `main` without merging, and continues. `todo.md` and `blocked-todos.md` must remain ignored/untracked so their edits persist across that switch. Final output reports the blocked count. |
 | Missing token | Refuses the retry and exits nonzero instead of guessing continuation state. A failed or empty missing-handoff recovery also exits nonzero. |
@@ -128,10 +130,10 @@ Todos with any unchecked or missing `Depends on:` target emit a warning and are 
 - If a task branch already exists at fresh task start, the runner resumes it automatically. Worktree changes on another branch still prevent switching.
 - Local `main` and exactly one nonempty Git-valid branch value are required. Successfully committed DONE branches are deleted automatically; unmerged BLOCKED branches remain.
 - Todo-loop prompts require `todo-upkeep` for discovered follow-ups and `git-auto-commit` before the first edit. Each validated iteration must commit before CONTINUE or DONE; the loop creates a task-branch safety checkpoint when work remains uncommitted.
-- Completed task branches are squash-merged so local `main` receives one commit per todo, then deleted. BLOCKED branches retain their checkpoint history and remain unmerged.
+- Completed task branches are squash-committed so local `main` receives exactly one commit per todo, then deleted. Their old task-tip ancestry is intentionally not retained; BLOCKED branches keep their checkpoint history and remain unmerged.
 
 ### Output safety
 
 Runner output is captured through a temporary file. NUL bytes are stripped before printing and sentinel detection to avoid shell command-substitution warnings from binary or malformed subprocess output.
 
-Successful squash merges suppress Git's raw informational chatter; loop status remains visible, and merge errors still surface.
+Successful squash merges retain Git's useful output. Merge or commit errors surface, preserve the completed branch, and leave any staged squash result available for inspection.

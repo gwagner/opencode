@@ -5,7 +5,7 @@ description: Captures baseline and post-change Chromium screenshots for one URL 
 
 # Browser Visual Capture
 
-Use this skill when validating UI changes with screenshots before and after a code change.
+Use this skill when validating a frontend change with screenshots before and after a code change.
 
 ## What it does
 
@@ -69,11 +69,16 @@ node /code/skills/browser-visual-capture/scripts/capture-screenshots.mjs \
 
 ## Workflow
 
-1. Capture baseline screenshots before the UI change.
-2. Implement the UI change.
-3. Capture post-change screenshots with the same URLs, viewport, and `--run-id`.
-4. Compare the saved PNGs manually or with an image-diff tool.
-5. Report saved paths and any failures from the JSON summary.
+1. Identify each affected user-visible route and its documented run mechanism.
+2. Capture baseline screenshots before the UI change.
+3. Implement the UI change.
+4. Capture post-change screenshots with the same URLs, viewport, and `--run-id`.
+5. Compare the saved PNGs manually or with an image-diff tool.
+6. Report saved paths and any failures from the JSON summary.
+
+## Unrunnable-route gap
+
+If an affected route cannot be run with documented project tooling, do not treat visual validation as skipped. Load `todo-capture` and record a concrete follow-up to make that route visually testable. Include the route, missing run mechanism or fixture, acceptance criteria for baseline/post-change capture, and available evidence. Do not invent a server command or a mock route.
 
 ## Failure behavior
 
