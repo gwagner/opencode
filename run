@@ -62,7 +62,7 @@ docker run -it --rm \
   -v $(go env GOCACHE):/root/.cache/go-build \
   -v $(go env GOMODCACHE):/go/pkg/mod \
   --mount type=bind,source="$DOCS_MOUNT",target=/project/ \
-  --mount type=bind,source="./",target=/project/.opencode/ \
+  --mount type=bind,source="$SCRIPT_DIR",target=/project/.opencode/ \
   --mount type=bind,source="$CODE_MOUNT",target=/code/ \
   --mount type=bind,source="./AGENTS.md",target=/project/AGENTS.md \
   --mount type=bind,source="./log/",target=/log/ \

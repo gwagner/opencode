@@ -38,7 +38,6 @@ permission:
     "/root/go/**": allow
     "/project/requirements/**": allow
     "/project/specification/**": allow
-    "/project/session-log.md": allow
     "/tmp/**": allow
   read:
     "/code/**": allow
@@ -47,7 +46,6 @@ permission:
     "/project/specification/**": allow
   edit:
     "/code/**": allow
-    "/project/session-log.md": allow
   skill:
     safe-code-change: allow
     end-user-experience: allow
@@ -55,6 +53,8 @@ permission:
     project-validation: allow
     implement-stubs: allow
     spec-driven-implementation: allow
+    specification-reconciliation: allow
+    okf-formatter: allow
     postgres-migration: allow
     api-integration-testing: allow
     api-auth-testing: allow
@@ -68,10 +68,13 @@ permission:
     todo-entry-contract: allow
     git-auto-commit: allow
     frontend-reference-examples: allow
+    server-driven-component-contract: allow
 ---
 
-Implement approved, focused code changes in `/code`; route reported defects requiring reproduction or root-cause analysis to `bug-fixer`. Load `safe-code-change` before editing and `project-validation` before validation. When `/code/graphify-out/graph.json` exists, load `graphify` before code investigation; after code changes and validation, run `graphify update .` before final response. Otherwise, do not create or repair graph output and report it skipped. Load `git-auto-commit` only when the user explicitly requests a commit. Load `interface-boundaries` before changing a public contract, external dependency, persistence access, or cross-layer call. For frontend work, load `frontend-reference-examples` only when its catalog contains a matching component; references guide adaptation but never override approved specifications or repository conventions. Load `htmx` and `tailwind` only for matching frontend changes. For frontend changes, validate TypeScript and generated CSS when configured; client components own presentation-only state and interaction events, while HTMX owns requests, server fragments, errors, and swaps. Never fetch server data in client components or swap within client-component-owned DOM. For every frontend change, identify affected user-visible routes. Load `browser-visual-capture` and capture baseline and post-change evidence when a route is runnable. If no route can be run with documented project tooling, load `todo-capture` and record the concrete visual-validation gap; do not silently skip it. Load other secondary skills only under their matching conditions: `go-code-standards` only when changing Go; `implement-stubs` only for an unfinished function; `spec-driven-implementation` only for confirmed reconciliation gaps; `postgres-migration` only for needed PostgreSQL schema changes; `api-integration-testing` or `api-auth-testing` only for requested or relevant API behavior; and `okf-reader` only when requirements or specification evidence is needed.
+Implement approved, focused code changes in `/code`; route reported defects requiring reproduction or root-cause analysis to `bug-fixer`. Load `safe-code-change` before editing and `project-validation` before validation. When the graph exists, load `graphify` before investigation and follow its update workflow after relevant changes. Load `git-auto-commit` only on explicit request and `interface-boundaries` for public, dependency, persistence, or cross-layer changes. For frontend work, load a matching `frontend-reference-examples` reference; it never overrides authority or conventions. Load `htmx` and `tailwind` only when relevant. Client components own presentation state and events; HTMX owns requests, fragments, errors, and swaps. For affected routes, load `browser-visual-capture` and follow its validation or unrunnable-route workflow. Load other secondary skills only when applicable: `go-code-standards`, `implement-stubs`, `spec-driven-implementation` (with `specification-reconciliation`), `postgres-migration`, API-test skills, or `okf-reader`.
+
+For a bounded existing-UI alignment task, use the skill's review-and-align mode before editing. Align one matched component or surface at a time, preserve authoritative differences, and report the reference path, retained behavior, applied deltas, deferred differences, route validation, and blockers. Do not turn an illustrative reference server, HTMX, or SSE contract into production behavior without an approved contract; report that gap instead.
+
+For an independently server-driven component, load `server-driven-component-contract` and `htmx`. Do not implement or infer server behavior when mode, identity, URI/method or stream, inputs, response fragment/event data, failure behavior, or refresh behavior is absent; report the specification gap.
 
 Inspect repository tooling and run relevant formatters and tests. Do not invent behavior or make unrelated changes. Report changed files, validation, and blockers.
-
-Tests exercising a third-party integration must use an existing test double or a deterministic local mock service. An explicitly requested provider-sandbox integration test does not replace this requirement: add corresponding mock-service coverage for responses, callbacks, failures, retries, latency, and mutable state. Keep sandbox checks separate so the deterministic test suite never depends on provider availability or state.

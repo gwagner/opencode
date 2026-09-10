@@ -2,530 +2,231 @@
 
 ## Match
 
-**Aliases:** table, data table, results table, history table, paginated table, actionable rows.
+**Component:** Data table. **Aliases:** table, results table, history table, paginated table, actionable rows, SSE, background refresh, live rows.
 
-Use for consistently presenting a named collection with a summary, semantic columns, empty and status states, optional actionable rows, and pagination. Domain-specific callers supply headings, cells, labels, action identifiers, and pagination metadata. Do not use this as an editable grid, spreadsheet, tree grid, chart, or live log stream.
+Use for a named, ordered collection whose values must remain comparable in native table semantics. It presents caller-formatted headings and inert cells, an optional whole-row action, a named overflow boundary, and parent-supplied states, pagination, recovery, and dialog integration. Suitable for operational results and histories; not for editable grids, spreadsheets, trees, card lists, charts, or an append-only live log. Do not force pagination, a dialog, a parent table shell, or a feature-specific refresh policy into this reference.
 
-This reference is adaptable implementation material. Approved requirements, API specifications, and repository conventions remain authoritative.
+This is adaptable implementation material, not product authority. Requirements, approved specifications, and adopting-project conventions override it.
 
 ## Ownership and behavior contract
 
-The component owns its visible heading, count or summary, table surface, overflow behavior, empty state, pagination controls, status region, and interaction event contracts.
+Visible regions: caller-selected heading level, summary, named focusable overflow wrapper, native table, parent shell/card treatment, parent feedback/status/empty/recovery areas, optional pagination, and optional dialog-host hook. Optional capabilities: row activation and SSE incremental row refresh.
 
-- The server or parent supplies already-formatted column headings, rows, accessible labels, action identifiers, and pagination metadata.
-- The component presents supplied values; it does not fetch server data, interpret domain values, or open detail UI.
-- An actionable row emits `data-table:activate` with its action, optional context, and stable row identity.
-- A pagination control emits `data-table:page-activate` with its stable table identity and requested one-based page.
-- A server layer or HTMX boundary outside client-owned DOM owns requests, loading failures, server fragments, and swaps.
-- The component must work without actionable rows or pagination when those capabilities do not apply.
+- The caller supplies already localized/formatted title, summary, scroll name, headings, ordered cell parts, labels, fallback copy, actions, pagination, recovery descriptor, and stable IDs. The component only presents them. It must not interpret domain values, HTML, status meaning, dates, ordering, authorization, eligibility, or navigation targets.
+- Cell parts are ordered and allowlisted: `text`, `strong`, `status-badge`, and `time`. They are escaped inert values, never arbitrary HTML or interactive content. `time` supplies display text and a machine-readable datetime value; it does not parse either.
+- `data-table:activate`: an unmodified primary pointer-up on the same eligible row, or `Enter`/`Space` on that row; detail `{action, context, rowIdentity, tableIdentity}`. All identities are stable. No automatic focus move; parent owns resulting navigation/dialog and restoration.
+- `data-table:page-activate`: enabled native paging-button activation; detail `{tableIdentity, page}` with a positive one-based integer. Parent owns request, loading, failure, replacement, and focus restoration.
+- `data-table:recovery-activate`: enabled native recovery-button activation; detail `{action, context, tableIdentity}`. Parent owns retry semantics and focus after its result.
+- Parent/server/HTMX owns initial render, large or structural replacement, navigation, dialogs, loading, errors, empty state, recovery, pagination, authorization, validation, fragment requests, and swaps. Client JavaScript only normalizes presentation interactions and emits events.
+- Optional SSE owns only existing-row complete `<tr>` `outerHTML` updates. A structural SSE signal asks the HTMX/parent owner to reconcile; it never inserts, removes, reorders, repages, or changes columns client-side. The parent coalesces signals and must not overlap reconciliation requests.
+- Do not nest links, buttons, inputs, or independently interactive content in an actionable row. Make rows with such controls inert and use a dedicated actions column.
 
-## Go view model
+### Server-driven contract
 
-Use a presentation-specific model rather than passing domain, database, or transport types into the template. Format dates, numbers, fallback text, and pagination labels before rendering.
+**Status:** user-approved reference parent contract; adoption remains subject to the adopting feature's approved authority.
+
+| Field | Contract |
+| --- | --- |
+| Mode and identity | Optional SSE hybrid. Table ID is a non-empty stable token; row identity is unique within its current table. URI path value is URL-path encoded. |
+| Stream | `GET /ui/components/v1/data-tables/{tableID}/events`; authorization is server-owned. Empty body; `Accept: text/event-stream`; `Cache-Control: no-cache`; reconnect sends `Last-Event-ID`. `200` is `text/event-stream` and `Cache-Control: no-cache`. |
+| Cache/reconnect | Server emits `retry: 10000` unless an adopter's approved contract changes it. Keep the SSE connection open while the document is hidden. Event IDs are monotonic decimal integers within one table stream. The HTMX SSE adapter records the last accepted ID per table and rejects duplicate, malformed, or lower IDs **before** any swap, including after reconnect. |
+| Row success | Event name `data-table-row-update-{tableID}-{rowIdentity}`. Data is one complete compatible `<tr>`; target is its matching row and swap is `outerHTML`. Returned markup retains row `id`, `data-data-table-row-id`, and event binding. The server selects, authorizes, formats, and renders it. |
+| Structural success | Event name `data-table-structural-change-{tableID}`. Data is a complete inert signal element with the same table ID and monotonic event ID. Its `outerHTML` swap updates only the signal; JavaScript emits `data-table:structural-change` with `{tableIdentity, eventID}`. HTMX/parent coalesces this event, permits no concurrent reconciliation request, and performs the approved full structural fragment swap. |
+| Failures | Stream loss retains truthful DOM and uses parent-supplied polite status while SSE reconnects. HTTP/authorization/validation failure UI, retry affordance, and focus are server/HTMX/parent-owned. No client rollback or fabricated state. |
+| Structural limits | SSE cannot change rows, summary, empty state, headings, ordering, pagination, or shell. Those changes require the parent/HTMX replacement contract. SSE has no cadence; reconnect, not polling, is its refresh behavior. |
+
+## Implementation-facing presentation model
 
 ```go
 package presentation
 
-// DataTableView contains display-ready values for the data-table template.
+// DataTableView contains display-ready data-table presentation values.
 type DataTableView struct {
-	ID          string
-	Title       string
-	Summary     string
-	ScrollLabel string
-	Columns     []DataTableColumnView
-	Rows        []DataTableRowView
-	Empty       DataTableEmptyView
-	Pagination  *DataTablePaginationView
-	Status      string
+	ID               string
+	Title            string
+	HeadingLevel     int
+	HeadingID        string
+	Summary          string
+	ScrollLabel      string
+	Columns          []DataTableColumnView
+	Rows             []DataTableRowView
+	Empty            *DataTableEmptyView
+	Feedback         *DataTableFeedbackView
+	Pagination       *DataTablePaginationView
+	Recovery         *DataTableRecoveryView
+	DetailDialogHost *DataTableDetailDialogHostView
+	SSE              *DataTableSSEView
+	Loading          bool
+	LoadingText      string
+	Status           string
+	CardTreatment    bool
 }
 
-// DataTableColumnView contains one display-ready column heading.
-type DataTableColumnView struct {
-	Label string
-}
+// DataTableColumnView contains one ordered display-ready column heading.
+type DataTableColumnView struct { Key, Label string }
 
-// DataTableRowView contains cells and an optional activation contract.
-type DataTableRowView struct {
-	Identity string
-	Cells    []DataTableCellView
-	Action   *DataTableRowActionView
-}
+// DataTableRowView contains one stable row and its optional action.
+type DataTableRowView struct { Identity string; Cells []DataTableCellView; Action *DataTableRowActionView }
 
-// DataTableCellView contains plain text or a semantic status badge.
-type DataTableCellView struct {
-	Text   string
-	Status *DataTableStatusView
-}
+// DataTableCellView contains ordered inert allowlisted cell parts.
+type DataTableCellView struct { Parts []DataTableCellPartView }
 
-// DataTableStatusView contains a style hook and visible status label.
-type DataTableStatusView struct {
-	Kind  string
-	Label string
-}
+// DataTableCellPartView contains one text, strong, status-badge, or time part.
+type DataTableCellPartView struct { Kind, Text, DateTime, StatusKind string }
 
-// DataTableRowActionView defines activation metadata for one row.
-type DataTableRowActionView struct {
-	Name            string
-	Context         string
-	AccessibleLabel string
-}
+// DataTableRowActionView defines an eligible whole-row activation.
+type DataTableRowActionView struct { Name, Context, AccessibleLabel string }
 
-// DataTableEmptyView contains feedback shown when Rows is empty.
-type DataTableEmptyView struct {
-	Title   string
-	Message string
-}
+// DataTableEmptyView contains optional parent-supplied empty-state copy.
+type DataTableEmptyView struct { Title, Message string }
 
-// DataTablePaginationView contains display-ready paging controls.
-type DataTablePaginationView struct {
-	AccessibleLabel string
-	Summary         string
-	Previous        DataTablePageActionView
-	Next            DataTablePageActionView
-}
+// DataTableFeedbackView contains parent-supplied visible feedback.
+type DataTableFeedbackView struct { Title, Message string; IsError bool }
 
-// DataTablePageActionView defines one previous or next page action.
-type DataTablePageActionView struct {
-	Label    string
-	Page     int
-	Disabled bool
-}
+// DataTablePaginationView contains parent-owned display-ready page controls.
+type DataTablePaginationView struct { AccessibleLabel, Summary string; Previous, Next DataTablePageActionView }
+
+// DataTablePageActionView defines one native previous or next page control.
+type DataTablePageActionView struct { Label string; Page int; Disabled bool }
+
+// DataTableRecoveryView defines an optional parent-owned recovery activation.
+type DataTableRecoveryView struct { Label, Action, Context string; Disabled bool }
+
+// DataTableDetailDialogHostView defines a stable hook for a parent-owned dialog.
+type DataTableDetailDialogHostView struct { ID string }
+
+// DataTableSSEView enables the optional approved per-row SSE stream.
+type DataTableSSEView struct { StreamURI, StructuralSignalID string }
 ```
 
-`ID` and row identities must be stable, non-empty DOM-safe tokens. Keep cell count and order aligned with `Columns`. Set `Action` only when all action fields required by the template are available. `Pagination` is `nil` for an unpaged collection. Parse the template with `html/template` so supplied text and attribute values are contextually escaped.
+Required: `ID`, `Title`, `HeadingLevel` (integer 1–6), `ScrollLabel`, non-empty unique column `Key`s, and one ordered cell per column in every row. `HeadingID` is optional: when blank, derive `{ID}-title`; when supplied, it must be a nonblank stable safe DOM token matching `^[A-Za-z][A-Za-z0-9_-]*$`, unique in the document, and not duplicate another emitted ID. `ID` and row identities are stable DOM/SSE-safe tokens; row identity is unique in the rendered table. Each part `Kind` is exactly `text`, `strong`, `status-badge`, or `time`; `Text` is required; `DateTime` is required only for `time`; `StatusKind` is required only for `status-badge`. Render no unknown kind. `Action`, `Empty`, `Feedback`, `Pagination`, `Recovery`, `DetailDialogHost`, and `SSE` are nil when absent. Empty output requires `Empty`; nonempty output must not render it. `LoadingText` is required when `Loading`; `CardTreatment` is explicit caller-selected presentation state, not a domain fact.
 
-## GoHTML template
+Format/localize values and fallbacks before rendering. Use `html/template`; all supplied text and attributes remain contextually escaped. This Go adapter is reusable presentation material, not evidence an adopter uses Go; an illustrative TypeScript renderer maps it to the same fields/invariants.
+
+## Semantic template
 
 ```gohtml
-{{- $titleID := printf "%s-title" .ID -}}
-<section
-  data-data-table-component
-  data-data-table-id="{{ .ID }}"
-  aria-labelledby="{{ $titleID }}"
->
-  <div data-data-table-heading>
-    <h2 id="{{ $titleID }}">{{ .Title }}</h2>
-    <span data-data-table-count>{{ .Summary }}</span>
+{{- $titleID := .HeadingID -}}
+{{- if not $titleID }}{{ $titleID = printf "%s-title" .ID }}{{ end -}}
+<section id="{{ .ID }}-region" data-data-table-component data-data-table-id="{{ .ID }}" aria-labelledby="{{ $titleID }}" {{ if .Loading }}aria-busy="true"{{ end }}{{ with .SSE }} hx-ext="sse" sse-connect="{{ .StreamURI }}"{{ end }}>
+  <header data-data-table-heading>
+    {{ if eq .HeadingLevel 1 }}<h1 id="{{ $titleID }}">{{ .Title }}</h1>{{ else if eq .HeadingLevel 2 }}<h2 id="{{ $titleID }}">{{ .Title }}</h2>{{ else if eq .HeadingLevel 3 }}<h3 id="{{ $titleID }}">{{ .Title }}</h3>{{ else if eq .HeadingLevel 4 }}<h4 id="{{ $titleID }}">{{ .Title }}</h4>{{ else if eq .HeadingLevel 5 }}<h5 id="{{ $titleID }}">{{ .Title }}</h5>{{ else }}<h6 id="{{ $titleID }}">{{ .Title }}</h6>{{ end }}
+    {{ if .Summary }}<span data-data-table-count>{{ .Summary }}</span>{{ end }}
+  </header>
+  <div data-data-table-shell {{ if .CardTreatment }}data-data-table-card{{ end }}>
+    {{ if .Loading }}<p data-data-table-loading role="status">{{ .LoadingText }}</p>{{ end }}
+    {{ if .Rows }}<div data-data-table tabindex="0" aria-label="{{ .ScrollLabel }}"><table data-data-table-inner aria-labelledby="{{ $titleID }}"><thead><tr>{{ range .Columns }}<th scope="col" data-data-table-column="{{ .Key }}">{{ .Label }}</th>{{ end }}</tr></thead><tbody>{{ range .Rows }}<tr id="{{ $.ID }}-row-{{ .Identity }}" data-data-table-row data-data-table-row-id="{{ .Identity }}" {{ with $.SSE }}sse-swap="data-table-row-update-{{ $.ID }}-{{ .Identity }}" hx-swap="outerHTML"{{ end }}{{ with .Action }} data-data-table-action="{{ .Name }}"{{ if .Context }} data-data-table-action-context="{{ .Context }}"{{ end }} tabindex="0" aria-label="{{ .AccessibleLabel }}"{{ end }}>{{ range .Cells }}<td>{{ range .Parts }}{{ if eq .Kind "text" }}{{ .Text }}{{ else if eq .Kind "strong" }}<strong>{{ .Text }}</strong>{{ else if eq .Kind "status-badge" }}<span data-status-badge data-status="{{ .StatusKind }}">{{ .Text }}</span>{{ else if eq .Kind "time" }}<time datetime="{{ .DateTime }}">{{ .Text }}</time>{{ end }}{{ end }}</td>{{ end }}</tr>{{ end }}</tbody></table></div>{{ else with .Empty }}<div data-data-table-empty><strong>{{ .Title }}</strong>{{ if .Message }}<span>{{ .Message }}</span>{{ end }}</div>{{ end }}{{ end }}
+    {{ with .Pagination }}<nav data-data-table-pagination aria-label="{{ .AccessibleLabel }}"><button type="button" data-data-table-page="{{ .Previous.Page }}" {{ if .Previous.Disabled }}disabled{{ end }}>{{ .Previous.Label }}</button><span data-data-table-page-summary>{{ .Summary }}</span><button type="button" data-data-table-page="{{ .Next.Page }}" {{ if .Next.Disabled }}disabled{{ end }}>{{ .Next.Label }}</button></nav>{{ end }}
+    {{ with .Feedback }}<div data-data-table-feedback {{ if .IsError }}role="alert"{{ else }}role="status"{{ end }}><strong>{{ .Title }}</strong><span>{{ .Message }}</span></div>{{ end }}
+    {{ with .Recovery }}<button type="button" data-data-table-recovery="{{ .Action }}" {{ if .Context }}data-data-table-recovery-context="{{ .Context }}"{{ end }} {{ if .Disabled }}disabled{{ end }}>{{ .Label }}</button>{{ end }}
   </div>
-
-  <div data-data-table-card>
-    <div data-data-table tabindex="0" aria-label="{{ .ScrollLabel }}" {{ if not .Rows }}hidden{{ end }}>
-      <table data-data-table-inner aria-labelledby="{{ $titleID }}">
-        <thead>
-          <tr>
-            {{ range .Columns }}
-            <th scope="col">{{ .Label }}</th>
-            {{ end }}
-          </tr>
-        </thead>
-        <tbody>
-          {{ range .Rows }}
-          <tr
-            data-data-table-row
-            data-data-table-row-id="{{ .Identity }}"
-            {{ with .Action }}
-            data-data-table-action="{{ .Name }}"
-            {{ if .Context }}data-data-table-action-context="{{ .Context }}"{{ end }}
-            tabindex="0"
-            aria-label="{{ .AccessibleLabel }}"
-            {{ end }}
-          >
-            {{ range .Cells }}
-            <td>
-              {{ with .Status }}<span data-status-badge data-status="{{ .Kind }}">{{ .Label }}</span>{{ else }}{{ .Text }}{{ end }}
-            </td>
-            {{ end }}
-          </tr>
-          {{ end }}
-        </tbody>
-      </table>
-    </div>
-
-    <div data-data-table-empty {{ if .Rows }}hidden{{ end }}>
-      <strong>{{ .Empty.Title }}</strong>
-      <span>{{ .Empty.Message }}</span>
-    </div>
-
-    {{ with .Pagination }}
-    <nav data-data-table-pagination aria-label="{{ .AccessibleLabel }}">
-      <button type="button" data-data-table-page="{{ .Previous.Page }}" {{ if .Previous.Disabled }}disabled{{ end }}>{{ .Previous.Label }}</button>
-      <span data-data-table-page-summary>{{ .Summary }}</span>
-      <button type="button" data-data-table-page="{{ .Next.Page }}" {{ if .Next.Disabled }}disabled{{ end }}>{{ .Next.Label }}</button>
-    </nav>
-    {{ end }}
-  </div>
-
   <p data-data-table-status role="status" aria-live="polite">{{ .Status }}</p>
+  {{ with .SSE }}<span id="{{ .StructuralSignalID }}" data-data-table-structural-signal data-data-table-id="{{ $.ID }}" hidden sse-swap="data-table-structural-change-{{ $.ID }}" hx-swap="outerHTML"></span>{{ end }}
+  {{ with .DetailDialogHost }}<div id="{{ .ID }}" data-data-table-detail-dialog-host></div>{{ end }}
 </section>
 ```
 
-The `with .Action` block omits action attributes, `tabindex`, and the row `aria-label` together for static rows. A nil `Pagination` omits pagination. Place dialogs and other destinations outside server-swappable table regions.
+Validate `HeadingLevel` and supplied `HeadingID` before template execution; the final heading branch is safe only after that validation. Tests cover a blank derived ID, a supplied existing stable heading ID, invalid/duplicate IDs rejected before output, and the same resolved ID on section, heading, and table association. Optional attributes/regions are omitted with their structure. The named wrapper is the immediate table parent; card treatment is a caller-selected shell hook, not mandated table framing. The structural signal is inert and is not user-facing.
 
 ## CSS rules
 
-Prefer project tokens. These rules use generic `--data-table-*` tokens for semantic colors, soft gradients, rounded cards, and visible focus rings.
-
 ```css
-[data-data-table-component] {
-  min-width: 0;
-  max-width: 100%;
-  color: var(--data-table-text);
-}
-
-[data-data-table-heading] {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  justify-content: space-between;
-  margin: 0 0 0.75rem;
-}
-
-[data-data-table-heading] h2 {
-  color: var(--data-table-text);
-  font-size: 1rem;
-  font-weight: 800;
-  margin: 0;
-}
-
-[data-data-table-count] {
-  align-items: center;
-  background: var(--data-table-accent-soft);
-  border: 1px solid var(--data-table-accent-border);
-  border-radius: 9999px;
-  color: var(--data-table-accent-text);
-  display: inline-flex;
-  font-size: 0.8125rem;
-  font-weight: 800;
-  padding: 0.3rem 0.65rem;
-}
-
-[data-data-table-card] {
-  background: var(--data-table-surface-gradient);
-  border: 1px solid var(--data-table-border);
-  border-radius: 1rem;
-  box-shadow: 0 12px 30px var(--data-table-shadow);
-  overflow: hidden;
-}
-
-[data-data-table] {
-  max-width: 100%;
-  min-width: 0;
-  overflow-x: auto;
-}
-
-[data-data-table]:focus-visible {
-  outline: 3px solid var(--data-table-focus-ring);
-  outline-offset: -3px;
-}
-
-[data-data-table-inner] {
-  border-collapse: separate;
-  border-spacing: 0;
-  color: var(--data-table-muted-text);
-  font-size: 0.875rem;
-  width: 100%;
-}
-
-[data-data-table-inner] th,
-[data-data-table-inner] td {
-  border-bottom: 1px solid var(--data-table-border);
-  padding: 0.8rem 0.9rem;
-  text-align: left;
-  vertical-align: top;
-}
-
-[data-data-table-inner] th {
-  background: var(--data-table-surface-subtle);
-  color: var(--data-table-muted-text);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-[data-data-table-inner] tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-[data-data-table-inner] tbody tr[data-data-table-action] {
-  cursor: pointer;
-}
-
-[data-data-table-inner] tbody tr[data-data-table-action]:hover {
-  background: var(--data-table-surface-subtle);
-}
-
-[data-data-table-inner] tbody tr[data-data-table-action]:focus-visible {
-  background: var(--data-table-focus-surface);
-  outline: 3px solid var(--data-table-focus-ring);
-  outline-offset: -3px;
-}
-
-[data-data-table-empty] {
-  color: var(--data-table-text);
-  gap: 0.375rem;
-  justify-items: start;
-  padding: 1.25rem;
-}
-
-[data-data-table-empty] strong,
-[data-data-table-empty] span {
-  display: block;
-}
-
-[data-data-table-empty] span,
-[data-data-table-status],
-[data-data-table-page-summary] {
-  color: var(--data-table-muted-text);
-  font-size: 0.875rem;
-}
-
-[data-data-table-empty][hidden] {
-  display: none;
-}
-
-[data-data-table-pagination] {
-  align-items: center;
-  border-top: 1px solid var(--data-table-border);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  justify-content: flex-end;
-  padding: 0.875rem 1rem;
-}
-
-[data-data-table-pagination] button {
-  background: var(--data-table-surface);
-  border: 1px solid var(--data-table-border-strong);
-  border-radius: 0.75rem;
-  color: var(--data-table-text);
-  font-size: 0.875rem;
-  font-weight: 700;
-  min-height: 2.75rem;
-  padding: 0.625rem 0.875rem;
-}
-
-[data-data-table-pagination] button:hover:not(:disabled) {
-  background: var(--data-table-surface-subtle);
-  border-color: var(--data-table-muted-text);
-}
-
-[data-data-table-pagination] button:focus-visible {
-  outline: 3px solid var(--data-table-focus-ring);
-  outline-offset: 2px;
-}
-
-[data-data-table-pagination] button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-[data-data-table-status] {
-  margin: 0.75rem 0 0;
-  min-height: 1.25rem;
-}
-
-@media (max-width: 40rem) {
-  [data-data-table-pagination] {
-    align-items: stretch;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  [data-data-table-page-summary] {
-    grid-column: 1 / -1;
-    grid-row: 1;
-    text-align: center;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  [data-data-table-component] * {
-    scroll-behavior: auto;
-  }
-}
+[data-data-table-component] { max-width: 100%; min-width: 0; color: var(--data-table-text); }
+[data-data-table-heading] { display:flex; flex-wrap:wrap; gap:.75rem; justify-content:space-between; margin:0 0 .75rem; }
+[data-data-table-heading] :is(h1,h2,h3,h4,h5,h6) { margin:0; font:inherit; font-weight:800; }
+[data-data-table-card] { background:var(--data-table-surface); border:1px solid var(--data-table-border); border-radius:var(--data-table-radius); box-shadow:var(--data-table-shadow); }
+[data-data-table][hidden], [data-data-table-empty][hidden] { display:none; }
+[data-data-table] { max-width:100%; min-width:0; overflow-x:auto; }
+[data-data-table]:focus-visible, [data-data-table-inner] tr[data-data-table-action]:focus-visible, [data-data-table-pagination] button:focus-visible, [data-data-table-recovery]:focus-visible { outline:3px solid var(--data-table-focus-ring); outline-offset:2px; }
+[data-data-table-inner] { border-collapse:collapse; min-width:max-content; width:100%; }
+[data-data-table-inner] :is(th,td) { border-bottom:1px solid var(--data-table-border); padding:.8rem .9rem; text-align:left; vertical-align:top; }
+[data-data-table-inner] th { background:var(--data-table-surface-subtle); }
+[data-data-table-inner] tbody tr:last-child td { border-bottom:0; }
+[data-data-table-inner] tr[data-data-table-action] { cursor:pointer; }
+[data-data-table-inner] tr[data-data-table-action]:hover { background:var(--data-table-focus-surface); }
+[data-data-table-pagination] { display:flex; flex-wrap:wrap; gap:.75rem; padding:.875rem 0; }
+[data-data-table-pagination] button, [data-data-table-recovery] { min-height:2.75rem; padding:.625rem .875rem; }
+[data-data-table-pagination] button:disabled, [data-data-table-recovery]:disabled { cursor:not-allowed; opacity:.55; }
+[data-data-table-loading], [data-data-table-feedback], [data-data-table-empty] { padding:.875rem 0; }
+[data-data-table-status] { min-height:1.25rem; }
+@media (max-width:40rem) { [data-data-table-pagination] button { flex:1 1 8rem; } [data-data-table-page-summary] { flex-basis:100%; } }
+@media (prefers-reduced-motion:reduce) { [data-data-table-component] * { scroll-behavior:auto; } }
 ```
+
+Tokens describe table text, surface, border, card, focus, and focus-surface semantics; replace with project tokens. Card styling applies only when the parent selects it. Hidden, disabled, visible keyboard focus, narrow overflow, and reduced motion are covered.
 
 ## JavaScript example
 
-This presentation adapter uses event delegation so the same interaction works for any conforming table, including server-rendered rows replaced outside client-owned DOM. It performs no requests and no swaps.
+Delegated JavaScript assumes HTMX plus an SSE extension owns stream connection and swaps. Its SSE-adapter lifecycle must call `acceptSSEEvent(tableIdentity, eventID)` before a swap; a rejected event never reaches HTMX swap handling. It accepts only conforming DOM and emits the three events above. Pointer activation requires same-row primary unmodified down/up; `Enter`/`Space` require row focus. Native buttons retain native keyboard behavior. Before a focused SSE row `outerHTML` swap it snapshots table/row identity by stable row DOM ID; after that swap it focuses only the same replacement row, never a different row or external focus. It does not fetch, call APIs, render server data, or own fragments.
 
 ```js
 "use strict";
-
-const pointerRows = new Map();
-
-function actionableDataTableRow(target) {
-  if (!(target instanceof Element)) return null;
-
-  const row = target.closest("tr[data-data-table-row][data-data-table-action]");
-  if (!row || row.tabIndex !== 0 || !row.getAttribute("aria-label")) return null;
-  if (!row.dataset.dataTableRowId || !row.dataset.dataTableAction) return null;
-
-  return row;
-}
-
-function dispatchDataTableActivation(row) {
-  const detail = {
-    action: row.dataset.dataTableAction ?? "",
-    context: row.dataset.dataTableActionContext ?? "",
-    rowIdentity: row.dataset.dataTableRowId ?? "",
-  };
-
-  if (!detail.action || !detail.rowIdentity) return;
-
-  row.dispatchEvent(new CustomEvent("data-table:activate", {
-    bubbles: true,
-    detail,
-  }));
-}
-
-document.addEventListener("pointerdown", (event) => {
-  if (!event.isPrimary || event.button !== 0 || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-
-  const row = actionableDataTableRow(event.target);
-  if (row) pointerRows.set(event.pointerId, row);
-});
-
-document.addEventListener("pointerup", (event) => {
-  const pressedRow = pointerRows.get(event.pointerId);
-  pointerRows.delete(event.pointerId);
-
-  if (
-    !pressedRow ||
-    !event.isPrimary ||
-    event.button !== 0 ||
-    event.altKey ||
-    event.ctrlKey ||
-    event.metaKey ||
-    event.shiftKey ||
-    actionableDataTableRow(event.target) !== pressedRow
-  ) return;
-
-  dispatchDataTableActivation(pressedRow);
-});
-
-document.addEventListener("pointercancel", (event) => {
-  pointerRows.delete(event.pointerId);
-});
-
-document.addEventListener("keydown", (event) => {
-  if (event.repeat || (event.key !== "Enter" && event.key !== " ")) return;
-
-  const row = actionableDataTableRow(event.target);
-  if (!row || event.target !== row) return;
-
-  event.preventDefault();
-  dispatchDataTableActivation(row);
-});
-
-document.addEventListener("click", (event) => {
-  if (!(event.target instanceof Element)) return;
-
-  const button = event.target.closest("button[data-data-table-page]");
-  if (!button || button.disabled) return;
-
-  const table = button.closest("[data-data-table-component][data-data-table-id]");
-  const page = Number(button.dataset.dataTablePage);
-  if (!table || !Number.isInteger(page) || page < 1) return;
-
-  button.dispatchEvent(new CustomEvent("data-table:page-activate", {
-    bubbles: true,
-    detail: {
-      tableIdentity: table.dataset.dataTableId,
-      page,
-    },
-  }));
-});
+const pressed = new Map(), focusSnapshots = new Map(), lastSSEEvent = new Map();
+// Called by the HTMX SSE adapter before it invokes an SSE swap.
+const acceptSSEEvent = (tableIdentity, eventID) => {
+  if (!/^\d+$/.test(eventID)) return false;
+  const next = BigInt(eventID), previous = lastSSEEvent.get(tableIdentity);
+  if (previous !== undefined && next <= previous) return false;
+  lastSSEEvent.set(tableIdentity, next); return true;
+};
+const row = t => t instanceof Element ? t.closest("tr[data-data-table-row][data-data-table-action]") : null;
+const tableFor = e => e.closest("[data-data-table-component][data-data-table-id]");
+const activate = r => { const t = tableFor(r); if (!t) return; r.dispatchEvent(new CustomEvent("data-table:activate", {bubbles:true, detail:{action:r.dataset.dataTableAction, context:r.dataset.dataTableActionContext || "", rowIdentity:r.dataset.dataTableRowId, tableIdentity:t.dataset.dataTableId}})); };
+document.addEventListener("pointerdown", e => { const r=row(e.target); if (e.isPrimary && e.button===0 && !e.altKey&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey && r) pressed.set(e.pointerId,r); });
+document.addEventListener("pointerup", e => { const r=pressed.get(e.pointerId); pressed.delete(e.pointerId); if (r && e.isPrimary && e.button===0 && !e.altKey&&!e.ctrlKey&&!e.metaKey&&!e.shiftKey && row(e.target)===r) activate(r); });
+document.addEventListener("pointercancel", e => pressed.delete(e.pointerId));
+document.addEventListener("keydown", e => { const r=row(e.target); if (r===e.target && !e.repeat && (e.key==="Enter"||e.key===" ")) { e.preventDefault(); activate(r); } });
+document.addEventListener("click", e => { const b=e.target instanceof Element && e.target.closest("button[data-data-table-page],button[data-data-table-recovery]"); if (!b || b.disabled) return; const t=tableFor(b); if (!t) return; const page=Number(b.dataset.dataTablePage); const recovery=b.dataset.dataTableRecovery; if (Number.isInteger(page)&&page>0) b.dispatchEvent(new CustomEvent("data-table:page-activate",{bubbles:true,detail:{tableIdentity:t.dataset.dataTableId,page}})); if (recovery) b.dispatchEvent(new CustomEvent("data-table:recovery-activate",{bubbles:true,detail:{tableIdentity:t.dataset.dataTableId,action:recovery,context:b.dataset.dataTableRecoveryContext||""}})); });
+document.addEventListener("htmx:beforeSwap", e => { const r=e.detail.target; if (r instanceof HTMLTableRowElement && document.activeElement===r) { const t=tableFor(r); if (t && r.id && r.dataset.dataTableRowId) focusSnapshots.set(r.id,{tableIdentity:t.dataset.dataTableId,rowIdentity:r.dataset.dataTableRowId}); } });
+document.addEventListener("htmx:afterSwap", e => { const target=e.detail.target; const saved=target instanceof Element && target.id ? focusSnapshots.get(target.id) : null; if (target instanceof Element && target.id) focusSnapshots.delete(target.id); if (saved) { const next=document.querySelector(`[data-data-table-id="${CSS.escape(saved.tableIdentity)}"] tr[data-data-table-row-id="${CSS.escape(saved.rowIdentity)}"]`); if (next instanceof HTMLElement) next.focus(); } if (target instanceof Element && target.matches("[data-data-table-structural-signal]")) { const next=document.getElementById(target.id); if (next?.matches("[data-data-table-structural-signal]")) next.dispatchEvent(new CustomEvent("data-table:structural-change",{bubbles:true,detail:{tableIdentity:next.dataset.dataTableId,eventID:next.dataset.dataTableEventId||""}})); } });
 ```
 
-Native buttons provide keyboard pagination activation. Do not place links, buttons, inputs, or other independent controls inside an actionable row; use a dedicated actions column and make that row non-actionable when nested controls are required.
+The server must include `data-data-table-event-id` on structural signal replacements. This sample assumes the adopting HTMX version supplies the replaced element as `event.detail.target` for both `htmx:beforeSwap` and `htmx:afterSwap`, retaining its stable row ID across an `outerHTML` swap; verify that lifecycle behavior. The parent listener deduplicates/coalesces event IDs and refuses overlapping reconcile requests; this example intentionally does neither request nor swap.
 
 ## Illustrative view data
 
-This fixture demonstrates caller-supplied display data. It is **not an authoritative endpoint, domain schema, field-name, status-enum, timestamp-format, sorting, or pagination contract**.
+Non-authoritative fixture: establishes no endpoint, domain schema, field names, enum, sorting, filtering, pagination, or business rule.
 
 ```go
-table := presentation.DataTableView{
-	ID:          "example-results",
-	Title:       "Results",
-	Summary:     "60 items",
-	ScrollLabel: "Scrollable results table",
-	Columns: []presentation.DataTableColumnView{
-		{Label: "Name"},
-		{Label: "Status"},
-		{Label: "Updated"},
-	},
-	Rows: []presentation.DataTableRowView{
-		{
-			Identity: "item-42",
-			Cells: []presentation.DataTableCellView{
-				{Text: "Example item"},
-				{Status: &presentation.DataTableStatusView{Kind: "active", Label: "Active"}},
-				{Text: "5 September 2026, 19:52 UTC"},
-			},
-			Action: &presentation.DataTableRowActionView{
-				Name:            "open-detail",
-				Context:         "results",
-				AccessibleLabel: "Open details for Example item",
-			},
-		},
-	},
-	Empty: presentation.DataTableEmptyView{
-		Title:   "No results",
-		Message: "No items are available.",
-	},
-	Pagination: &presentation.DataTablePaginationView{
-		AccessibleLabel: "Result pages",
-		Summary:         "Page 1 of 3",
-		Previous: presentation.DataTablePageActionView{
-			Label:    "Previous",
-			Page:     1,
-			Disabled: true,
-		},
-		Next: presentation.DataTablePageActionView{
-			Label: "Next",
-			Page:  2,
-		},
-	},
-}
+table := presentation.DataTableView{ID:"example-results", Title:"Results", HeadingLevel:2, HeadingID:"existing-results-heading", Summary:"1 item", ScrollLabel:"Scrollable results table", CardTreatment:true,
+	Columns: []presentation.DataTableColumnView{{Key:"name",Label:"Name"},{Key:"state",Label:"State"},{Key:"updated",Label:"Updated"}},
+	Rows: []presentation.DataTableRowView{{Identity:"item-42", Cells: []presentation.DataTableCellView{{Parts:[]presentation.DataTableCellPartView{{Kind:"strong",Text:"Example item"}}},{Parts:[]presentation.DataTableCellPartView{{Kind:"status-badge",StatusKind:"active",Text:"Active"}}},{Parts:[]presentation.DataTableCellPartView{{Kind:"time",DateTime:"2026-09-06T19:52:00Z",Text:"6 September 2026, 19:52 UTC"}}}}, Action:&presentation.DataTableRowActionView{Name:"open-detail",Context:"results",AccessibleLabel:"Open details for Example item"}}},
+	Pagination:&presentation.DataTablePaginationView{AccessibleLabel:"Result pages",Summary:"Page 1 of 1",Previous:presentation.DataTablePageActionView{Label:"Previous",Page:1,Disabled:true},Next:presentation.DataTablePageActionView{Label:"Next",Page:1,Disabled:true}},
+	Feedback:&presentation.DataTableFeedbackView{Title:"Latest results shown",Message:"Updates may reconnect automatically."}, Recovery:&presentation.DataTableRecoveryView{Label:"Try again",Action:"retry-results"}, DetailDialogHost:&presentation.DataTableDetailDialogHostView{ID:"example-results-dialog-host"},
+	SSE:&presentation.DataTableSSEView{StreamURI:"/ui/components/v1/data-tables/example-results/events",StructuralSignalID:"example-results-structural-signal"}, Status:"Connected for row updates."}
 ```
 
 ## States and failures
 
-| State | Expected presentation |
-| --- | --- |
-| Loading | Retain the title and headings, mark the request-owned region busy, and expose project-standard loading feedback without client-side fetching. |
-| Success | Show supplied rows, summary, and applicable pagination actions. |
-| Empty | Hide the table body or table, show the explicit empty state, display a zero summary, and disable or omit pagination. |
-| Partial values | Present caller-formatted fallback text such as an em dash; preserve the row's accessible meaning. |
-| Request failure | The request owner renders a persistent, recoverable error and retry action without swapping client-owned DOM. |
-| Action failure | Preserve or restore focus to the activated row or page control, announce the failure, and allow retry. |
+| State | Visibility and announcement | Focus/recovery | Owner |
+| --- | --- | --- | --- |
+| Loading | Parent shows loading copy and `aria-busy`; truthful rows may remain. | Retain focus; parent controls recovery. | Parent/server/HTMX |
+| Success | Rows, summary, parent paging; SSE may replace matching rows. | Same focused row restores after SSE replacement only. | Server/HTMX/SSE |
+| Empty | Parent shows supplied empty title and optional message; table absent. | Focus stays outside removed table; parent recovery if supplied. | Parent/server/HTMX |
+| Partial values | Render caller-formatted fallback parts. | No change. | Caller |
+| Request failure | Retain truthful content; visible feedback/status announces failure or reconnect. | Retain focus; native recovery emits event. | Parent/server/HTMX |
+| Action failure | Parent shows confirmed-data failure; no client rollback. | Parent restores activated row/button or its fallback. | Parent/server/HTMX |
 
 ## Accessibility and responsive checks
 
-- Keep a real table with `scope="col"` headers; do not recreate tabular data with generic grids.
-- Give the table an accessible name through its visible heading.
-- Make the horizontal scroll region keyboard reachable and visibly focused.
-- For actionable rows, require a stable identity, action, `tabindex="0"`, meaningful `aria-label`, pointer activation, `Enter`, `Space`, and visible focus.
-- Avoid nested interactive controls in actionable rows.
-- Keep status text visible; color may reinforce but never replace meaning.
-- Announce asynchronous status changes through the polite status region; persistent errors need visible error UI.
-- Keep pagination targets at least 44 CSS pixels high and expose disabled state natively.
-- At narrow widths, retain horizontal scrolling without clipping the page and keep pagination readable.
+- Native `table`, `thead`, `tbody`, `th scope="col"`, and `td`; visible heading names the table.
+- Heading level is caller chosen but validated 1–6; do not skip hierarchy merely for table styling.
+- Wrapper has its visible/accessible scroll-purpose label, `tabindex="0"`, visible focus, native horizontal keyboard scrolling, and no activation behavior.
+- Eligible rows have one named tab stop and primary pointer/Enter/Space activation; inert rows have none. Cell parts, including badges/time, are inert.
+- Use visible status/error text and polite announcements; color is supplementary. Buttons use native disabled semantics and at least 44px targets.
+- At zoom and narrow widths, no clipping/document overflow; far columns remain reachable. Preserve reading order and table semantics; never cardify rows.
+- Test SSE focused-row replacement, duplicate/older event rejection, structural signal coalescing/no overlap, `Last-Event-ID`, hidden-document connected behavior, and modal focus ownership separately.
 
 ## Adaptation and test checklist
 
-- Replace illustrative headings, cells, actions, and pagination metadata with approved caller contracts.
-- Use project date, number, status, localization, and design-token conventions.
-- Test static and actionable rows, including pointer cancellation, modifier keys, `Enter`, `Space`, and event details.
-- Test zero, one, full-page, and final-page collections plus page event details and disabled boundaries.
-- Test accessible names, scoped headers, overflow focus, row focus, empty feedback, and status announcements.
-- Test light, dark, explicit appearance, and narrow-screen presentation where supported.
-- Keep request and swap tests at the owning server or HTMX boundary.
-- Capture baseline and post-change evidence for every affected runnable route.
+- Replace every fixture value, generic token, stream URI, event consumer, card decision, copy, action, dialog host, and optional capability with approved adopter values.
+- Validate heading level, blank-derived/supplied-safe-unique heading ID, IDs, unique column/row identity, exact cell count, allowlisted parts, action completeness, and optional-state invariants before render.
+- Test populated/empty/loading/partial/request-failure/action-failure, one/full/final page boundaries, native disabled controls, pointer cancellation/modifiers, keyboard paths, and all emitted details.
+- Test semantic associations, names, focus order/restoration, live feedback, inert cells, contrast, 200% zoom, and narrow containment.
+- Server/HTMX tests own authorization, stream headers, event IDs/names/data, `Last-Event-ID`, reconnect, complete-row fragments, structural reconciliation/swap, and no-overlap coalescing. Capture runnable-route visual evidence where supported.
 
 ## Provenance and limitations
 
-Adapted from user-provided authenticated-app CSS and delegated row-activation JavaScript on 2026-09-05. The source established the design-token palette, table spacing and typography, overflow behavior, actionable-row focus treatment, and generic activation event. The surrounding component structure, pagination event, illustrative data, and state guidance are reference designs rather than observed or approved production contracts.
+User-supplied intent, 2026-09-06: this FRE is the parent reference; validated caller heading level/ID, optional hybrid HTMX/SSE model, row updates, structural signals, inert-part allowlist, recovery event, and SSE continuity rules. Current approved parent citation: `/project/specification/frontend/components/data-table.md` (FE-CMP-020), read 2026-09-06. It adopts this reference as normative for its scope; requirements and approved specifications remain authority for each adopter. Existing parent contract includes stream URI, complete-row `outerHTML`, activation/page event names, named focusable overflow wrapper, card option, and parent-owned shell/state/pagination/dialog ownership.
+
+Reference decisions: HTMX SSE extension is assumed to emit `htmx:beforeSwap`/`htmx:afterSwap` with a target; verify against the adopting HTMX version. The exact structural signal markup and parent reconciliation endpoint are intentionally not prescribed. Unsupported: arbitrary cell HTML, client data fetching/state reconstruction, SSE structural DOM mutation, nested row controls, and universal SSE. Source-derived behavior may change; reference date: 2026-09-06.

@@ -27,9 +27,6 @@ permission:
     "graphify path *": allow
   edit:
     "/code/specification-gaps.md": allow
-    "/project/context.md": allow
-    "/project/handoff.md": allow
-    "/project/session-log.md": allow
   skill:
     okf-reader: allow
     codebase-reverse-engineering: allow

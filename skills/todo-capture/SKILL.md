@@ -15,13 +15,9 @@ If the active prompt contains `TODO_LOOP_MODE=true`, do not use this skill. Use 
 - Append work blocked by an unanswered execution-critical decision to `/code/blocked-todos.md`.
 - Create either file when needed.
 
-## Authoritative updates
-
-Before capture, determine whether authoritative documents need creation, correction, or clarification. Delegate product requirements to `prd-strategist`, shared architecture or cross-feature decisions to `app-spec-architect`, and bounded feature contracts to `code-spec-engineer`. Complete required updates before writing an implementation-ready todo. For blocked work, complete updates that are possible and list any decision-dependent authoritative update in `Required to unblock:`. Do not substitute todo metadata for authoritative documentation.
-
 ## Format
 
-Load and apply `todo-entry-contract`; it is the canonical entry schema and routing policy.
+Load and apply `todo-entry-contract`; it is the canonical entry schema, routing policy, and authority prerequisite.
 
 ```markdown
 - [ ] Prevent invalid checkout submission

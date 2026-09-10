@@ -22,6 +22,12 @@ Reorganization should improve:
 
 Do not reorganize merely for aesthetic reasons. Prefer minimal, purposeful changes.
 
+### Assessment Before Reorganization
+
+Use retrieval evidence before restructuring when available. A document is a candidate when narrow work repeatedly requires loading unrelated sections, retrieval cannot route to a bounded section, or separate sections have independent reuse, ownership, type, resource, or lifecycle.
+
+Report a bounded reorganization recommendation unless the current request requires the structural change to complete safely. Do not turn a weak result, missing optional index, or a single broad research request into an automatic reorganization.
+
 ### Preserve Concept Meaning
 
 When moving, splitting, merging, or renaming files:

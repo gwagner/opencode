@@ -47,16 +47,17 @@ When answering a question from an OKF bundle:
 
 1. Identify the bundle root.
 2. Read the root `index.md` if present.
-3. Use `index.md` files for progressive disclosure before opening many concept files.
-4. Use filenames, paths, titles, descriptions, types, tags, and resources to identify candidate concepts.
-5. Read only the most relevant concept documents first.
-6. Follow markdown links only when they are likely to clarify the answer.
-7. Prefer absolute bundle-relative links beginning with `/`.
-8. Support relative markdown links.
-9. Treat links as directed, untyped relationships.
-10. Infer relationship meaning from surrounding prose.
-11. Tolerate broken links; they may represent incomplete knowledge.
-12. Use `log.md` only when the user asks about history, freshness, recent changes, or evolution of the bundle.
+3. For a narrow lookup in a large bundle, when available, run `python3 /project/.opencode/scripts/retrieve-knowledge.py --root <bundle-root> --max-sections <bounded-limit> <query...>`. It returns ranked section locators, not document bodies.
+4. Use indexes and returned paths, headings, and line ranges for progressive disclosure before opening concept bodies. Read the selected section and necessary heading ancestry only.
+5. Use filenames, paths, titles, descriptions, types, tags, and resources to identify candidate concepts when the retrieval tool is unavailable or insufficient.
+6. Read only the most relevant concept documents first.
+7. Follow markdown links only when they are likely to clarify the answer.
+8. Prefer absolute bundle-relative links beginning with `/`.
+9. Support relative markdown links.
+10. Treat links as directed, untyped relationships.
+11. Infer relationship meaning from surrounding prose.
+12. Tolerate broken links; they may represent incomplete knowledge.
+13. Use `log.md` only when the user asks about history, freshness, recent changes, or evolution of the bundle.
 
 ## Answering Rules
 

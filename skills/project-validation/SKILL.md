@@ -13,4 +13,13 @@ If `/code/validation.md` exists, follow it. Otherwise inspect project scripts, m
 4. Classify failures as change defect, pre-existing failure, environment blocker, or unknown; do not hide failures.
 5. Report commands actually run, results, skipped checks, and blockers.
 
+## PostgreSQL test targets
+
+When validation requires PostgreSQL:
+
+1. Inspect existing test configuration, scripts, CI, and Compose wiring for its target-selection and isolation rules.
+2. Run the project-native test command without overriding inherited `DATABASE_URL`. Use it only when repository evidence establishes a non-production, isolated test target.
+3. When no URL is configured, let only existing project test or Compose configuration consume inherited `POSTGRES_PASSWORD`. Never print it or invent connection fields such as host, port, user, or database name.
+4. Only after those options are exhausted may an existing project test provisioner be used. If no safe target or provisioner exists, do not create a special database setup; skip unsafe execution and report the blocker.
+
 Do not introduce a test framework, modify production configuration, or run destructive commands merely to validate a change.

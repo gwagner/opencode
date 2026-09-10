@@ -76,7 +76,12 @@ grep -q 'Report `implementation-divergence` separately and omit `internal-detail
 for owner in prd-strategist app-spec-architect code-spec-engineer; do
   file="/code/agents/$owner.md"
   grep -q 'edit or close' "$file"
+  grep -q '^    "python3 /project/\.opencode/scripts/retrieve-knowledge\.py \*": allow$' "$file"
 done
 
 grep -q 'under `/code/specification/`' /code/agents/reverse-engineer-app-spec.md
-grep -q '^  bash: deny$' /code/agents/app-spec-architect.md
+grep -q '/project/.opencode/scripts/retrieve-knowledge.py' /code/skills/okf-reader/SKILL.md
+if grep -R -q '/code/scripts/retrieve-knowledge.py' /code/agents /code/skills; then
+  printf '%s\n' 'retrieval workflow still uses the application code mount' >&2
+  exit 1
+fi

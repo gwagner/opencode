@@ -12,14 +12,15 @@ Use this skill when the primary source is `/project/requirements/`.
 
 ## Procedure
 
-1. Inventory all requirement files.
-2. Treat them as overlapping descriptions of one product.
-3. Identify authoritative language, examples, and acceptance criteria.
-4. Reconcile duplicates and contradictions.
-5. Extract product goals, actors, workflows, business rules, data needs, integrations, and constraints.
-6. Record missing information necessary for implementation.
-7. Ask concise clarifying questions only when ambiguity is critical and cannot be safely isolated.
-8. Otherwise make the narrowest reasonable assumption and proceed.
+1. Inventory paths, indexes, and concept frontmatter; do not load every body by default.
+2. For a scoped question in a large bundle, use the `okf-reader` retrieval workflow to select bounded sections, then read their necessary context.
+3. Treat selected requirements as overlapping descriptions of one product. Expand the reading set only when links, duplicate candidates, or possible conflicts require it.
+4. Identify authoritative language, examples, and acceptance criteria.
+5. Reconcile duplicates and contradictions.
+6. Extract product goals, actors, workflows, business rules, data needs, integrations, and constraints.
+7. Record missing information necessary for implementation.
+8. Ask concise clarifying questions only when ambiguity is critical and cannot be safely isolated.
+9. Otherwise make the narrowest reasonable assumption and proceed.
 
 ## Classification
 

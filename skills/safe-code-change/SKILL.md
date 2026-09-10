@@ -12,3 +12,4 @@ description: Implements a focused code change safely in a collaborative reposito
 5. Preserve existing worktree changes. Never reset, restore, or delete work not created for the task.
 6. Run the narrowest applicable formatter and tests. Classify failures before changing code.
 7. Report changed files, the affected user workflow and observable result, validation actually run, manual verification if needed, and remaining blockers.
+8. Test third-party integrations with an existing test double or deterministic local mock service. Provider-sandbox checks are separate and supplement mock coverage for responses, callbacks, failures, retries, latency, and mutable state.

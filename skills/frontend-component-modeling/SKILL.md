@@ -62,4 +62,5 @@ For interactive components, describe:
 - Identify data shown to business users, not merely that a dashboard exists.
 - Do not invent frontend implementation when none exists; label required surfaces as proposed or expected.
 - Define a server-fragment versus client-component boundary: HTMX owns forms, requests, errors, and server-fragment swaps; client components own interaction behavior and emit events.
+- For every independently server-driven component, load `server-driven-component-contract` and specify mode, identity, HTTP method/URI or SSE stream, authorization, inputs/headers/body/content types, cache behavior, target/swap or event targets, complete fragment/event data, loading/error/recovery, and structural-update behavior. For HTMX automatic refresh specify trigger, exact interval, and override rule; SSE has reconnect behavior, not a polling interval. Mark values not established by authority as open questions.
 - Never specify an HTMX swap inside client-component-owned DOM. Client components receive server-provided inputs and do not fetch or own backend-derived state.

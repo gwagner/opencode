@@ -16,6 +16,6 @@ Use before creating API integration tests. Compare the caller-provided specifica
 3. For each endpoint record method, path, source evidence, parameters, headers, body, response schema, success/errors, and role/scope/ownership rules.
 4. Classify access as `PUBLIC`, `AUTHENTICATED`, `AUTHORIZED`, or `UNKNOWN`; never infer access from naming alone.
 5. Compare intended and implemented method, route, fields, statuses, and access rules. Preserve both sides of every mismatch; implementation evidence does not override the contract.
-6. Identify the existing framework, startup mechanism, test runner, clients, fixtures, factories, containers, and authentication helpers. Prefer project conventions over new infrastructure.
+6. Identify the existing framework, startup mechanism, test runner, clients, fixtures, factories, containers, authentication helpers, and—when relevant—PostgreSQL test-target resolution, including whether project wiring consumes `DATABASE_URL` or `POSTGRES_PASSWORD`. Never disclose environment values. Prefer project conventions over new infrastructure.
 
-Return application/test infrastructure, authentication mechanisms and credential acquisition, a `METHOD PATH | classification | expected success | implementation status` inventory, and explicit specification mismatches. Include enough path/symbol evidence for test implementation without rediscovery.
+Return application/test infrastructure, authentication mechanisms and credential acquisition, PostgreSQL target-resolution evidence when relevant, a `METHOD PATH | classification | expected success | implementation status` inventory, and explicit specification mismatches. Include enough path/symbol evidence for test implementation without rediscovery.

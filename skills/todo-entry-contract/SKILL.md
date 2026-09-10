@@ -13,6 +13,10 @@ Use whenever creating, updating, validating, or promoting todo entries.
 - Split independently executable outcomes into separate entries.
 - Preserve existing order and checked state; do not duplicate an equivalent unchecked entry.
 
+## Authority prerequisite
+
+Before an implementation-ready entry or promotion, determine whether authoritative documents need updates. Route product intent to `prd-strategist`, shared architecture or cross-feature decisions to `app-spec-architect`, and bounded feature contracts to `code-spec-engineer`. Each owner updates its authority and reports paths, evidence, decisions, assumptions, and remaining questions. Complete required updates before ready work; for unresolved work, record decision-dependent updates in `Required to unblock:`. Never substitute todo metadata for authority.
+
 ## Implementation-ready entries
 
 Require exactly one nonempty value for each label:

@@ -22,6 +22,7 @@ Confirm:
 - Major entities and fields are defined.
 - API operations are concrete.
 - Frontend screens and components are concrete or explicitly absent.
+- Each independently server-driven component has an explicit contract: mode, stable identity, HTTP method/URI or SSE stream, authorization, inputs/headers/body/content types, cache behavior, response fragment/event data, target/swap or event targets, loading/error/recovery, and implementation tests. HTMX automatic refreshes define trigger/interval/default-override behavior; SSE defines reconnect, event, and structural-update behavior without a polling interval.
 - State transitions have triggers and entry criteria.
 - Validation and failure recovery are described.
 - Security and operational concerns are addressed.

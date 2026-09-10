@@ -6,11 +6,11 @@ All knowledge based information must be stored in Open Knowledge Format also kno
 
 # Workspace Context
 
-At the start of every session, the primary session agent reads `/project/context.md` and, when present, `/project/handoff.md`. Delegated agents read only context needed for their task and report durable findings to the primary agent. The primary agent owns lifecycle updates: incorporate durable knowledge into `context.md`, append the work summary to `session-log.md`, and remove an incorporated handoff when its permissions and tools allow it. If lifecycle files cannot be updated safely, report the exact blocker instead of requiring every specialist to edit them.
+At the start of every session, the primary session agent reads `/project/context.md` and, when present, `/project/handoff.md`. Delegated agents read only context needed for their task and report durable findings to the primary agent. The primary agent owns lifecycle updates: promote only active cross-cutting decisions into `context.md`, replace or remove stale entries, and remove an incorporated handoff when its permissions and tools allow it. If lifecycle files cannot be updated safely, report the exact blocker instead of requiring every specialist to edit them.
 
 You have a /project folder.  In /project you will have this structure:
 - /project/* is NEVER a git repo and can never be committed
-- context.md: This file holds durable project knowledge, decisions, and learnings. The primary session agent updates it only when the completed work changes that knowledge; delegated agents report relevant findings to the primary agent.
+- context.md: A compact current-state and navigation index, kept under ~30 lines. Link to authoritative requirements, specifications, dated decisions, code, or handoffs; do not restate them or append history. The primary session agent updates it only when completed work changes active cross-cutting knowledge; delegated agents report relevant findings to the primary agent.
 - requirements/: this folder holds all requirements for a project.  Requirements files must be focused so that they are highly reusable in future sessions.  
     - This defines "what" this project does and is the definitive source of truth.
     - If there is divergence between requirements and specifications, requirements are the soruce of truth.
@@ -20,13 +20,6 @@ You have a /project folder.  In /project you will have this structure:
     - schema/: this folder holds information about application data schemas
 - decisions/: this folder should be a log of all decisions tha were made for the project
     - log files must be broken up by date
-- session-log.md: This is a log file that helps detail out what happend in a given session.  This is an append only log file that should not be re-read by the AI Agent.  This file should store a compounding log of:
-    - A header that helps give a title to what the session was about.  This title helps break up different sessions in the session events beign written to the log file
-    - What happened in a session
-    - What files got created, updated, modified, or deleted
-    - Any decisions that were made
-    - Any chances for improvement of the agents
-    - Any unresolved or open questions
 
 You also have a /code folder.  In /code you will have this structure:
 - /code is the root of all code and no code is stored outside of /code
@@ -44,7 +37,7 @@ You also have a /code folder.  In /code you will have this structure:
 1. Make sure the software is written using SOLID principales and is highly modular using interface contracts
 1. Code must be well documented with tracabiity back to requirements
     - Make sure code follows the programing languages documentation guidelines to auto generate end user documentation
-1. The primary session agent records completed work in session-log.md and updates relevant README.md files when usage, configuration, or operator behavior changed; delegated agents report changes for that finalization
+1. The primary session agent updates relevant README.md files when usage, configuration, or operator behavior changed; delegated agents report changes for that finalization
     - README.md should be stylized and human readable
 
 ## Graphify
