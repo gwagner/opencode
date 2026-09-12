@@ -1,4 +1,4 @@
-FROM ghcr.io/anomalyco/opencode:1.18.18
+FROM ghcr.io/anomalyco/opencode:1.18.30
 
 ENV BUN_INSTALL="/root/.bun"
 ENV PATH="$PATH:/root/.local/bin/"

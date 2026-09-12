@@ -96,12 +96,12 @@ type DataTableRecoveryView struct { Label, Action, Context string; Disabled bool
 type DataTableDetailDialogHostView struct { ID string }
 
 // DataTableSSEView enables the optional approved per-row SSE stream.
-type DataTableSSEView struct { StreamURI, StructuralSignalID string }
+type DataTableSSEView struct { StreamURI, StructuralSignalID, StructuralEventID string }
 ```
 
 Required: `ID`, `Title`, `HeadingLevel` (integer 1–6), `ScrollLabel`, non-empty unique column `Key`s, and one ordered cell per column in every row. `HeadingID` is optional: when blank, derive `{ID}-title`; when supplied, it must be a nonblank stable safe DOM token matching `^[A-Za-z][A-Za-z0-9_-]*$`, unique in the document, and not duplicate another emitted ID. `ID` and row identities are stable DOM/SSE-safe tokens; row identity is unique in the rendered table. Each part `Kind` is exactly `text`, `strong`, `status-badge`, or `time`; `Text` is required; `DateTime` is required only for `time`; `StatusKind` is required only for `status-badge`. Render no unknown kind. `Action`, `Empty`, `Feedback`, `Pagination`, `Recovery`, `DetailDialogHost`, and `SSE` are nil when absent. Empty output requires `Empty`; nonempty output must not render it. `LoadingText` is required when `Loading`; `CardTreatment` is explicit caller-selected presentation state, not a domain fact.
 
-Format/localize values and fallbacks before rendering. Use `html/template`; all supplied text and attributes remain contextually escaped. This Go adapter is reusable presentation material, not evidence an adopter uses Go; an illustrative TypeScript renderer maps it to the same fields/invariants.
+Format/localize values and fallbacks before rendering. `StructuralEventID` is a monotonic decimal event ID and is required when rendering a structural signal replacement; it may be blank for the initial signal target. Use `html/template`; all supplied text and attributes remain contextually escaped. This Go adapter is reusable presentation material, not evidence an adopter uses Go; an illustrative TypeScript renderer maps it to the same fields/invariants.
 
 ## Semantic template
 
@@ -121,7 +121,7 @@ Format/localize values and fallbacks before rendering. Use `html/template`; all 
     {{ with .Recovery }}<button type="button" data-data-table-recovery="{{ .Action }}" {{ if .Context }}data-data-table-recovery-context="{{ .Context }}"{{ end }} {{ if .Disabled }}disabled{{ end }}>{{ .Label }}</button>{{ end }}
   </div>
   <p data-data-table-status role="status" aria-live="polite">{{ .Status }}</p>
-  {{ with .SSE }}<span id="{{ .StructuralSignalID }}" data-data-table-structural-signal data-data-table-id="{{ $.ID }}" hidden sse-swap="data-table-structural-change-{{ $.ID }}" hx-swap="outerHTML"></span>{{ end }}
+  {{ with .SSE }}<span id="{{ .StructuralSignalID }}" data-data-table-structural-signal data-data-table-id="{{ $.ID }}" {{ if .StructuralEventID }}data-data-table-event-id="{{ .StructuralEventID }}"{{ end }} hidden sse-swap="data-table-structural-change-{{ $.ID }}" hx-swap="outerHTML"></span>{{ end }}
   {{ with .DetailDialogHost }}<div id="{{ .ID }}" data-data-table-detail-dialog-host></div>{{ end }}
 </section>
 ```

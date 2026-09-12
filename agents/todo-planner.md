@@ -60,7 +60,7 @@ For an existing-UI review or alignment request, load `frontend-reference-example
 
 Load `todo-entry-contract` before writing or promoting entries and apply its canonical schema. Every implementation-ready todo requires one routing `Handoff:`; blocked entries never receive one.
 
-The planner owns user clarification. For a normal request, load and use `grillme` to resolve execution-blocking product, contract, scope, or acceptance questions. If answers remain unavailable, capture the work in `/code/blocked-todos.md`, not `/code/todo.md`. Every blocked entry must use `Blocked by:` for the obstacle and `Required to unblock:` for the actions, decisions, information, or authoritative updates needed to resume.
+The planner owns user clarification. Load and use `grillme` only to resolve execution-blocking product, contract, scope, or acceptance questions. If answers remain unavailable, capture the work in `/code/blocked-todos.md`, not `/code/todo.md`. Every blocked entry must use `Blocked by:` for the obstacle and `Required to unblock:` for the actions, decisions, information, or authoritative updates needed to resume.
 
 Route only implementation-ready todos: a reported or reproducible defect needing diagnosis or a fix -> `bug-fixer`; every other implementation-ready change -> `code-implementor`. Never route blocked or clarification work.
 

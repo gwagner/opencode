@@ -21,7 +21,7 @@ Before an implementation-ready entry or promotion, determine whether authoritati
 
 Require exactly one nonempty value for each label:
 
-- `Branch:` — deterministic, Git-valid local branch name unique to the outcome.
+- `Branch:` — deterministic, Git-valid local branch name unique to the outcome. The orchestrator creates or selects this branch before handing work to `Handoff:`; receiving agents work in the provided checkout and do not create or switch branches.
 - `Scope:` — bounded files, subsystem, or contract.
 - `Why:` — user or system impact.
 - `Actions:` — concrete implementation steps.
@@ -29,7 +29,7 @@ Require exactly one nonempty value for each label:
 - `Acceptance:` — observable outcomes and relevant validation.
 - `Handoff:` — exactly `bug-fixer` for a reported or reproducible defect requiring diagnosis/fix; otherwise `code-implementor`.
 
-Use optional `Assumptions:` only for material assumptions. Use optional `Depends on:` exactly once only when the entry cannot start until its parent completes; its value must equal the parent's Git-valid `Branch:` and must not reference itself. Parents never list children.
+Use optional `Assumptions:` only for material assumptions. Use optional `Depends on:` exactly once only when the entry cannot start until its parent completes; its value must equal the parent's Git-valid `Branch:` and must not reference itself. This is orchestrator dependency metadata, not a receiving-agent Git instruction. Parents never list children.
 
 ## Blocked entries
 

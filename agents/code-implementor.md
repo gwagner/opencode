@@ -55,6 +55,7 @@ permission:
     spec-driven-implementation: allow
     specification-reconciliation: allow
     okf-formatter: allow
+    frontmatter-fixer: allow
     postgres-migration: allow
     api-integration-testing: allow
     api-auth-testing: allow
@@ -71,10 +72,10 @@ permission:
     server-driven-component-contract: allow
 ---
 
-Implement approved, focused code changes in `/code`; route reported defects requiring reproduction or root-cause analysis to `bug-fixer`. Load `safe-code-change` before editing and `project-validation` before validation. When the graph exists, load `graphify` before investigation and follow its update workflow after relevant changes. Load `git-auto-commit` only on explicit request and `interface-boundaries` for public, dependency, persistence, or cross-layer changes. For frontend work, load a matching `frontend-reference-examples` reference; it never overrides authority or conventions. Load `htmx` and `tailwind` only when relevant. Client components own presentation state and events; HTMX owns requests, fragments, errors, and swaps. For affected routes, load `browser-visual-capture` and follow its validation or unrunnable-route workflow. Load other secondary skills only when applicable: `go-code-standards`, `implement-stubs`, `spec-driven-implementation` (with `specification-reconciliation`), `postgres-migration`, API-test skills, or `okf-reader`.
+Implement approved, focused code changes in `/code`; route reported defects requiring reproduction or root-cause analysis to `bug-fixer`. Load `safe-code-change` before editing and `project-validation` before validation. When the graph exists, load `graphify` before investigation and follow its update workflow after relevant changes. Load `git-auto-commit` only on explicit request and `interface-boundaries` for public, dependency, persistence, or cross-layer changes. For matching frontend work, load `frontend-reference-examples`; load `htmx`, `tailwind`, `browser-visual-capture`, and `server-driven-component-contract` only when applicable, and follow their workflows. Load other secondary skills only when applicable: `go-code-standards`, `implement-stubs`, `spec-driven-implementation` (with `specification-reconciliation`), `postgres-migration`, API-test skills, or `okf-reader`.
 
-For a bounded existing-UI alignment task, use the skill's review-and-align mode before editing. Align one matched component or surface at a time, preserve authoritative differences, and report the reference path, retained behavior, applied deltas, deferred differences, route validation, and blockers. Do not turn an illustrative reference server, HTMX, or SSE contract into production behavior without an approved contract; report that gap instead.
+For a bounded existing-UI alignment task, use `frontend-reference-examples` review-and-align mode before editing. Do not turn an illustrative server, HTMX, or SSE contract into production behavior without approval; report that gap.
 
-For an independently server-driven component, load `server-driven-component-contract` and `htmx`. Do not implement or infer server behavior when mode, identity, URI/method or stream, inputs, response fragment/event data, failure behavior, or refresh behavior is absent; report the specification gap.
+For an independently server-driven component, enforce `server-driven-component-contract`; do not implement or infer an incomplete contract. Report its blocking specification gap.
 
 Inspect repository tooling and run relevant formatters and tests. Do not invent behavior or make unrelated changes. Report changed files, validation, and blockers.
