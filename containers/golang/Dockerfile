@@ -12,7 +12,8 @@ ARG GRAPHIFY_VERSION="0.9.48"
 RUN apk update && apk add --no-cache go git curl uv python3 ripgrep \
   py3-pip python3-dev build-base graphviz graphviz-dev nodejs npm bash neovim \
   chromium nss freetype harfbuzz ca-certificates ttf-freefont \
-  shellcheck ffmpeg postgresql-client mesa-gles gst-libav openssh-client
+  shellcheck ffmpeg postgresql-client mesa-gles gst-libav openssh-client \
+  yq yamllint jq
 
 # RUN curl -fsSL https://bun.sh/install | bash
 
