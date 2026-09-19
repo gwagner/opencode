@@ -11,6 +11,9 @@ Use whenever creating, updating, validating, or promoting todo entries.
 
 - Use one top-level unchecked checkbox for one independently executable and reviewable outcome.
 - Split independently executable outcomes into separate entries.
+- Default to smaller entries. An implementation-ready entry must fit one focused implementation pass and produce one independently testable user or system outcome.
+- Split an entry when it changes more than one independently testable behavior, route or component boundary, or architectural layer. Create ordered child entries with `Depends on:` when work must be sequential.
+- Limit `Actions:` to three concrete implementation steps. Do not use umbrella actions such as “implement feature”, “complete workflow”, or “update all affected code”.
 - Preserve existing order and checked state; do not duplicate an equivalent unchecked entry.
 
 ## Authority prerequisite

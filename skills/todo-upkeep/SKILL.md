@@ -15,7 +15,7 @@ Use this skill only when the active prompt contains `TODO_LOOP_MODE=true`. Use `
 
 ## Rules
 
-1. Add only concrete work necessary to finish the current objective or safely handle a newly discovered follow-up.
+1. Add only concrete work necessary to finish the next atomic deliverable toward the current objective or safely handle a newly discovered follow-up. Split independently executable follow-ups into separate entries rather than appending them to the active todo.
 2. Do not add speculative, duplicate, or unrelated work.
 3. Load and apply `todo-entry-contract`; it is the canonical entry schema, routing policy, and authority prerequisite.
 4. If an execution-critical question remains unanswered, add a detailed entry to `/code/blocked-todos.md`; do not add a routed todo.

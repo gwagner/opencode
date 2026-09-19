@@ -15,7 +15,7 @@ Use these references as implementation aids, not product authority, except an ap
 4. Reuse semantic structure, accessibility behavior, style hooks, interaction boundaries, and state coverage where applicable. For an independently server-driven component, load `server-driven-component-contract` and implement its declared transport contract exactly. Do not copy irrelevant markup or fabricate an unapproved contract.
 5. Keep server-derived data outside client-component state. Example JavaScript may render caller-provided data and emit interaction events, but it must not fetch server data. HTMX or the existing server layer owns requests, errors, fragments, and swaps.
 6. Preserve stable `data-*` hooks only when they serve styling, testing, behavior, or integration. Do not treat sample identifiers or values as production data.
-7. Validate the adapted component with project-native checks and the frontend agent's visual-validation workflow.
+7. Validate the adapted component with project-native checks, deterministic `browser-visual-capture` artifacts, and `browser-visual-compare` expectations derived from approved acceptance criteria.
 
 ## Review and align existing UI
 
@@ -25,7 +25,7 @@ Use this mode only for a requested, bounded set of existing routes or components
 2. Match each surface to one catalog document by purpose and interaction. Record no match rather than forcing a near match.
 3. Compare semantic structure, accessible names and keyboard behavior, responsive behavior, loading/empty/error states, presentation ownership, and documented stable hooks. Preserve authoritative behavior that differs from the reference.
 4. Classify each delta: safe presentation alignment; approved behavior implementation; or authority/contract gap. Do not change a server, HTMX, or SSE contract from an illustrative reference unless that contract is approved for the adopting surface.
-5. Apply the smallest safe change per component. Validate the affected route with project-native checks and visual evidence when runnable; otherwise record the concrete visual-validation gap.
+5. Apply the smallest safe change per component. When runnable, validate the affected route with project-native checks plus baseline/post-change capture and structured comparison; otherwise record the concrete visual-validation gap.
 
 For each aligned surface, report the matched reference path, retained behavior, changes made, intentionally deferred differences, validation, and blockers.
 

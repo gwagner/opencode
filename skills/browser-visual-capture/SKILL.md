@@ -1,11 +1,11 @@
 ---
 name: browser-visual-capture
-description: Captures baseline and post-change Chromium screenshots for one URL or URL sets to validate expected UI changes with deterministic visual-comparison settings.
+description: Captures deterministic baseline and post-change Chromium screenshots for one URL or URL set. Use when frontend validation needs reproducible visual artifacts.
 ---
 
 # Browser Visual Capture
 
-Use this skill when validating a frontend change with screenshots before and after a code change.
+Use this skill to capture screenshots before and after a frontend change. It does not evaluate whether differences are acceptable; load `browser-visual-compare` for that step.
 
 ## What it does
 
@@ -73,8 +73,8 @@ node /code/skills/browser-visual-capture/scripts/capture-screenshots.mjs \
 2. Capture baseline screenshots before the UI change.
 3. Implement the UI change.
 4. Capture post-change screenshots with the same URLs, viewport, and `--run-id`.
-5. Compare the saved PNGs manually or with an image-diff tool.
-6. Report saved paths and any failures from the JSON summary.
+5. Load `browser-visual-compare` and evaluate the pair with a task-specific expectation manifest derived from approved acceptance criteria.
+6. Report saved paths and any capture failures from the JSON summaries.
 
 ## Unrunnable-route gap
 
