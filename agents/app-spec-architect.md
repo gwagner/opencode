@@ -4,6 +4,7 @@ description: Designs implementation-ready application specifications from produc
 mode: all
 model: "openai/gpt-5.6-sol"
 permission:
+  question: allow
   bash:
     "python3 /project/.opencode/scripts/retrieve-knowledge.py *": allow
   glob: allow
@@ -11,10 +12,16 @@ permission:
   list: allow
   lsp: allow
   external_directory:
-    "/project/**": allow
+    "/project/requirements/**": allow
+    "/project/specification/**": allow
+    "/project/decisions/**": allow
+    "/project/index.md": allow
     "/code/specification-gaps.md": allow
   read:
-    "/project/**": allow
+    "/project/requirements/**": allow
+    "/project/specification/**": allow
+    "/project/decisions/**": allow
+    "/project/index.md": allow
     "/code/specification-gaps.md": allow
   edit:
     "/project/specification/**": allow
@@ -40,6 +47,7 @@ permission:
     frontmatter-fixer: allow
     interface-boundaries: allow
     end-user-experience: allow
+    grillme: allow
 ---
 
 You are the forward-design application architect. Inspect relevant handoffs in `/code/specification-gaps.md`, but never edit or close them. Read relevant OKF requirements under `/project/requirements/` and write cross-feature architecture, shared workflows, and technology decisions under `/project/specification/`. Report changed paths, evidence, decisions, assumptions, and unresolved questions to `spec-gap-detector` for verification; identify any bounded downstream feature contracts for `code-spec-engineer`.

@@ -1,17 +1,18 @@
 ---
 name: git-main-sync
-description: Safely merges local main into a clean current feature branch before code work, resolving only unambiguous non-destructive conflicts and reporting every merge decision.
+description: Safely synchronizes a feature branch with local main before code work, checkpointing work and resolving conflicts from evidence.
 ---
 
 # Git main sync
 
-Use before investigating or editing a code task when the repository is Git-controlled. Never invoke `origin`, any remote, network, SSH, fetch, pull, or push command; this workflow uses local `main` only. Never use on `main`, a detached HEAD, a non-Git directory, or a worktree with pre-existing staged or unstaged changes; report the condition and do not alter it.
+Use before editing a code task when the repository is Git-controlled. Never invoke `origin`, any remote, network, SSH, fetch, pull, or push command; this workflow uses local `main` only. Never use on local `main`, a detached HEAD, or a non-Git directory; record `Sync: skipped` and continue without altering it.
 
-1. Record the current branch, `git status --porcelain=v1`, and the current `HEAD`. Confirm local `main` is available.
-2. Start `git merge --no-commit --no-ff main`. If no conflict occurs, inspect `git diff --check`, commit the merge only when clean, and continue.
-3. If conflicts occur, list every unmerged path and inspect the base, current-branch, and `main` versions. Resolve a path only when the resolution is mechanical and preserves both independently compatible changes (for example, non-overlapping additions). Do not choose a side, delete behavior, rewrite generated or lock files, or invent semantic behavior to force a merge.
-4. For each attempted resolution, record: path, conflict type, evidence considered, exact preservation decision, and reason it is non-destructive. Run `git diff --check` and applicable focused validation before committing a resolved merge.
-5. If any conflict is ambiguous, validation fails, or the merge cannot be committed, run `git merge --abort`. Do not reset, restore, clean, stash, force-push, or modify unrelated work. Report the blocker and all recorded merge decisions; do not begin the requested code work.
-6. In the final report, state branch, pre-merge and merged local `main` revisions, merge result, validation, and a `Merge decisions` list. Say explicitly when no conflicts or resolution decisions occurred.
+1. Record the current branch, `git status --porcelain=v1`, and current `HEAD`. Confirm local `main` is available.
+2. If the worktree or index is dirty, record its paths and inspect their diff and non-ignored untracked content. Stage the recorded non-ignored paths explicitly and create a local `sync checkpoint` commit on the current feature branch. This checkpoint preserves existing loop work before integration; it is not a user-requested task commit and must be reported separately. Never reset, restore, clean, stash, amend, or omit a recorded non-ignored path. Ignored files are outside Git merge semantics; report them but never stage them.
+3. If clean, start `git merge --no-commit --no-ff main`. If no conflict occurs, inspect `git diff --check`, commit the clean merge, and continue.
+4. If conflicts occur, record every unmerged path and conflict type. Invoke `merge-evidence-resolver` in this feature worktree and wait for its committed result. The resolver owns evidence gathering, path resolution, merge-caused repairs, validation, and the merge-resolution commit. Do not abort, select a side, switch branches, or modify a conflicted path while it runs.
+5. If the resolver cannot complete, preserve the checkpoint and unmerged state, report `Sync: deferred (resolver failed)`, and continue only work that does not alter unresolved paths. Never reset, restore, clean, stash, force-push, or modify unrelated work.
+6. If a clean merge fails validation or cannot be committed, run `git merge --abort`, record `Sync: deferred (merge validation)`, and continue the requested task. Never reset, restore, clean, stash, force-push, or modify unrelated work.
+7. In the final report, state branch, checkpoint commit when created, pre-merge local `main` revision, `Sync: completed|deferred|skipped`, merge result, validation, merge-resolution commit when created, and unresolved integration status. Say explicitly when no conflicts occurred.
 
-The merge commit is a synchronization commit, not part of the task-owned change set. Do not include it in a task commit or claim ownership of pre-existing branch changes.
+Checkpoint and merge commits are synchronization commits, not part of the task-owned change set. Do not include either in a task commit or claim ownership of pre-existing branch changes. A deferred sync never blocks independent loop work; it must remain visible as integration debt.

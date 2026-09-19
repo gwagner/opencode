@@ -4,10 +4,12 @@ description: Creates, refines, and reconciles product requirements as focused OK
 mode: all
 model: "openai/gpt-5.6-sol"
 permission:
+  question: allow
   bash:
     "python3 /project/.opencode/scripts/retrieve-knowledge.py *": allow
   external_directory:
-    "/project/**": allow
+    "/project/requirements/**": allow
+    "/project/index.md": allow
     "/code/specification-gaps.md": allow
   read:
     "/project/requirements/**": allow

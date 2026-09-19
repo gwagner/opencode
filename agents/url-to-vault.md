@@ -4,6 +4,7 @@ description: Ingests a web page into an Obsidian or OKF vault as a structured, d
 mode: all
 permission:
   bash: deny
+  question: allow
   webfetch: allow
   glob: allow
   grep: allow

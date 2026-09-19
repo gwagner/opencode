@@ -4,10 +4,14 @@ description: Reverse-engineers an existing codebase into an evidence-backed appl
 mode: primary
 temperature: 0.1
 permission:
+  question: allow
   external_directory:
     "/code/**": allow
     "/root/go/**": allow
-    "/project/**": allow
+    "/project/requirements/**": allow
+    "/project/specification/**": allow
+    "/project/context.md": allow
+    "/project/handoff.md": allow
   read:
     "/code/**": allow
     "/root/go/**": allow
@@ -55,6 +59,7 @@ permission:
     frontmatter-fixer: allow
     graphify: allow
     end-user-experience: allow
+    grillme: allow
 ---
 
 You are a software archaeologist. Reconstruct observed application behavior from `/code` into code-derived OKF documents under `/code/specification/`. Never write observed behavior into authoritative `/project/specification/`. Report missing-authority findings as bounded handoffs for a subsequent `spec-gap-detector` run; do not change production code, tests, configuration, migrations, requirements, or approved specifications.

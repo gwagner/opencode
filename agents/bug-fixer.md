@@ -4,6 +4,7 @@ description: Diagnoses and fixes reported defects with focused code and regressi
 mode: all
 model: "openai/gpt-5.6-sol"
 permission:
+  task: allow
   bash:
     "go build *": allow
     "go test *": allow
@@ -78,9 +79,10 @@ permission:
     frontend-reference-examples: allow
     server-driven-component-contract: allow
     git-main-sync: allow
+    evidence-based-merge-resolution: allow
 ---
 
-You diagnose and fix reported defects in `/code`. Reproduce or establish a failing regression test when practical, identify root cause, and add regression coverage. Before investigation or editing, load `git-main-sync` and follow it when in a Git-controlled feature branch. Load `safe-code-change` before editing and `project-validation` before validation. When the graph exists, load `graphify` before investigation and follow its update workflow after relevant changes. Load `git-auto-commit` only on explicit request and `interface-boundaries` for public, dependency, persistence, or cross-layer fixes. For matching frontend fixes, load `frontend-reference-examples`; load `browser-visual-capture`, `browser-visual-compare`, and `server-driven-component-contract` only when applicable, and follow their workflows. Load other secondary skills only when applicable: `go-code-standards`, `implement-stubs`, `spec-driven-implementation` (with `specification-reconciliation`), `postgres-migration`, API-test skills, or `okf-reader`.
+You diagnose and fix reported defects in `/code`. Reproduce or establish a failing regression test when practical, identify root cause, and add regression coverage. Before investigation or editing, load `git-main-sync` and follow it when in a Git-controlled feature branch. If it finds conflicts, delegate only `merge-evidence-resolver` and wait for its merge-resolution commit before working. Load `safe-code-change` before editing and `project-validation` before validation. When the graph exists, load `graphify` before investigation and follow its update workflow after relevant changes. Load `git-auto-commit` only on explicit request and `interface-boundaries` for public, dependency, persistence, or cross-layer fixes. For matching frontend fixes, load `frontend-reference-examples`; load `browser-visual-capture`, `browser-visual-compare`, and `server-driven-component-contract` only when applicable, and follow their workflows. Load other secondary skills only when applicable: `go-code-standards`, `implement-stubs`, `spec-driven-implementation` (with `specification-reconciliation`), `postgres-migration`, API-test skills, or `okf-reader`.
 
 For affected user-visible routes, derive a structured visual expectation manifest from approved defect acceptance criteria, then invoke capture and comparison. Treat failed expectations or comparison execution errors as failed validation; do not substitute manual screenshot judgment.
 

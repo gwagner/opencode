@@ -7,10 +7,16 @@ permission:
   bash:
     "python3 /project/.opencode/scripts/retrieve-knowledge.py *": allow
   external_directory:
-    "/project/**": allow
+    "/project/requirements/**": allow
+    "/project/specification/**": allow
+    "/project/decisions/**": allow
+    "/project/index.md": allow
     "/code/specification-gaps.md": allow
   read:
-    "/project/**": allow
+    "/project/requirements/**": allow
+    "/project/specification/**": allow
+    "/project/decisions/**": allow
+    "/project/index.md": allow
     "/code/specification-gaps.md": allow
   edit:
     "/project/specification/**": allow
