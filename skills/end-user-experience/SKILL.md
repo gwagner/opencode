@@ -1,6 +1,28 @@
 ---
 name: end-user-experience
 description: Keeps planning, design, implementation, and testing focused on successful, clear, recoverable end-user outcomes.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: app-spec-architect
+      source: /code/agents/app-spec-architect.md
+      allowed_skill: end-user-experience
+    - agent: code-spec-engineer
+      source: /code/agents/code-spec-engineer.md
+      allowed_skill: end-user-experience
+    - agent: prd-strategist
+      source: /code/agents/prd-strategist.md
+      allowed_skill: end-user-experience
+    - agent: reverse-engineer-app-spec
+      source: /code/agents/reverse-engineer-app-spec.md
+      allowed_skill: end-user-experience
+    - agent: todo-planner
+      source: /code/agents/todo-planner.md
+      allowed_skill: end-user-experience
+inputs:
+  - affected actor
+  - task
+  - authority or observed evidence
 ---
 
 # End-user experience

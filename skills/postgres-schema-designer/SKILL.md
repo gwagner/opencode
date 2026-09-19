@@ -1,22 +1,24 @@
 ---
 name: postgres-schema-designer
 description: Designs PostgreSQL schema specification documents. Use with specification work involving entities, constraints, keys, indexes, relationships, or transaction rules.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: app-spec-architect
+      source: /code/agents/app-spec-architect.md
+      allowed_skill: postgres-schema-designer
+    - agent: code-spec-engineer
+      source: /code/agents/code-spec-engineer.md
+      allowed_skill: postgres-schema-designer
+    - agent: reverse-engineer-app-spec
+      source: /code/agents/reverse-engineer-app-spec.md
+      allowed_skill: postgres-schema-designer
+inputs:
+  - approved persistence requirements
+  - permitted specification destination
 ---
 
 # PostgreSQL schema design
-
-## Deterministic workflow
-
-```yaml
-request: "Focused PostgreSQL schema specification"
-workflow:
-  - id: "model-persistence"
-    when: "Before PostgreSQL relevance has been established."
-    skill: "data-persistence-modeling"
-  - id: "create-forward-migration"
-    when: "When an implementation task requires a forward-only migration."
-    skill: "postgres-migration"
-```
 
 Use after `data-persistence-modeling` has established that PostgreSQL persistence is relevant.
 

@@ -1,6 +1,15 @@
 ---
 name: backend-scaffolding
 description: Scaffolds reachable backend routes, services, data access, contracts, and useful placeholders from approved requirements and specifications.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: code-implementor
+      source: /code/agents/code-implementor.md
+      allowed_skill: backend-scaffolding
+inputs:
+  - approved backend contract
+  - bounded implementation scope
 ---
 
 # Backend scaffolding
@@ -16,6 +25,14 @@ workflow:
   - id: "define-boundaries"
     when: "Before defining or changing a route, use case, persistence, integration, or job dependency."
     skill: "interface-boundaries"
+  - id: "validate-project"
+    when: "After all selected post-change stages."
+    skill: "project-validation"
+    report:
+      - "passed"
+      - "failed"
+      - "skipped"
+      - "blocked"
 ```
 
 1. Inspect existing language, framework, structure, conventions, and validation commands.

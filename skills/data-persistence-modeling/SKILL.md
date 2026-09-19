@@ -1,6 +1,21 @@
 ---
 name: data-persistence-modeling
 description: Designs or reconstructs application entities, PostgreSQL schemas, relationships, constraints, indexing, transactions, tenancy, and audit history.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: app-spec-architect
+      source: /code/agents/app-spec-architect.md
+      allowed_skill: data-persistence-modeling
+    - agent: code-spec-engineer
+      source: /code/agents/code-spec-engineer.md
+      allowed_skill: data-persistence-modeling
+    - agent: reverse-engineer-app-spec
+      source: /code/agents/reverse-engineer-app-spec.md
+      allowed_skill: data-persistence-modeling
+inputs:
+  - persistence scope
+  - requirements or schema evidence
 compatibility: opencode
 metadata:
   domain: data-architecture

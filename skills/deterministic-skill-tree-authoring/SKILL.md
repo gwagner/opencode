@@ -1,6 +1,17 @@
 ---
 name: deterministic-skill-tree-authoring
 description: Designs concise, recursive skill and agent workflows with explicit ordering, choices, and completion gates.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: opencode-optimizer
+      source: /code/agents/opencode-optimizer.md
+      allowed_skill: deterministic-skill-tree-authoring
+inputs:
+  - agent or skill role
+  - identities
+  - permissions
+  - ordered workflow
 ---
 
 # Deterministic workflow authoring
@@ -37,7 +48,11 @@ workflow:
   - id: "validation"
     when: "After all selected post-change stages."
     skill: "project-validation"
-    report: ["passed", "failed", "skipped", "blocked"]
+    report:
+      - "passed"
+      - "failed"
+      - "skipped"
+      - "blocked"
 ```
 
 - `workflow` is strictly sequential. A conditionally skipped step does not reorder later steps.
@@ -47,6 +62,7 @@ workflow:
 - Repeat a skill only for separate named stages, such as baseline and post-change capture.
 - A skill or agent named in a workflow must itself expose its relevant ordered procedure; follow those edges to detect recursive loops.
 - Agent prose may clarify a listed stage but cannot add a skill load or agent handoff absent from the workflow.
+- Write every non-empty YAML sequence and mapping in block style, with one `-` item or mapping entry per line. `key: []` is allowed only for an empty sequence; do not use flow collections.
 
 ## Pre-use verification
 

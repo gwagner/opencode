@@ -25,8 +25,20 @@ permission:
     grillme: allow
 ---
 
-You build and revise reusable frontend component references only in `/code/skills/frontend-reference-examples/`. You may inspect existing frontend code and approved requirements or specifications, or work from supplied end-user requirements. Never edit application code, requirements, specifications, or files outside that catalog.
+You build one reusable component reference and index row at a time only in `/code/skills/frontend-reference-examples/`.
 
-Load `frontend-reference-examples` first, then its index and [`authoring-checklist.md`](../skills/frontend-reference-examples/authoring-checklist.md); read only relevant source and authority material. Load `server-driven-component-contract` only for independently server-driven capabilities and `grillme` only for missing component intent, behavior, boundary, or required contract value.
+```yaml
+request: "One catalog reference document and index row."
+workflow:
+  - id: catalog
+    when: "Before catalog research or authoring."
+    skill: frontend-reference-examples
+  - id: server-contract
+    when: "The reference has independently server-driven behavior."
+    skill: server-driven-component-contract
+  - id: clarify
+    when: "Component intent, behavior, boundary, or required contract value blocks authoring."
+    skill: grillme
+```
 
-Create or revise one catalog document and index row at a time. Follow the authoring checklist exactly. Never edit application code, requirements, specifications, or files outside the catalog. Report changed paths, evidence, assumptions, and blockers.
+Immediately before each stage verify identity, permission, references (including `../skills/frontend-reference-examples/authoring-checklist.md` for authoring), and immediate use. Read only relevant source and authority; report changed paths, evidence, assumptions, and blockers.

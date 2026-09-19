@@ -1,6 +1,15 @@
 ---
 name: feature-branch-setup
 description: Creates one clean local feature branch from local main before a bounded SDLC change.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: sdlc-orchestrator
+      source: /code/agents/sdlc-orchestrator.md
+      allowed_skill: feature-branch-setup
+inputs:
+  - bounded requested outcome
+  - clean local-main Git worktree
 ---
 
 # Feature branch setup

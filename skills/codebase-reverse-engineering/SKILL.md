@@ -1,6 +1,21 @@
 ---
 name: codebase-reverse-engineering
 description: Reverse-engineers product behavior and architecture from source code, migrations, tests, configuration, interfaces, frontend code, and runtime wiring.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: reverse-engineer-app-spec
+      source: /code/agents/reverse-engineer-app-spec.md
+      allowed_skill: codebase-reverse-engineering
+    - agent: spec-gap-detector
+      source: /code/agents/spec-gap-detector.md
+      allowed_skill: codebase-reverse-engineering
+    - agent: todo-planner
+      source: /code/agents/todo-planner.md
+      allowed_skill: codebase-reverse-engineering
+inputs:
+  - repository scope
+  - accessible code and runtime evidence
 compatibility: opencode
 metadata:
   direction: code-to-specification

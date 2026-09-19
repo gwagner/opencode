@@ -1,6 +1,24 @@
 ---
 name: project-validation
 description: Discovers and runs the narrowest project-native formatting, build, lint, and test validation for a focused change.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: api-integration-tester
+      source: /code/agents/api-integration-tester.md
+      allowed_skill: project-validation
+    - agent: bug-fixer
+      source: /code/agents/bug-fixer.md
+      allowed_skill: project-validation
+    - agent: code-implementor
+      source: /code/agents/code-implementor.md
+      allowed_skill: project-validation
+    - agent: merge-evidence-resolver
+      source: /code/agents/merge-evidence-resolver.md
+      allowed_skill: project-validation
+inputs:
+  - focused changed paths
+  - project-native validation context
 ---
 
 # Project validation

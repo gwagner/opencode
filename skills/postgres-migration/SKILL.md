@@ -1,6 +1,19 @@
 ---
 name: postgres-migration
-description: Create safe, forward-only PostgreSQL schema migrations in /code/migrations. Use when adding, changing, or removing PostgreSQL tables, columns, indexes, constraints, types, functions, triggers, policies, or other schema objects. Existing migration files are immutable: never edit, rename, delete, replace, or reuse a migration after it has been written; create a new migration file for every subsequent change or correction.
+description: "Create safe, forward-only PostgreSQL schema migrations in /code/migrations. Use when adding, changing, or removing PostgreSQL tables, columns, indexes, constraints, types, functions, triggers, policies, or other schema objects. Existing migration files are immutable: never edit, rename, delete, replace, or reuse a migration after it has been written; create a new migration file for every subsequent change or correction."
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: bug-fixer
+      source: /code/agents/bug-fixer.md
+      allowed_skill: postgres-migration
+    - agent: code-implementor
+      source: /code/agents/code-implementor.md
+      allowed_skill: postgres-migration
+inputs:
+  - approved schema change
+  - migration history
+  - migration directory
 compatibility: opencode
 metadata:
   database: postgresql
@@ -9,6 +22,21 @@ metadata:
 ---
 
 # PostgreSQL schema migrations
+
+## Completion workflow
+
+```yaml
+request: "Validated forward-only PostgreSQL migration"
+workflow:
+  - id: "validate-project"
+    when: "After migration-specific checks and every selected post-change check."
+    skill: "project-validation"
+    report:
+      - "passed"
+      - "failed"
+      - "skipped"
+      - "blocked"
+```
 
 Create PostgreSQL schema migrations as immutable, forward-only SQL files in:
 

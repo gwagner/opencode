@@ -1,6 +1,16 @@
 ---
 name: spec-driven-implementation
 description: Implements code changes aligning a codebase with requirements and consistent approved specifications, including tests, migrations, validation, and regenerated documentation.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: bug-fixer
+      source: /code/agents/bug-fixer.md
+      allowed_skill: spec-driven-implementation
+inputs:
+  - confirmed reconciliation gap
+  - consistent approved authority
+  - implementation scope
 compatibility: opencode
 metadata:
   domain: implementation
@@ -19,6 +29,14 @@ workflow:
   - id: "verify-resolved-gap"
     when: "After code-derived specification is regenerated."
     skill: "specification-reconciliation"
+  - id: "validate-project"
+    when: "After all selected post-change stages."
+    skill: "project-validation"
+    report:
+      - "passed"
+      - "failed"
+      - "skipped"
+      - "blocked"
 ```
 
 Use this skill after `specification-reconciliation` has identified confirmed gaps.

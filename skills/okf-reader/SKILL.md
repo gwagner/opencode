@@ -1,19 +1,36 @@
 ---
 name: okf-reader
 description: Read and answer questions from OKF knowledge bundles using indexes, concept frontmatter, markdown links, and citations.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: app-spec-architect
+      source: /code/agents/app-spec-architect.md
+      allowed_skill: okf-reader
+    - agent: bug-fixer
+      source: /code/agents/bug-fixer.md
+      allowed_skill: okf-reader
+    - agent: code-implementor
+      source: /code/agents/code-implementor.md
+      allowed_skill: okf-reader
+    - agent: code-spec-engineer
+      source: /code/agents/code-spec-engineer.md
+      allowed_skill: okf-reader
+    - agent: prd-strategist
+      source: /code/agents/prd-strategist.md
+      allowed_skill: okf-reader
+    - agent: spec-gap-detector
+      source: /code/agents/spec-gap-detector.md
+      allowed_skill: okf-reader
+    - agent: todo-planner
+      source: /code/agents/todo-planner.md
+      allowed_skill: okf-reader
+inputs:
+  - question
+  - accessible OKF bundle root
 ---
 
 # OKF reader
-
-## Deterministic workflow
-
-```yaml
-request: "Answer grounded in the smallest relevant OKF knowledge subset"
-workflow:
-  - id: "format-revised-knowledge"
-    when: "When writing or materially revising an OKF bundle."
-    skill: "okf-formatter"
-```
 
 Use for questions answered from an OKF Markdown bundle. Read the smallest relevant subset.
 
@@ -28,4 +45,4 @@ Use for questions answered from an OKF Markdown bundle. Read the smallest releva
 
 Load [`reference.md`](reference.md) only for format or frontmatter questions, relationship/schema/example/history lookup playbooks, or bundle-wide navigation.
 
-Use `okf-formatter` when writing or materially revising an OKF bundle.
+Writing or materially revising a bundle is a separate, caller-owned procedure outside this reading workflow.

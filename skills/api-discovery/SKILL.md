@@ -1,6 +1,19 @@
 ---
 name: api-discovery
 description: Discovers intended API contracts, implemented routes, access control, mismatches, and reusable test infrastructure before API integration testing.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: api-integration-tester
+      source: /code/agents/api-integration-tester.md
+      allowed_skill: api-discovery
+    - agent: bug-fixer
+      source: /code/agents/bug-fixer.md
+      allowed_skill: api-discovery
+inputs:
+  - API scope
+  - authority sources
+  - application and test source locations
 compatibility: opencode
 metadata:
   domain: api-testing

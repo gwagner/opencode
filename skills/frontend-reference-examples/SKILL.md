@@ -1,6 +1,25 @@
 ---
 name: frontend-reference-examples
 description: Finds reusable HTML, CSS, JavaScript, accessibility, and example-data references for matching frontend components. Use when implementing or revising a UI component represented in this skill's catalog.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: bug-fixer
+      source: /code/agents/bug-fixer.md
+      allowed_skill: frontend-reference-examples
+    - agent: code-implementor
+      source: /code/agents/code-implementor.md
+      allowed_skill: frontend-reference-examples
+    - agent: frontend-reference-builder
+      source: /code/agents/frontend-reference-builder.md
+      allowed_skill: frontend-reference-examples
+    - agent: todo-planner
+      source: /code/agents/todo-planner.md
+      allowed_skill: frontend-reference-examples
+inputs:
+  - component or route scope
+  - approved behavior
+  - catalog access
 ---
 
 # Frontend reference examples
@@ -19,6 +38,14 @@ workflow:
   - id: "compare-visual-artifacts"
     when: "After baseline and post-change visual artifacts are captured."
     skill: "browser-visual-compare"
+  - id: "validate-project"
+    when: "After all selected post-change stages."
+    skill: "project-validation"
+    report:
+      - "passed"
+      - "failed"
+      - "skipped"
+      - "blocked"
 ```
 
 Use these references as implementation aids, not product authority. A transport contract in a reference is an illustrative template unless the adopting component has its own approved server-driven contract; only that adopted contract is normative.

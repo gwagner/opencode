@@ -1,6 +1,18 @@
 ---
 name: api-test-reporting
 description: Reports API integration-test coverage, execution, contract and access-control findings, blockers, and prioritized remaining work.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: api-integration-tester
+      source: /code/agents/api-integration-tester.md
+      allowed_skill: api-test-reporting
+    - agent: bug-fixer
+      source: /code/agents/bug-fixer.md
+      allowed_skill: api-test-reporting
+inputs:
+  - API discovery or execution results
+  - endpoint coverage evidence
 compatibility: opencode
 metadata:
   domain: api-testing

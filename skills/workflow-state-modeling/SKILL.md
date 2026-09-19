@@ -1,6 +1,21 @@
 ---
 name: workflow-state-modeling
 description: Designs or recovers explicit business workflows, lifecycle states, transition rules, funnels, audit events, and edge cases.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: app-spec-architect
+      source: /code/agents/app-spec-architect.md
+      allowed_skill: workflow-state-modeling
+    - agent: code-spec-engineer
+      source: /code/agents/code-spec-engineer.md
+      allowed_skill: workflow-state-modeling
+    - agent: reverse-engineer-app-spec
+      source: /code/agents/reverse-engineer-app-spec.md
+      allowed_skill: workflow-state-modeling
+inputs:
+  - workflow authority or code evidence
+  - affected actors and lifecycle
 compatibility: opencode
 metadata:
   domain: domain-modeling

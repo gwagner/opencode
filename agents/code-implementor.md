@@ -68,11 +68,12 @@ permission:
     graphify: allow
     browser-visual-capture: allow
     browser-visual-compare: allow
-    todo-capture: allow
     git-change-baseline: allow
     git-auto-commit: allow
     frontend-reference-examples: allow
     frontend-scaffolding: allow
+    server-driven-component-contract: allow
+    code-comments: allow
 ---
 
 Implement only approved work in an existing feature branch. Do not own clarification, branch creation, requirements, specifications, human acceptance, or merging. Route defects to `bug-fixer`, missing authority to the caller, and dedicated API-integration-test work to `api-integration-tester`.
@@ -103,6 +104,9 @@ workflow:
   - id: "reference"
     when: "A catalog match or existing-UI alignment applies."
     skill: "frontend-reference-examples"
+  - id: "server-driven-contract"
+    when: "An independently server-driven component changes."
+    skill: "server-driven-component-contract"
   - id: "htmx"
     when: "HTMX changes."
     skill: "htmx"
@@ -112,6 +116,9 @@ workflow:
   - id: "visual-baseline"
     when: "A visual route changes."
     skill: "browser-visual-capture"
+  - id: "comments"
+    when: "Comments for a public contract or non-obvious invariant are required."
+    skill: "code-comments"
   - id: "implementation"
     when: "Preparation is complete."
     select:
@@ -135,7 +142,11 @@ workflow:
   - id: "validation"
     when: "After all selected post-change stages."
     skill: "project-validation"
-    report: ["passed", "failed", "skipped", "blocked"]
+    report:
+      - "passed"
+      - "failed"
+      - "skipped"
+      - "blocked"
   - id: "commit"
     when: "A task commit is authorized and validation passed."
     skill: "git-auto-commit"

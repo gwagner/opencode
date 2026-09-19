@@ -1,6 +1,18 @@
 ---
 name: implement-stubs
 description: Find and safely implement unfinished functions in the current repository.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: bug-fixer
+      source: /code/agents/bug-fixer.md
+      allowed_skill: implement-stubs
+    - agent: code-implementor
+      source: /code/agents/code-implementor.md
+      allowed_skill: implement-stubs
+inputs:
+  - one bounded unfinished function or selection evidence
+  - repository context
 ---
 
 # Implement unfinished functions
@@ -10,6 +22,14 @@ description: Find and safely implement unfinished functions in the current repos
 ```yaml
 request: "One safely implemented unfinished function"
 workflow:
+  - id: "validate-project"
+    when: "After all selected post-change stages."
+    skill: "project-validation"
+    report:
+      - "passed"
+      - "failed"
+      - "skipped"
+      - "blocked"
   - id: "commit-validated-stub-implementation"
     when: "When the user explicitly requests a commit after validation passes."
     skill: "git-auto-commit"

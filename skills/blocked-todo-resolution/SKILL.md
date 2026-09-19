@@ -1,6 +1,15 @@
 ---
 name: blocked-todo-resolution
 description: Resolves self-contained entries in /code/blocked-todos.md through grillme and authoritative document updates, then promotes executable work to /code/todo.md without requiring code access.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: todo-planner
+      source: /code/agents/todo-planner.md
+      allowed_skill: blocked-todo-resolution
+inputs:
+  - requested blocked todo entry
+  - recorded blocker evidence
 ---
 
 # Blocked Todo Resolution

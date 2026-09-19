@@ -1,6 +1,21 @@
 ---
 name: evidence-traceability
 description: Adds stable source citations, confidence, status classification, and traceability matrices to application specifications.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: app-spec-architect
+      source: /code/agents/app-spec-architect.md
+      allowed_skill: evidence-traceability
+    - agent: reverse-engineer-app-spec
+      source: /code/agents/reverse-engineer-app-spec.md
+      allowed_skill: evidence-traceability
+    - agent: spec-gap-detector
+      source: /code/agents/spec-gap-detector.md
+      allowed_skill: evidence-traceability
+inputs:
+  - material claims
+  - accessible authoritative or code evidence
 compatibility: opencode
 metadata:
   domain: specification-quality

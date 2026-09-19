@@ -1,6 +1,13 @@
 ---
 name: specification-reconciliation
 description: Compares requirements and consistent approved specifications with code-derived behavior to create a traceable reconciliation plan.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers: []
+inputs:
+  - requirements
+  - approved specifications
+  - code-derived specifications
 compatibility: opencode
 metadata:
   domain: specification-reconciliation

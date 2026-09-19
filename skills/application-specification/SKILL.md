@@ -1,6 +1,22 @@
 ---
 name: application-specification
 description: Defines the common structure, rigor, terminology, and output rules for implementation-ready application specifications.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: app-spec-architect
+      source: /code/agents/app-spec-architect.md
+      allowed_skill: application-specification
+    - agent: code-spec-engineer
+      source: /code/agents/code-spec-engineer.md
+      allowed_skill: application-specification
+    - agent: reverse-engineer-app-spec
+      source: /code/agents/reverse-engineer-app-spec.md
+      allowed_skill: application-specification
+inputs:
+  - specification scope
+  - requirements or code evidence
+  - permitted destination
 compatibility: opencode
 metadata:
   domain: software-architecture

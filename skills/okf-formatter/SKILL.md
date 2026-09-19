@@ -1,6 +1,28 @@
 ---
 name: okf-formatter
 description: Formats new or updated knowledge as focused, linked Open Knowledge Format Markdown concepts and indexes.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: app-spec-architect
+      source: /code/agents/app-spec-architect.md
+      allowed_skill: okf-formatter
+    - agent: code-spec-engineer
+      source: /code/agents/code-spec-engineer.md
+      allowed_skill: okf-formatter
+    - agent: prd-strategist
+      source: /code/agents/prd-strategist.md
+      allowed_skill: okf-formatter
+    - agent: reverse-engineer-app-spec
+      source: /code/agents/reverse-engineer-app-spec.md
+      allowed_skill: okf-formatter
+    - agent: url-to-vault
+      source: /code/agents/url-to-vault.md
+      allowed_skill: okf-formatter
+inputs:
+  - OKF bundle root
+  - bounded knowledge content
+  - permitted write destination
 ---
 
 # OKF formatter
@@ -13,12 +35,6 @@ workflow:
   - id: "validate-frontmatter"
     when: "After changing concept frontmatter."
     skill: "frontmatter-fixer"
-  - id: "reorganize-bundle"
-    when: "When a purposeful structural change is required."
-    skill: "okf-reorganizer"
-  - id: "retrieve-existing-knowledge"
-    when: "When retrieving knowledge from an existing bundle."
-    skill: "okf-reader"
 ```
 
 Use when writing or materially revising an Open Knowledge Format bundle.
@@ -40,7 +56,7 @@ The bundle-root `index.md` alone may use frontmatter to declare `okf_version: "0
 5. Use structured headings, lists, tables, and fenced code where they improve retrieval.
 6. Use `# Citations` for sources supporting material claims.
 7. Load `frontmatter-fixer` to validate changed concept frontmatter.
-8. Use `okf-reorganizer` only for purposeful structural changes and `okf-reader` for retrieval.
+8. Retrieval preparation and purposeful structural changes are separate, caller-owned procedures outside this formatting workflow.
 
 ## Validation
 

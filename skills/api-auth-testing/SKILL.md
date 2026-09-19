@@ -1,6 +1,19 @@
 ---
 name: api-auth-testing
 description: Designs and implements API authentication, authorization, ownership, and tenant-boundary test matrices.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: api-integration-tester
+      source: /code/agents/api-integration-tester.md
+      allowed_skill: api-auth-testing
+    - agent: bug-fixer
+      source: /code/agents/bug-fixer.md
+      allowed_skill: api-auth-testing
+inputs:
+  - established API contract
+  - access-control model
+  - safe test credentials
 compatibility: opencode
 metadata:
   domain: api-testing

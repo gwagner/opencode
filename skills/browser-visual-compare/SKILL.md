@@ -1,21 +1,27 @@
 ---
 name: browser-visual-compare
-description: Compares deterministic baseline/post-change screenshot pairs against structured visual expectations. Use after browser-visual-capture for automated frontend visual validation.
+description: Compares caller-supplied deterministic baseline/post-change screenshot pairs against structured visual expectations.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: bug-fixer
+      source: /code/agents/bug-fixer.md
+      allowed_skill: browser-visual-compare
+    - agent: code-implementor
+      source: /code/agents/code-implementor.md
+      allowed_skill: browser-visual-compare
+    - agent: todo-planner
+      source: /code/agents/todo-planner.md
+      allowed_skill: browser-visual-compare
+inputs:
+  - baseline summary
+  - post-change summary
+  - approved expectation manifest
 ---
 
 # Browser Visual Compare
 
-## Deterministic workflow
-
-```yaml
-request: "Acceptance-driven visual comparison result"
-workflow:
-  - id: "capture-screenshot-pairs"
-    when: "Before evaluating baseline and post-change screenshots."
-    skill: "browser-visual-capture"
-```
-
-Use this skill after `browser-visual-capture`. The calling agent supplies task-specific expectations from approved acceptance criteria; this skill owns reusable pixel comparison and pass/fail mechanics. Never infer product expectations from the screenshots.
+Use this skill for screenshot pairs supplied by the caller. The caller owns capture sequencing and supplies task-specific expectations from approved acceptance criteria; this skill owns reusable pixel comparison and pass/fail mechanics. Never infer product expectations from the screenshots.
 
 ## CLI
 
@@ -86,6 +92,6 @@ Optional rectangle arrays use integer CSS-pixel coordinates `{x,y,width,height}`
 ## Workflow
 
 1. Derive the manifest from approved acceptance criteria before evaluating screenshots.
-2. Capture baseline and post-change summaries with identical URL sets, viewport, and run ID.
+2. Confirm the caller-supplied baseline and post-change summaries use identical URL sets, viewport, and run ID.
 3. Run the comparator and retain `comparison.json` with the capture artifacts.
 4. Treat exit `2` as failed validation and exit `1` as an execution blocker. Report the report path and concise reasons; do not replace the structured result with manual judgment.

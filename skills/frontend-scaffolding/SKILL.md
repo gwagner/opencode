@@ -1,6 +1,15 @@
 ---
 name: frontend-scaffolding
 description: Scaffolds modular TypeScript, HTMX, and Tailwind frontend components under /code/src/frontend from approved specifications.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: code-implementor
+      source: /code/agents/code-implementor.md
+      allowed_skill: frontend-scaffolding
+inputs:
+  - approved frontend contract
+  - affected component and route scope
 ---
 
 # Frontend scaffolding
@@ -28,6 +37,14 @@ workflow:
   - id: "compare-visual-artifacts"
     when: "After baseline and post-change artifacts are captured for a runnable affected route."
     skill: "browser-visual-compare"
+  - id: "validate-project"
+    when: "After all selected post-change stages."
+    skill: "project-validation"
+    report:
+      - "passed"
+      - "failed"
+      - "skipped"
+      - "blocked"
 ```
 
 Use only for approved frontend scaffolding or a modification to a rendered frontend component. Work only under `/code/src/frontend/`.

@@ -1,6 +1,19 @@
 ---
 name: api-integration-testing
 description: Builds maintainable API integration tests using existing project infrastructure for contracts, access control, validation, CRUD flows, and isolation.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: api-integration-tester
+      source: /code/agents/api-integration-tester.md
+      allowed_skill: api-integration-testing
+    - agent: bug-fixer
+      source: /code/agents/bug-fixer.md
+      allowed_skill: api-integration-testing
+inputs:
+  - api-discovery output
+  - established endpoint contract
+  - safe test target
 compatibility: opencode
 metadata:
   domain: api-testing
@@ -17,6 +30,14 @@ workflow:
   - id: "discover-contract"
     when: "Before implementing integration tests."
     skill: "api-discovery"
+  - id: "validate-project"
+    when: "After all selected post-change stages."
+    skill: "project-validation"
+    report:
+      - "passed"
+      - "failed"
+      - "skipped"
+      - "blocked"
 ```
 
 Use after `api-discovery` establishes the endpoint contract and authentication model.

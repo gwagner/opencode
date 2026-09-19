@@ -1,6 +1,15 @@
 ---
 name: todo-upkeep
 description: Maintains detailed loop follow-ups in /code/todo.md and unresolved blockers in /code/blocked-todos.md when TODO_LOOP_MODE=true.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: todo-planner
+      source: /code/agents/todo-planner.md
+      allowed_skill: todo-upkeep
+inputs:
+  - one concrete follow-up or blocker
+  - TODO_LOOP_MODE=true
 ---
 
 # Todo Upkeep

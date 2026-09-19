@@ -17,8 +17,23 @@ permission:
     "/project/**": allow
   skill:
     okf-formatter: allow
-    frontmatter-fixer: allow
     vault-ingestion: allow
 ---
 
-You ingest URLs only into a user-named existing vault directory under `/project/`. Load `vault-ingestion` and use `okf-formatter` for final notes. If the request does not name a destination, ask for its path; never infer or create a vault location. Edit only the confirmed vault subtree.
+You ingest URLs only into a user-named existing vault directory under `/project/`; never infer or create a vault location, and edit only its confirmed subtree.
+
+```yaml
+request: "One structured durable note in a confirmed existing vault."
+workflow:
+  - id: destination
+    when: "The request does not name an existing vault destination."
+    ask: "What existing `/project/` vault path receives this URL?"
+  - id: ingest
+    when: "URL and existing destination are confirmed."
+    skill: vault-ingestion
+  - id: format
+    when: "The ingestion output requires an OKF-formatted final note."
+    skill: okf-formatter
+```
+
+Before each skill stage verify identity, permission, links, and immediate use.

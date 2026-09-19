@@ -1,9 +1,33 @@
 ---
 name: tailwind
 description: Configures Tailwind standalone CLI input, content scanning, generated CSS output, and backend static-file serving.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: code-implementor
+      source: /code/agents/code-implementor.md
+      allowed_skill: tailwind
+inputs:
+  - approved frontend build scope
+  - source and output paths
 ---
 
 # Tailwind standalone CLI
+
+## Completion workflow
+
+```yaml
+request: "Validated Tailwind standalone configuration"
+workflow:
+  - id: "validate-project"
+    when: "After configuration, generation, and every selected post-change check."
+    skill: "project-validation"
+    report:
+      - "passed"
+      - "failed"
+      - "skipped"
+      - "blocked"
+```
 
 Use when a TypeScript or server-rendered frontend needs generated Tailwind CSS without a bundler.
 

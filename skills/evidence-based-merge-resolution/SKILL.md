@@ -1,6 +1,16 @@
 ---
 name: evidence-based-merge-resolution
 description: Resolves local-main merge conflicts in the current checkpointed feature branch using authoritative evidence, validation, and an explicit local-main tie-breaker.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: merge-evidence-resolver
+      source: /code/agents/merge-evidence-resolver.md
+      allowed_skill: evidence-based-merge-resolution
+inputs:
+  - active local-main merge conflict
+  - checkpointed feature worktree
+  - authority evidence
 ---
 
 # Evidence-based merge resolution
@@ -10,9 +20,14 @@ description: Resolves local-main merge conflicts in the current checkpointed fea
 ```yaml
 request: "Evidence-backed local-main merge-resolution commit"
 workflow:
-  - id: "synchronize-local-main"
-    when: "Before resolving a conflicted local-main merge on the feature branch."
-    skill: "git-main-sync"
+  - id: "validate-resolution"
+    when: "After resolving conflicts and before the merge-resolution commit."
+    skill: "project-validation"
+    report:
+      - "passed"
+      - "failed"
+      - "skipped"
+      - "blocked"
 ```
 
 Use only after `git-main-sync` has created a checkpoint commit and a local-`main` merge is conflicted in the current feature worktree. Resolve and commit that merge directly on the feature branch. Never use a remote, reset, restore, clean, stash, amend, rewrite history, or resolve uncommitted work that predates the checkpoint.

@@ -1,6 +1,21 @@
 ---
 name: api-integration-modeling
 description: Designs or recovers HTTP APIs, handlers, contracts, authentication, errors, external integrations, webhooks, retries, and idempotency.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: app-spec-architect
+      source: /code/agents/app-spec-architect.md
+      allowed_skill: api-integration-modeling
+    - agent: code-spec-engineer
+      source: /code/agents/code-spec-engineer.md
+      allowed_skill: api-integration-modeling
+    - agent: reverse-engineer-app-spec
+      source: /code/agents/reverse-engineer-app-spec.md
+      allowed_skill: api-integration-modeling
+inputs:
+  - API or integration scope
+  - approved requirements or observed evidence
 compatibility: opencode
 metadata:
   domain: interface-architecture

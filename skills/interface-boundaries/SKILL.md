@@ -1,6 +1,29 @@
 ---
 name: interface-boundaries
 description: Designs deep, focused module interfaces and adapter seams. Use when changing public contracts, external dependencies, persistence access, or cross-layer calls.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: api-integration-tester
+      source: /code/agents/api-integration-tester.md
+      allowed_skill: interface-boundaries
+    - agent: app-spec-architect
+      source: /code/agents/app-spec-architect.md
+      allowed_skill: interface-boundaries
+    - agent: bug-fixer
+      source: /code/agents/bug-fixer.md
+      allowed_skill: interface-boundaries
+    - agent: code-implementor
+      source: /code/agents/code-implementor.md
+      allowed_skill: interface-boundaries
+    - agent: code-spec-engineer
+      source: /code/agents/code-spec-engineer.md
+      allowed_skill: interface-boundaries
+inputs:
+  - affected boundary
+  - consumer
+  - owned behavior
+  - approved change
 ---
 
 # Interface boundaries

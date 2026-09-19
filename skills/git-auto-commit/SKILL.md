@@ -1,26 +1,29 @@
 ---
 name: git-auto-commit
 description: Creates a safe, verbose Git commit for agent-owned validated changes when the user explicitly requests a commit.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: api-integration-tester
+      source: /code/agents/api-integration-tester.md
+      allowed_skill: git-auto-commit
+    - agent: bug-fixer
+      source: /code/agents/bug-fixer.md
+      allowed_skill: git-auto-commit
+    - agent: code-implementor
+      source: /code/agents/code-implementor.md
+      allowed_skill: git-auto-commit
+inputs:
+  - explicit commit authorization
+  - ownership baseline
+  - passed validation
 ---
 
 # Git auto-commit
 
-## Deterministic workflow
+Use only when the user explicitly requests a commit, after a recorded ownership baseline and passed project validation. This skill owns final staging and commit only.
 
-```yaml
-request: "Safe commit containing only validated agent-owned changes"
-workflow:
-  - id: "record-change-baseline"
-    when: "Before the first edit of an authorized task commit."
-    skill: "git-change-baseline"
-  - id: "validate-owned-changes"
-    when: "After the owned change is complete and before staging."
-    skill: "project-validation"
-```
-
-Use only when the user explicitly requests a commit, after `git-change-baseline` recorded ownership and `project-validation` passed. This skill owns final staging and commit only.
-
-In todo-loop work, ownership is iteration-scoped: use `git-change-baseline` before editing in every iteration and commit that iteration before returning CONTINUE or DONE. The loop may create a safety checkpoint for work left after a clean iteration baseline; that checkpoint does not transfer unrelated pre-existing work to the agent.
+In todo-loop work, ownership is iteration-scoped: record a baseline before editing in every iteration and commit that iteration before returning CONTINUE or DONE. The loop may create a safety checkpoint for work left after a clean iteration baseline; that checkpoint does not transfer unrelated pre-existing work to the agent.
 
 1. Confirm the recorded baseline has an empty index. Preserve all pre-existing worktree paths and exclude them from this commit.
 2. Track only files created or edited by this agent after the baseline. Do not commit when ownership of a changed path is uncertain.

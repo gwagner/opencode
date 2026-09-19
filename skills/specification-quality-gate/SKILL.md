@@ -1,6 +1,22 @@
 ---
 name: specification-quality-gate
 description: Performs a final completeness, consistency, evidence, stack, workflow, API, data, frontend, security, and implementation-readiness review.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: app-spec-architect
+      source: /code/agents/app-spec-architect.md
+      allowed_skill: specification-quality-gate
+    - agent: code-spec-engineer
+      source: /code/agents/code-spec-engineer.md
+      allowed_skill: specification-quality-gate
+    - agent: reverse-engineer-app-spec
+      source: /code/agents/reverse-engineer-app-spec.md
+      allowed_skill: specification-quality-gate
+inputs:
+  - draft specification
+  - intended authority or evidence mode
+  - permitted destination
 compatibility: opencode
 metadata:
   domain: quality-assurance

@@ -1,6 +1,30 @@
 ---
 name: server-driven-component-contract
 description: Defines explicit backend contracts for independently server-driven frontend components using HTMX or Server-Sent Events.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: app-spec-architect
+      source: /code/agents/app-spec-architect.md
+      allowed_skill: server-driven-component-contract
+    - agent: bug-fixer
+      source: /code/agents/bug-fixer.md
+      allowed_skill: server-driven-component-contract
+    - agent: code-implementor
+      source: /code/agents/code-implementor.md
+      allowed_skill: server-driven-component-contract
+    - agent: code-spec-engineer
+      source: /code/agents/code-spec-engineer.md
+      allowed_skill: server-driven-component-contract
+    - agent: frontend-reference-builder
+      source: /code/agents/frontend-reference-builder.md
+      allowed_skill: server-driven-component-contract
+    - agent: reverse-engineer-app-spec
+      source: /code/agents/reverse-engineer-app-spec.md
+      allowed_skill: server-driven-component-contract
+inputs:
+  - one component capability
+  - approved or observed transport authority
 ---
 
 # Server-driven component contract

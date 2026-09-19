@@ -1,6 +1,24 @@
 ---
 name: htmx
 description: Implements HTMX server-fragment requests, form actions, errors, loading states, and safe swap ownership.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: app-spec-architect
+      source: /code/agents/app-spec-architect.md
+      allowed_skill: htmx
+    - agent: code-implementor
+      source: /code/agents/code-implementor.md
+      allowed_skill: htmx
+    - agent: code-spec-engineer
+      source: /code/agents/code-spec-engineer.md
+      allowed_skill: htmx
+    - agent: reverse-engineer-app-spec
+      source: /code/agents/reverse-engineer-app-spec.md
+      allowed_skill: htmx
+inputs:
+  - approved HTMX interaction contract
+  - affected route and fragment
 ---
 
 # HTMX
@@ -13,6 +31,14 @@ workflow:
   - id: "define-server-driven-contract"
     when: "Before implementing an independently server-driven component."
     skill: "server-driven-component-contract"
+  - id: "validate-project"
+    when: "After all selected post-change stages."
+    skill: "project-validation"
+    report:
+      - "passed"
+      - "failed"
+      - "skipped"
+      - "blocked"
 ```
 
 Use for HTMX server-rendered HTML interactions. For independently server-driven components, load `server-driven-component-contract` first. That skill owns SSE contracts.

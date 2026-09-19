@@ -1,24 +1,24 @@
 ---
 name: browser-visual-capture
 description: Captures deterministic baseline and post-change Chromium screenshots for one URL or URL set. Use when frontend validation needs reproducible visual artifacts.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: bug-fixer
+      source: /code/agents/bug-fixer.md
+      allowed_skill: browser-visual-capture
+    - agent: code-implementor
+      source: /code/agents/code-implementor.md
+      allowed_skill: browser-visual-capture
+inputs:
+  - URLs
+  - capture phase
+  - deterministic run ID and viewport
 ---
 
 # Browser Visual Capture
 
-## Deterministic workflow
-
-```yaml
-request: "Deterministic baseline and post-change browser screenshots"
-workflow:
-  - id: "compare-captures"
-    when: "After baseline and post-change captures are available."
-    skill: "browser-visual-compare"
-  - id: "capture-unrunnable-route-gap"
-    when: "When an affected route cannot run with documented project tooling."
-    skill: "todo-capture"
-```
-
-Use this skill to capture screenshots before and after a frontend change. It does not evaluate whether differences are acceptable; load `browser-visual-compare` for that step.
+Use this skill to capture screenshots before and after a frontend change. It does not evaluate whether differences are acceptable; the caller owns any separate comparison procedure.
 
 ## What it does
 
@@ -86,12 +86,12 @@ node /code/skills/browser-visual-capture/scripts/capture-screenshots.mjs \
 2. Capture baseline screenshots before the UI change.
 3. Implement the UI change.
 4. Capture post-change screenshots with the same URLs, viewport, and `--run-id`.
-5. Load `browser-visual-compare` and evaluate the pair with a task-specific expectation manifest derived from approved acceptance criteria.
+5. Return the pair to the caller for any separately owned comparison procedure and task-specific expectation manifest derived from approved acceptance criteria.
 6. Report saved paths and any capture failures from the JSON summaries.
 
 ## Unrunnable-route gap
 
-If an affected route cannot be run with documented project tooling, do not treat visual validation as skipped. Load `todo-capture` and record a concrete follow-up to make that route visually testable. Include the route, missing run mechanism or fixture, acceptance criteria for baseline/post-change capture, and available evidence. Do not invent a server command or a mock route.
+If an affected route cannot be run with documented project tooling, do not treat visual validation as skipped. Report the route, missing run mechanism or fixture, acceptance criteria for baseline/post-change capture, and available evidence so the caller can own any separate follow-up procedure. Do not invent a server command or a mock route.
 
 ## Failure behavior
 

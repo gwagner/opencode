@@ -1,6 +1,16 @@
 ---
 name: specification-gap-handoff
 description: Classifies code-to-authority documentation gaps and creates durable, evidence-backed handoffs for the correct requirements or specification owner.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: spec-gap-detector
+      source: /code/agents/spec-gap-detector.md
+      allowed_skill: specification-gap-handoff
+inputs:
+  - observed capability evidence
+  - accessible authority sources
+  - gap-report destination
 ---
 
 # Specification gap handoff

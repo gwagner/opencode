@@ -1,6 +1,15 @@
 ---
 name: git-change-baseline
 description: Records a safe ownership baseline for one authorized future task commit before editing begins.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: code-implementor
+      source: /code/agents/code-implementor.md
+      allowed_skill: git-change-baseline
+inputs:
+  - explicit task-commit authorization
+  - current Git worktree
 ---
 
 # Git change baseline

@@ -1,6 +1,21 @@
 ---
 name: frontend-component-modeling
 description: Designs or reconstructs frontend routes, screens, TypeScript components, Tailwind conventions, states, events, validation, accessibility, and backend dependencies.
+opencode_permission:
+  authoritative: agent permissions are authoritative; this grants none.
+  direct_agent_callers:
+    - agent: app-spec-architect
+      source: /code/agents/app-spec-architect.md
+      allowed_skill: frontend-component-modeling
+    - agent: code-spec-engineer
+      source: /code/agents/code-spec-engineer.md
+      allowed_skill: frontend-component-modeling
+    - agent: reverse-engineer-app-spec
+      source: /code/agents/reverse-engineer-app-spec.md
+      allowed_skill: frontend-component-modeling
+inputs:
+  - frontend scope
+  - approved requirements or observed evidence
 compatibility: opencode
 metadata:
   domain: frontend-architecture
