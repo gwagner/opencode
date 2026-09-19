@@ -5,6 +5,16 @@ description: Find and safely implement unfinished functions in the current repos
 
 # Implement unfinished functions
 
+## Deterministic workflow
+
+```yaml
+request: "One safely implemented unfinished function"
+workflow:
+  - id: "commit-validated-stub-implementation"
+    when: "When the user explicitly requests a commit after validation passes."
+    skill: "git-auto-commit"
+```
+
 Work on exactly one unfinished function per invocation.
 
 ## Discovery

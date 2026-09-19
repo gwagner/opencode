@@ -5,6 +5,16 @@ description: Use when adding or modifying Go to apply focused idiomatic Go code 
 
 # Go Code Standards
 
+## Deterministic workflow
+
+```yaml
+request: "Idiomatic Go change with focused dependency seams"
+workflow:
+  - id: "define-dependency-boundaries"
+    when: "When adding dependency interfaces or test seams."
+    skill: "interface-boundaries"
+```
+
 - Write idiomatic Go and format with `gofmt`.
 - Handle errors explicitly and add useful context when returning them.
 - Propagate `context.Context` through operations that may block or call dependencies.

@@ -5,6 +5,25 @@ description: Owns the local feature-branch, end-user acceptance, and local-main 
 
 # Feature branch lifecycle
 
+## Deterministic workflow
+
+```yaml
+request: "Accepted and locally integrated feature-branch change"
+workflow:
+  - id: "establish-iteration-baseline"
+    when: "Before each implementation iteration."
+    skill: "git-auto-commit"
+  - id: "validate-implementation-iteration"
+    when: "After each implementation iteration and before its task commit."
+    skill: "project-validation"
+  - id: "commit-validated-iteration"
+    when: "After all applicable validation passes."
+    skill: "git-auto-commit"
+  - id: "sync-accepted-branch"
+    when: "After end-user acceptance and before local-main integration."
+    skill: "git-main-sync"
+```
+
 Use only outside `TODO_LOOP_MODE=true`, for one approved, already-created feature branch whose
 change will be implemented by `code-implementor`. This procedure owns acceptance and optional
 local integration, not branch setup, implementation, or validation design.

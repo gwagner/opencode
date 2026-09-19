@@ -5,6 +5,19 @@ description: Creates a safe, verbose Git commit for agent-owned validated change
 
 # Git auto-commit
 
+## Deterministic workflow
+
+```yaml
+request: "Safe commit containing only validated agent-owned changes"
+workflow:
+  - id: "record-change-baseline"
+    when: "Before the first edit of an authorized task commit."
+    skill: "git-change-baseline"
+  - id: "validate-owned-changes"
+    when: "After the owned change is complete and before staging."
+    skill: "project-validation"
+```
+
 Use only when the user explicitly requests a commit, after `git-change-baseline` recorded ownership and `project-validation` passed. This skill owns final staging and commit only.
 
 In todo-loop work, ownership is iteration-scoped: use `git-change-baseline` before editing in every iteration and commit that iteration before returning CONTINUE or DONE. The loop may create a safety checkpoint for work left after a clean iteration baseline; that checkpoint does not transfer unrelated pre-existing work to the agent.

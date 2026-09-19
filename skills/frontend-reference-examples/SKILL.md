@@ -5,6 +5,22 @@ description: Finds reusable HTML, CSS, JavaScript, accessibility, and example-da
 
 # Frontend reference examples
 
+## Deterministic workflow
+
+```yaml
+request: "Approved frontend reference adaptation or bounded UI alignment"
+workflow:
+  - id: "define-server-driven-contract"
+    when: "When adapting an independently server-driven component."
+    skill: "server-driven-component-contract"
+  - id: "capture-visual-artifacts"
+    when: "When validating a runnable adapted or aligned route."
+    skill: "browser-visual-capture"
+  - id: "compare-visual-artifacts"
+    when: "After baseline and post-change visual artifacts are captured."
+    skill: "browser-visual-compare"
+```
+
 Use these references as implementation aids, not product authority. A transport contract in a reference is an illustrative template unless the adopting component has its own approved server-driven contract; only that adopted contract is normative.
 
 ## Workflow

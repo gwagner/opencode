@@ -5,6 +5,19 @@ description: Captures deterministic baseline and post-change Chromium screenshot
 
 # Browser Visual Capture
 
+## Deterministic workflow
+
+```yaml
+request: "Deterministic baseline and post-change browser screenshots"
+workflow:
+  - id: "compare-captures"
+    when: "After baseline and post-change captures are available."
+    skill: "browser-visual-compare"
+  - id: "capture-unrunnable-route-gap"
+    when: "When an affected route cannot run with documented project tooling."
+    skill: "todo-capture"
+```
+
 Use this skill to capture screenshots before and after a frontend change. It does not evaluate whether differences are acceptable; load `browser-visual-compare` for that step.
 
 ## What it does

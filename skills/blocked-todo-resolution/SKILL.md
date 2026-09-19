@@ -5,6 +5,22 @@ description: Resolves self-contained entries in /code/blocked-todos.md through g
 
 # Blocked Todo Resolution
 
+## Deterministic workflow
+
+```yaml
+request: "Resolved or safely blocked todo entry"
+workflow:
+  - id: "clarify-blockers"
+    when: "For every unresolved execution-blocking question."
+    skill: "grillme"
+  - id: "apply-entry-contract"
+    when: "After clarification answers are available."
+    skill: "todo-entry-contract"
+  - id: "promote-resolved-work"
+    when: "When all execution blockers are resolved."
+    skill: "todo-entry-contract"
+```
+
 Use this skill when the user asks to resolve, review, or promote work from `/code/blocked-todos.md`.
 
 ## Procedure

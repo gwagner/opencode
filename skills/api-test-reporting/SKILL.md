@@ -9,6 +9,16 @@ metadata:
 
 # API integration-test reporting
 
+## Deterministic workflow
+
+```yaml
+request: "Concise API integration-test coverage and execution report"
+workflow:
+  - id: "discover-api"
+    when: "Before reporting when API discovery has not already established the inspected contract."
+    skill: "api-discovery"
+```
+
 Use after API discovery or integration-test execution.
 
 Report concisely:

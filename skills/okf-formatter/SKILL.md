@@ -5,6 +5,22 @@ description: Formats new or updated knowledge as focused, linked Open Knowledge 
 
 # OKF formatter
 
+## Deterministic workflow
+
+```yaml
+request: "Focused, linked Open Knowledge Format documents and indexes"
+workflow:
+  - id: "validate-frontmatter"
+    when: "After changing concept frontmatter."
+    skill: "frontmatter-fixer"
+  - id: "reorganize-bundle"
+    when: "When a purposeful structural change is required."
+    skill: "okf-reorganizer"
+  - id: "retrieve-existing-knowledge"
+    when: "When retrieving knowledge from an existing bundle."
+    skill: "okf-reader"
+```
+
 Use when writing or materially revising an Open Knowledge Format bundle.
 
 ## Canonical format

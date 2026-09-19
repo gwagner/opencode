@@ -9,6 +9,19 @@ metadata:
 
 # Application specification
 
+## Deterministic workflow
+
+```yaml
+request: "Implementation-ready application specification"
+workflow:
+  - id: "read-existing-knowledge"
+    when: "When reviewing existing knowledge documents."
+    skill: "okf-reader"
+  - id: "format-final-documents"
+    when: "When writing final specification documents."
+    skill: "okf-formatter"
+```
+
 Use this skill whenever producing or materially revising an application specification.
 
 ## Objective

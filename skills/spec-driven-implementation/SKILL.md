@@ -8,6 +8,19 @@ metadata:
 
 # Specification-driven implementation
 
+## Deterministic workflow
+
+```yaml
+request: "Validated code change resolving a confirmed reconciliation gap"
+workflow:
+  - id: "identify-confirmed-gaps"
+    when: "Before implementing a confirmed reconciliation gap."
+    skill: "specification-reconciliation"
+  - id: "verify-resolved-gap"
+    when: "After code-derived specification is regenerated."
+    skill: "specification-reconciliation"
+```
+
 Use this skill after `specification-reconciliation` has identified confirmed gaps.
 
 ## Source-of-truth policy

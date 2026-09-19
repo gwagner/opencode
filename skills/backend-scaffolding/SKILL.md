@@ -5,6 +5,19 @@ description: Scaffolds reachable backend routes, services, data access, contract
 
 # Backend scaffolding
 
+## Deterministic workflow
+
+```yaml
+request: "Reachable backend scaffold from approved authority"
+workflow:
+  - id: "read-approved-authority"
+    when: "Before mapping the required public contract."
+    skill: "okf-reader"
+  - id: "define-boundaries"
+    when: "Before defining or changing a route, use case, persistence, integration, or job dependency."
+    skill: "interface-boundaries"
+```
+
 1. Inspect existing language, framework, structure, conventions, and validation commands.
 2. Use `okf-reader` to load only the relevant feature, workflow, API, data, validation, authorization, and error requirements.
 3. Map the required public contract to the smallest coherent route, service, persistence, and wiring changes.

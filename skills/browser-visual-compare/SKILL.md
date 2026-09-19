@@ -5,6 +5,16 @@ description: Compares deterministic baseline/post-change screenshot pairs agains
 
 # Browser Visual Compare
 
+## Deterministic workflow
+
+```yaml
+request: "Acceptance-driven visual comparison result"
+workflow:
+  - id: "capture-screenshot-pairs"
+    when: "Before evaluating baseline and post-change screenshots."
+    skill: "browser-visual-capture"
+```
+
 Use this skill after `browser-visual-capture`. The calling agent supplies task-specific expectations from approved acceptance criteria; this skill owns reusable pixel comparison and pass/fail mechanics. Never infer product expectations from the screenshots.
 
 ## CLI

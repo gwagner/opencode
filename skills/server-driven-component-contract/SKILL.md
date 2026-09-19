@@ -5,6 +5,16 @@ description: Defines explicit backend contracts for independently server-driven 
 
 # Server-driven component contract
 
+## Deterministic workflow
+
+```yaml
+request: "Explicit approved server-driven component contract"
+workflow:
+  - id: "clarify-missing-contract"
+    when: "When mode or a required contract value is missing and the agent may ask."
+    skill: "grillme"
+```
+
 Use when a frontend component independently requests, mutates, or receives server-derived presentation data through HTMX or SSE. The approved component contract is normative for its backend implementation; styling and illustrative fixture data remain adaptable.
 
 ## Procedure

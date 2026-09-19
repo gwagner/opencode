@@ -9,6 +9,16 @@ metadata:
 
 # Frontend and component modeling
 
+## Deterministic workflow
+
+```yaml
+request: "Frontend component model with explicit server-driven contracts"
+workflow:
+  - id: "model-server-driven-contract"
+    when: "For every independently server-driven component."
+    skill: "server-driven-component-contract"
+```
+
 ## Actual versus approved stack
 
 When designing from requirements, select a frontend stack only when approved requirements or an explicit architecture decision establishes it. When TypeScript components, Tailwind, and server-backed flows are approved, model their boundaries using:

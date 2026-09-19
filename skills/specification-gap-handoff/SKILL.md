@@ -5,6 +5,25 @@ description: Classifies code-to-authority documentation gaps and creates durable
 
 # Specification gap handoff
 
+## Deterministic workflow
+
+```yaml
+request: "Durable specification-gap entry with its correct documentation owner"
+workflow:
+  - id: "select-documentation-owner"
+    when: "When a queued gap classification requires an authoritative owner."
+    select:
+      question: "Which owner must resolve the earliest missing authority?"
+      precedence: "Evaluate branches in listed order; the final branch is fallback."
+      branches:
+        - when: "When product intent, business rules, user-visible behavior, scope, or acceptance policy is missing."
+          agent: "prd-strategist"
+        - when: "When shared architecture, a cross-feature workflow, a system boundary, or a technology decision is missing."
+          agent: "app-spec-architect"
+        - when: "otherwise"
+          agent: "code-spec-engineer"
+```
+
 Use when implemented behavior may lack authoritative requirements or specifications. This skill records and routes documentation work; it never approves observed code behavior or changes production code.
 
 ## Classify each capability

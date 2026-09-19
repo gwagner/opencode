@@ -8,6 +8,16 @@ metadata:
 
 # Specification quality gate
 
+## Deterministic workflow
+
+```yaml
+request: "Final implementation-ready specification quality review"
+workflow:
+  - id: "format-final-specification"
+    when: "When producing the final specification output."
+    skill: "okf-formatter"
+```
+
 Run this skill immediately before finalizing specification documents.
 
 ## Completeness

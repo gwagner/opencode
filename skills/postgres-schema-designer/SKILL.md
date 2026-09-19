@@ -5,6 +5,19 @@ description: Designs PostgreSQL schema specification documents. Use with specifi
 
 # PostgreSQL schema design
 
+## Deterministic workflow
+
+```yaml
+request: "Focused PostgreSQL schema specification"
+workflow:
+  - id: "model-persistence"
+    when: "Before PostgreSQL relevance has been established."
+    skill: "data-persistence-modeling"
+  - id: "create-forward-migration"
+    when: "When an implementation task requires a forward-only migration."
+    skill: "postgres-migration"
+```
+
 Use after `data-persistence-modeling` has established that PostgreSQL persistence is relevant.
 
 1. Read only the feature, workflow, API, and existing schema evidence relevant to the change.

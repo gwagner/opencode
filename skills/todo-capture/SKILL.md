@@ -5,6 +5,16 @@ description: Captures detailed deferred work in /code/todo.md, or unresolved wor
 
 # Todo Capture
 
+## Deterministic workflow
+
+```yaml
+request: "Concrete deferred or blocked non-loop work entry"
+workflow:
+  - id: "apply-entry-contract"
+    when: "Before writing a deferred or blocked todo entry."
+    skill: "todo-entry-contract"
+```
+
 Use this skill when normal non-loop work reveals an actionable task that should be saved for later execution.
 
 If the active prompt contains `TODO_LOOP_MODE=true`, do not use this skill. Use `todo-upkeep` instead.

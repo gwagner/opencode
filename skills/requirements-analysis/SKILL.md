@@ -8,6 +8,16 @@ metadata:
 
 # Requirements analysis
 
+## Deterministic workflow
+
+```yaml
+request: "Traceable analysis of raw product requirements"
+workflow:
+  - id: "retrieve-requirement-knowledge"
+    when: "For a scoped question in a large requirements bundle."
+    skill: "okf-reader"
+```
+
 Use this skill when the primary source is `/project/requirements/`.
 
 ## Procedure

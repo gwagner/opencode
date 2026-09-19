@@ -5,6 +5,16 @@ description: Resolves local-main merge conflicts in the current checkpointed fea
 
 # Evidence-based merge resolution
 
+## Deterministic workflow
+
+```yaml
+request: "Evidence-backed local-main merge-resolution commit"
+workflow:
+  - id: "synchronize-local-main"
+    when: "Before resolving a conflicted local-main merge on the feature branch."
+    skill: "git-main-sync"
+```
+
 Use only after `git-main-sync` has created a checkpoint commit and a local-`main` merge is conflicted in the current feature worktree. Resolve and commit that merge directly on the feature branch. Never use a remote, reset, restore, clean, stash, amend, rewrite history, or resolve uncommitted work that predates the checkpoint.
 
 1. Record feature branch, checkpoint object ID, local `main` object ID, merge-base, status, conflict paths, and Git conflict types. Confirm the conflict is the active local-`main` merge and preserve the checkpoint as the feature-side parent.

@@ -5,6 +5,16 @@ description: Safely synchronizes a feature branch with local main before code wo
 
 # Git main sync
 
+## Deterministic workflow
+
+```yaml
+request: "Synchronized feature branch against local main"
+workflow:
+  - id: "resolve-conflicted-merge"
+    when: "When the local-main merge has conflicts."
+    agent: "merge-evidence-resolver"
+```
+
 Use before editing a code task when the repository is Git-controlled. Never invoke `origin`, any remote, network, SSH, fetch, pull, or push command; this workflow uses local `main` only. Never use on local `main`, a detached HEAD, or a non-Git directory; record `Sync: skipped` and continue without altering it.
 
 1. Record the current branch, `git status --porcelain=v1`, and current `HEAD`. Confirm local `main` is available.

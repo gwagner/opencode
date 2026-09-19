@@ -5,6 +5,31 @@ description: Scaffolds modular TypeScript, HTMX, and Tailwind frontend component
 
 # Frontend scaffolding
 
+## Deterministic workflow
+
+```yaml
+request: "Rendered frontend scaffold from approved specifications"
+workflow:
+  - id: "define-server-driven-contract"
+    when: "Before implementing an independently server-driven component."
+    skill: "server-driven-component-contract"
+  - id: "apply-matching-reference"
+    when: "When a matching catalog component exists."
+    skill: "frontend-reference-examples"
+  - id: "implement-htmx"
+    when: "When the scaffold includes HTMX work."
+    skill: "htmx"
+  - id: "configure-tailwind"
+    when: "When Tailwind configuration or generation changes."
+    skill: "tailwind"
+  - id: "capture-visual-artifacts"
+    when: "For each affected route runnable with documented project tooling."
+    skill: "browser-visual-capture"
+  - id: "compare-visual-artifacts"
+    when: "After baseline and post-change artifacts are captured for a runnable affected route."
+    skill: "browser-visual-compare"
+```
+
 Use only for approved frontend scaffolding or a modification to a rendered frontend component. Work only under `/code/src/frontend/`.
 
 1. Read approved specifications and repository conventions for routes, backend stack, fragment contracts, and static-asset integration. Do not invent missing behavior or contracts.

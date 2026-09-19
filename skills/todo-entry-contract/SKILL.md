@@ -5,6 +5,25 @@ description: Defines the canonical schema, routing, dependencies, and blocked-st
 
 # Todo entry contract
 
+## Deterministic workflow
+
+```yaml
+request: "Canonical, authority-ready todo entry"
+workflow:
+  - id: "select-authority-owner"
+    when: "When authoritative documents require updates before an implementation-ready entry or promotion."
+    select:
+      question: "Which authority owner must update the missing source?"
+      precedence: "Evaluate branches in listed order; the final branch is fallback."
+      branches:
+        - when: "When product intent requires an update."
+          agent: "prd-strategist"
+        - when: "When shared architecture or a cross-feature decision requires an update."
+          agent: "app-spec-architect"
+        - when: "otherwise"
+          agent: "code-spec-engineer"
+```
+
 Use whenever creating, updating, validating, or promoting todo entries.
 
 ## Entry boundary

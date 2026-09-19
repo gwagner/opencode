@@ -5,6 +5,16 @@ description: Reorganizes an OKF bundle while preserving concepts, links, metadat
 
 # What I Do
 
+## Deterministic workflow
+
+```yaml
+request: "Purposefully reorganized OKF bundle with preserved links and provenance"
+workflow:
+  - id: "validate-reorganized-bundle"
+    when: "After completing an OKF bundle reorganization."
+    skill: "okf-formatter"
+```
+
 
 ## Reorganizing as the OKF Bundle Grows
 

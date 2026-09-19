@@ -5,6 +5,16 @@ description: Implements HTMX server-fragment requests, form actions, errors, loa
 
 # HTMX
 
+## Deterministic workflow
+
+```yaml
+request: "HTMX server-rendered interaction with safe swap ownership"
+workflow:
+  - id: "define-server-driven-contract"
+    when: "Before implementing an independently server-driven component."
+    skill: "server-driven-component-contract"
+```
+
 Use for HTMX server-rendered HTML interactions. For independently server-driven components, load `server-driven-component-contract` first. That skill owns SSE contracts.
 
 1. Define each request method, URI template and encoded path variables, authorization, query/header/body schema, request content type, cache behavior, response status/content type/cache headers, complete response fragment, target, and swap mode.

@@ -5,6 +5,16 @@ description: Read and answer questions from OKF knowledge bundles using indexes,
 
 # OKF reader
 
+## Deterministic workflow
+
+```yaml
+request: "Answer grounded in the smallest relevant OKF knowledge subset"
+workflow:
+  - id: "format-revised-knowledge"
+    when: "When writing or materially revising an OKF bundle."
+    skill: "okf-formatter"
+```
+
 Use for questions answered from an OKF Markdown bundle. Read the smallest relevant subset.
 
 ## Core workflow

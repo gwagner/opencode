@@ -9,6 +9,16 @@ metadata:
 
 # API integration testing
 
+## Deterministic workflow
+
+```yaml
+request: "Maintainable API integration tests for an established endpoint contract"
+workflow:
+  - id: "discover-contract"
+    when: "Before implementing integration tests."
+    skill: "api-discovery"
+```
+
 Use after `api-discovery` establishes the endpoint contract and authentication model.
 
 ## Implementation

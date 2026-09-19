@@ -8,6 +8,19 @@ metadata:
 
 # Specification reconciliation
 
+## Deterministic workflow
+
+```yaml
+request: "Traceable reconciliation report between authority and code-derived behavior"
+workflow:
+  - id: "read-reconciliation-inputs"
+    when: "Before comparing requirements and both specification trees."
+    skill: "okf-reader"
+  - id: "format-reconciliation-output"
+    when: "When writing the reconciliation report or regenerated code-derived documents."
+    skill: "okf-formatter"
+```
+
 Use this skill to compare:
 
 - Product requirements: `/project/requirements/`

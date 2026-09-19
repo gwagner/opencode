@@ -5,6 +5,16 @@ description: Maintains detailed loop follow-ups in /code/todo.md and unresolved 
 
 # Todo Upkeep
 
+## Deterministic workflow
+
+```yaml
+request: "Concrete deferred or blocked loop follow-up entry"
+workflow:
+  - id: "apply-entry-contract"
+    when: "Before writing an implementation-ready follow-up or unresolved blocker."
+    skill: "todo-entry-contract"
+```
+
 Use this skill only when the active prompt contains `TODO_LOOP_MODE=true`. Use `todo-capture` during normal non-loop work.
 
 ## Target files
