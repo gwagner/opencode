@@ -3,6 +3,9 @@
   "plugin": [
     "./plugins/graphify.js"
   ],
+  "skills": [
+    "/opt/plugins/"
+  ],
   "permission": {
     "edit": {
       "AGENTS.md": "deny"
