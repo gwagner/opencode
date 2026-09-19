@@ -5,18 +5,15 @@ description: Owns the local feature-branch, end-user acceptance, and local-main 
 
 # Feature branch lifecycle
 
-Use only outside `TODO_LOOP_MODE=true`, for one approved code change that will be implemented by
-`code-implementor`. This procedure owns Git lifecycle, not implementation or validation design.
+Use only outside `TODO_LOOP_MODE=true`, for one approved, already-created feature branch whose
+change will be implemented by `code-implementor`. This procedure owns acceptance and optional
+local integration, not branch setup, implementation, or validation design.
 
 ## Before implementation
 
-1. Confirm the repository is Git-controlled, local `main` exists, and the current worktree and
-   index are clean. Otherwise report the exact blocker; do not checkpoint, stash, reset, restore,
-   or reuse pre-existing work.
-2. Derive one Git-valid `feature/<task-slug>` branch name from the requested outcome. If the branch
-   already exists, stop and report it rather than reusing or deleting it.
-3. Create and switch to that branch directly from local `main`. Never fetch, pull, push, or use a
-   remote.
+1. Confirm the current branch is the caller-created feature branch, local `main` exists, and the
+   branch was created using `feature-branch-setup`. Otherwise report the exact blocker; do not
+   checkpoint, stash, reset, restore, clean, or reuse pre-existing work.
 
 ## Iterations and acceptance
 

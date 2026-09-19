@@ -5,13 +5,13 @@ description: Creates a safe, verbose Git commit for agent-owned validated change
 
 # Git auto-commit
 
-Use only when the user explicitly requests a commit. Load before the first edit when used; this skill owns the candidate file list.
+Use only when the user explicitly requests a commit, after `git-change-baseline` recorded ownership and `project-validation` passed. This skill owns final staging and commit only.
 
-In todo-loop work, ownership is iteration-scoped: load this skill before editing in every iteration and commit that iteration before returning CONTINUE or DONE. The loop may create a safety checkpoint for work left after a clean iteration baseline; that checkpoint does not transfer unrelated pre-existing work to the agent.
+In todo-loop work, ownership is iteration-scoped: use `git-change-baseline` before editing in every iteration and commit that iteration before returning CONTINUE or DONE. The loop may create a safety checkpoint for work left after a clean iteration baseline; that checkpoint does not transfer unrelated pre-existing work to the agent.
 
-1. Record `git status --porcelain=v1 -z` and require an empty index. Preserve all pre-existing worktree changes; exclude every path present in the baseline from this commit.
+1. Confirm the recorded baseline has an empty index. Preserve all pre-existing worktree paths and exclude them from this commit.
 2. Track only files created or edited by this agent after the baseline. Do not commit when ownership of a changed path is uncertain.
-3. Run `project-validation` and all task-required checks. Commit only when each applicable check passes. Do not commit after a failed, blocked, or required-but-skipped check.
+3. Confirm `project-validation` and every task-required check passed. Do not commit after a failed, blocked, or required-but-skipped check.
 4. Recheck status and diff. Stage only tracked, baseline-clean paths with `git add -- <paths>`.
 5. Commit only those paths with `git commit --only ... -- <paths>`. Never use reset, restore, clean, stash, amend, or push.
 6. Use a descriptive subject and body containing:
