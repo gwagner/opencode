@@ -152,7 +152,7 @@ When moving content:
 * Do not remove broken links unless you know they are obsolete.
 * If a target does not exist yet, a broken link may represent planned knowledge and is allowed.
 
-Prefer absolute bundle-relative links for stability.
+Prefer absolute bundle-relative links for stability. Here, `/` means the root of the bundle being reorganized, not the filesystem root or `/code`.
 
 Example:
 

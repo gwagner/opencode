@@ -1,3 +1,13 @@
+---
+type: component-reference
+title: Data table
+description: Adaptable native table for caller-formatted, ordered data with optional activation and refresh behavior.
+tags:
+  - frontend
+  - component
+  - table
+---
+
 # Data table
 
 ## Match
@@ -21,9 +31,9 @@ Visible regions: caller-selected heading level, summary, named focusable overflo
 - Optional SSE owns only existing-row complete `<tr>` `outerHTML` updates. A structural SSE signal asks the HTMX/parent owner to reconcile; it never inserts, removes, reorders, repages, or changes columns client-side. The parent coalesces signals and must not overlap reconciliation requests.
 - Do not nest links, buttons, inputs, or independently interactive content in an actionable row. Make rows with such controls inert and use a dedicated actions column.
 
-### Server-driven contract
+### Illustrative server-driven transport template
 
-**Status:** user-approved reference parent contract; adoption remains subject to the adopting feature's approved authority.
+**Status:** not an approved adopter contract. An adopting feature must approve its own contract before using this template.
 
 | Field | Contract |
 | --- | --- |

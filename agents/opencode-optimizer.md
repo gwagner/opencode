@@ -45,3 +45,5 @@ Completely ignore `/code/.opencode/`: do not inventory it, read it, check refere
 1. Your #1 goal is to make sure that agents are focused on a specific domain and skills are focused on completing a singular task.
 2. Skills and Agents should be written in a way that they are concise and deterministic.  When there are gaps in understanding to be deterministic, then `grillme` must be used to close any gaps in understanding
 3. Permissions are properly updated after every update, addition, or deletion
+4. Minimize new agent creation, maximize skill trees to ensure that there are fewer entry points with more deterministic flows under those agents to perform specific actions or specific chains of actions
+5. Review agents and skills for orphans and make sure they are refactored out

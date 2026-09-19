@@ -1,10 +1,22 @@
-# Match
+---
+type: component-reference
+title: Line graph
+description: Adaptable time-series visualization for caller-supplied chronological numeric data.
+tags:
+  - frontend
+  - component
+  - graph
+---
+
+# Line graph
+
+## Match
 
 **Component:** Line graph. **Aliases:** graph, chart, time-series chart, line chart, metric visualization, range selector.
 
 Use it to present caller-supplied chronological numeric series, an accessible chart summary, optional time-range choices, and rendering feedback. Suitable for comparable time-based metrics. Do not use it for categorical comparison, unformatted/raw measurements, data entry, an unrelated aggregate, or a table needing row actions; use a bar-chart reference, form control, summary card, or data table instead. This is adaptable implementation material, not product authority.
 
-# Ownership and behavior contract
+## Ownership and behavior contract
 
 The component owns its heading/summary, canvas frame, nonvisual series summary, optional range-control group, and live feedback. The caller supplies already formatted heading, summary, visible range labels, UTC or localized point labels, series labels, point values, empty/failure copy, and stable component/series IDs. The component presents those values only; it must not interpret metric names, infer units, create missing data, sort business records, calculate ranges, authorize access, or turn visualization-only points into records.
 

@@ -59,6 +59,7 @@ permission:
     "/code/**": allow
   skill:
     safe-code-change: allow
+    backend-scaffolding: allow
     end-user-experience: allow
     interface-boundaries: allow
     project-validation: allow
@@ -81,12 +82,13 @@ permission:
     todo-entry-contract: allow
     git-auto-commit: allow
     frontend-reference-examples: allow
+    frontend-scaffolding: allow
     server-driven-component-contract: allow
     git-main-sync: allow
     evidence-based-merge-resolution: allow
 ---
 
-Implement approved, focused code changes in `/code`; route reported defects requiring reproduction or root-cause analysis to `bug-fixer`. Before investigation or editing, load `git-main-sync` and follow it when in a Git-controlled feature branch. If it finds conflicts, delegate only `merge-evidence-resolver` and wait for its merge-resolution commit before working. Load `safe-code-change` before editing and `project-validation` before validation. When the graph exists, load `graphify` before investigation and follow its update workflow after relevant changes. Load `git-auto-commit` only on explicit request and `interface-boundaries` for public, dependency, persistence, or cross-layer changes. For matching frontend work, load `frontend-reference-examples`; load `htmx`, `tailwind`, `browser-visual-capture`, `browser-visual-compare`, and `server-driven-component-contract` only when applicable, and follow their workflows. Load other secondary skills only when applicable: `go-code-standards`, `implement-stubs`, `spec-driven-implementation` (with `specification-reconciliation`), `postgres-migration`, API-test skills, or `okf-reader`.
+Implement approved, focused code changes in `/code`; route reported defects requiring reproduction or root-cause analysis to `bug-fixer`. Before investigation or editing, load `git-main-sync` and follow it when in a Git-controlled feature branch. If it finds conflicts, delegate only `merge-evidence-resolver` and wait for its merge-resolution commit before working. Load `safe-code-change` before editing and `project-validation` before validation. When the graph exists, load `graphify` before investigation and follow its update workflow after relevant changes. Load `git-auto-commit` only on explicit request and `interface-boundaries` for public, dependency, persistence, or cross-layer changes. For approved backend feature scaffolding, load `backend-scaffolding`; for TypeScript, HTMX, or Tailwind frontend scaffolding, load `frontend-scaffolding`. Follow each loaded workflow. Load other secondary skills only when applicable: `go-code-standards`, `implement-stubs`, `spec-driven-implementation` (with `specification-reconciliation`), `postgres-migration`, API-test skills, or `okf-reader`.
 
 For affected user-visible routes, derive a structured visual expectation manifest from approved acceptance criteria, then invoke capture and comparison. Treat failed expectations or comparison execution errors as failed validation; do not substitute manual screenshot judgment.
 

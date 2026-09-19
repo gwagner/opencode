@@ -5,7 +5,7 @@ description: Finds reusable HTML, CSS, JavaScript, accessibility, and example-da
 
 # Frontend reference examples
 
-Use these references as implementation aids, not product authority, except an approved server-driven component contract is normative for that component's backend implementation.
+Use these references as implementation aids, not product authority. A transport contract in a reference is an illustrative template unless the adopting component has its own approved server-driven contract; only that adopted contract is normative.
 
 ## Workflow
 
@@ -37,7 +37,7 @@ Each component document should include, when applicable:
 - semantic HTML template;
 - styleable CSS and documented custom properties;
 - JavaScript inputs, emitted events, focus behavior, and ownership boundary;
-- an explicit server-driven contract, when the component independently uses HTMX or SSE: mode, URI/method or stream, identity, inputs, headers/body/content type, cache behavior, fragment/event data, target/swap, failures, and refresh behavior;
+- a clearly labelled illustrative server-driven transport template, when the component independently uses HTMX or SSE: mode, URI/method or stream, identity, inputs, headers/body/content type, cache behavior, fragment/event data, target/swap, failures, and refresh behavior;
 - clearly labelled illustrative API or fixture data;
 - loading, empty, success, partial, and error states;
 - responsive and accessibility behavior;

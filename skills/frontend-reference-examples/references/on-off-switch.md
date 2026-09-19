@@ -1,3 +1,14 @@
+---
+type: component-reference
+title: On-off switch
+description: Adaptable binary control with caller-supplied labels and optional server-driven behavior.
+tags:
+  - frontend
+  - component
+  - control
+  - switch
+---
+
 # On-off switch
 
 ## Match
@@ -14,7 +25,7 @@ The component owns the visible label, native checkbox, track and thumb, current-
 
 `on-off-switch:change` fires after a user changes the native checkbox. Its detail is `{ switchIdentity, checked, stateLabel }`; `switchIdentity` is the stable component ID, `checked` is the selected Boolean, and `stateLabel` is the matching caller-supplied label. Focus remains on the checkbox.
 
-**Independent HTMX contract:** the checkbox sends `PATCH /ui/components/v1/on-off-switches/{id}` on `change`. `{id}` is the URL-path-encoded `ID`; the `application/x-www-form-urlencoded` payload has exactly `checked=true` or `checked=false`. The request carries HTMX's `HX-Request: true` header, targets its closest `[data-on-off-switch-region]`, and swaps `outerHTML`. `200 OK` must return `Content-Type: text/html`, `Cache-Control: no-store`, and one complete region rendered from the confirmed `OnOffSwitchView`, retaining the same `ID`. A validation or action failure must return a complete confirmed-state region with `Feedback.IsError=true` and a visible retry path owned by the server. Transport failures leave the current region untouched; HTMX/server presents the error outside the component. The server owns validation, authorization, mutation, loading, error state, and fragment rendering. The JavaScript never rolls state back or replaces fragments.
+**Illustrative independent HTMX template — not an approved adopter contract:** the checkbox sends `PATCH /ui/components/v1/on-off-switches/{id}` on `change`. `{id}` is the URL-path-encoded `ID`; the `application/x-www-form-urlencoded` payload has exactly `checked=true` or `checked=false`. The request carries HTMX's `HX-Request: true` header, targets its closest `[data-on-off-switch-region]`, and swaps `outerHTML`. `200 OK` returns `Content-Type: text/html`, `Cache-Control: no-store`, and one complete region rendered from the confirmed `OnOffSwitchView`, retaining the same `ID`. A validation or action failure returns a complete confirmed-state region with `Feedback.IsError=true` and a visible retry path owned by the server. Transport failures leave the current region untouched; HTMX/server presents the error outside the component. The server owns validation, authorization, mutation, loading, error state, and fragment rendering. The JavaScript never rolls state back or replaces fragments. Adopt it only when the component's authority approves it.
 
 Do not nest links, buttons, or other interactive controls inside the label. Do not place this independent control in a competing form submission contract.
 
