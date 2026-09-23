@@ -1,7 +1,7 @@
 FROM node:22-bookworm-slim
 
 ARG USERNAME=openchamber
-ARG UID=1000
+ARG UID=1001
 ARG GID=1000
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -12,8 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   openssh-client \
   && rm -rf /var/lib/apt/lists/*
 
-RUN groupadd --gid ${GID} ${USERNAME} \
-  && useradd \
+RUN useradd \
   --uid ${UID} \
   --gid ${GID} \
   --create-home \

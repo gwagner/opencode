@@ -1,12 +1,23 @@
 FROM ghcr.io/anomalyco/opencode:1.18.30
 
-ENV BUN_INSTALL="/root/.bun"
 ENV PATH="$PATH:/root/.local/bin/"
-ENV PATH="$BUN_INSTALL/bin:$PATH"
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ARG GRAPHIFY_VERSION="0.9.48"
+
+ARG USERNAME=opencode
+ARG UID=1000
+ARG GID=1000
+
+RUN addgroup -g ${GID} ${USERNAME} \
+  && adduser \
+  -D \
+  -u ${UID} \
+  -G ${USERNAME} \
+  -h /home/${USERNAME} \
+  -s /bin/bash \
+  ${USERNAME}
 
 # Install core packages
 RUN apk update && apk add --no-cache go git curl uv python3 ripgrep \
@@ -14,8 +25,6 @@ RUN apk update && apk add --no-cache go git curl uv python3 ripgrep \
   chromium nss freetype harfbuzz ca-certificates ttf-freefont \
   shellcheck ffmpeg postgresql-client mesa-gles gst-libav openssh-client \
   yq yamllint jq
-
-# RUN curl -fsSL https://bun.sh/install | bash
 
 # Install Graphify
 RUN uv tool install graphifyy@${GRAPHIFY_VERSION}
@@ -32,3 +41,6 @@ RUN git clone https://github.com/jasnell/opencode-skill-ascii-art-diagrams.git /
 # Setup tailwind
 RUN npm install -g tailwindcss @tailwindcss/cli typescript playwright
 RUN mkdir -p "$PLAYWRIGHT_BROWSERS_PATH" && npx playwright install 
+
+USER ${USERNAME}
+WORKDIR /home/${USERNAME}
