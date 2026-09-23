@@ -1,18 +1,12 @@
 ---
 name: application-specification
 description: Defines the common structure, rigor, terminology, and output rules for implementation-ready application specifications.
+classification: non-technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: app-spec-architect
-      source: /code/agents/app-spec-architect.md
-      allowed_skill: application-specification
-    - agent: code-spec-engineer
-      source: /code/agents/code-spec-engineer.md
-      allowed_skill: application-specification
-    - agent: reverse-engineer-app-spec
-      source: /code/agents/reverse-engineer-app-spec.md
-      allowed_skill: application-specification
+  read: allow
+  skill:
+    okf-reader: allow
+    okf-formatter: allow
 inputs:
   - specification scope
   - requirements or code evidence
@@ -24,6 +18,10 @@ metadata:
 ---
 
 # Application specification
+
+## Inputs
+
+Require a specification scope, requirements or code evidence, and a permitted destination.
 
 ## Deterministic workflow
 
@@ -46,35 +44,21 @@ Produce a product-oriented, implementation-ready specification. Describe the app
 
 Do not produce a package inventory, generic architecture essay, or aspirational product brief.
 
-## Required minimum content
+## Required content and document boundaries
 
-Include, when relevant:
+Deliver the applicable concerns below as linked, independently retrievable OKF concepts. Do not assemble them as sections of one omnibus specification.
 
-1. Document metadata
-2. Executive summary
-3. Product and business context
-4. Goals and non-goals
-5. Actors, user roles, and permissions
-6. User stories or use cases
-7. End-to-end workflows
-8. Functional requirements
-9. System architecture
-10. Component breakdown
-11. Backend design
-12. Frontend design
-13. Data model
-14. API contracts
-15. External integrations
-16. Webhook processing
-17. State and funnel models
-18. Validation, errors, and edge cases
-19. Security, privacy, and audit
-20. Deployment and operations
-21. Risks, assumptions, gaps, and open questions
-22. Recommended implementation phases, when requested or justified
-23. Traceability matrix
+- Product context, goals, and non-goals
+- Actors, roles, permissions, and use cases
+- Functional requirements
+- One architecture or component boundary per concept
+- One workflow or state model per concept
+- One data model, API contract, integration, webhook, or frontend surface per concept
+- Validation, errors, and recovery for the concept they govern
+- Security, privacy, audit, deployment, and operations when applicable
+- Risks, assumptions, gaps, open questions, implementation phases, and traceability
 
-At minimum, include an executive summary, architecture overview, functional requirements, risks, and open questions. Include data, backend/API, frontend, and workflow sections only when applicable; state explicitly when a concern is out of scope or unknown.
+Use an `index.md` to route readers to these concepts with concise descriptions. Keep each concept body at or below the 800-word default set by `knowledge-document-slicing`; only an indivisible external contract or generated artifact may exceed it, with the exception recorded in its parent index. State inapplicable or unknown concerns in the nearest relevant concept rather than creating empty documents.
 
 ## Writing requirements
 

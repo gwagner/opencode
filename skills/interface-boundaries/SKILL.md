@@ -1,32 +1,21 @@
 ---
 name: interface-boundaries
 description: Designs deep, focused module interfaces and adapter seams. Use when changing public contracts, external dependencies, persistence access, or cross-layer calls.
+classification: technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: api-integration-tester
-      source: /code/agents/api-integration-tester.md
-      allowed_skill: interface-boundaries
-    - agent: app-spec-architect
-      source: /code/agents/app-spec-architect.md
-      allowed_skill: interface-boundaries
-    - agent: bug-fixer
-      source: /code/agents/bug-fixer.md
-      allowed_skill: interface-boundaries
-    - agent: code-implementor
-      source: /code/agents/code-implementor.md
-      allowed_skill: interface-boundaries
-    - agent: code-spec-engineer
-      source: /code/agents/code-spec-engineer.md
-      allowed_skill: interface-boundaries
+  read: allow
 inputs:
-  - affected boundary
+  - caller-provided permitted affected boundary paths
   - consumer
   - owned behavior
   - approved change
 ---
 
 # Interface boundaries
+
+## Inputs
+
+Require caller-provided permitted affected boundary paths, consumer, owned behavior, and approved change.
 
 Use only when the change crosses a module, process, framework, persistence, or external-service boundary.
 
@@ -44,8 +33,9 @@ Use only when the change crosses a module, process, framework, persistence, or e
 2. Define the smallest consumer-owned interface that hides the owned complexity. Reduce methods and parameters before exposing details.
 3. Add a seam only for a real variation, test need, or established convention. One adapter is usually hypothetical; two adapters establish a real seam. Do not add speculative abstractions.
 4. Keep transport, framework, ORM, and vendor types in adapters; expose application/domain types at the boundary where practical.
-5. Inject dependencies at composition boundaries. Keep transactions and state-transition ownership explicit.
-6. Test through the same interface callers use: focused fakes for owned ports; observable contract or integration tests for adapters when relevant.
+5. Inject dependencies and explicit authorized configuration at composition boundaries. Keep transactions and state-transition ownership explicit. When authority prohibits ambient credentials or configuration, adapters must not fall back to environment, profile, role, metadata, global client, or transport defaults.
+6. For delayed or retried calls, define the immutable event-time input snapshot and stable operation identity at the application-facing boundary; do not let adapters reread mutable current configuration implicitly.
+7. Test through the same interface callers use: focused fakes for owned ports; observable contract or integration tests for adapters when relevant.
 
 ## Checks
 

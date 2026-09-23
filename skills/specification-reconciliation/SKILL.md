@@ -1,9 +1,15 @@
 ---
 name: specification-reconciliation
 description: Compares requirements and consistent approved specifications with code-derived behavior to create a traceable reconciliation plan.
+classification: non-technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers: []
+  read: allow
+  glob: allow
+  grep: allow
+  edit: allow
+  skill:
+    okf-reader: allow
+    okf-formatter: allow
 inputs:
   - requirements
   - approved specifications

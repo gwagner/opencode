@@ -1,18 +1,32 @@
 ---
 name: backend-scaffolding
 description: Scaffolds reachable backend routes, services, data access, contracts, and useful placeholders from approved requirements and specifications.
+classification: technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: code-implementor
-      source: /code/agents/code-implementor.md
-      allowed_skill: backend-scaffolding
+  read: allow
+  glob: allow
+  grep: allow
+  edit: allow
+  bash:
+    "go test *": allow
+  skill:
+    okf-reader: allow
+    interface-boundaries: allow
+    project-validation: allow
 inputs:
   - approved backend contract
   - bounded implementation scope
 ---
 
 # Backend scaffolding
+
+## Inputs
+
+Require an approved backend contract and bounded implementation scope.
+
+## Dead-code rule
+
+Within the approved affected source and test scope, remove unused functions and modules, commented-out code, and logic kept only for reference. Use Git history for reference; do not retain it in source. Preserve potentially live behavior and report uncertainty rather than guessing.
 
 ## Deterministic workflow
 

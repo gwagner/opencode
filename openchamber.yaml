@@ -1,0 +1,47 @@
+services:
+  opencode:
+    image: opencode_golang
+    container_name: opencode
+
+    command:
+      - opencode
+      - serve
+      - --hostname
+      - "0.0.0.0"
+      - --port
+      - "4096"
+
+    volumes:
+      - ./workspace:/workspace
+      - ./opencode/config:/home/opencode/.config/opencode
+      - ./opencode/share:/home/opencode/.local/share/opencode
+
+    expose:
+      - "4096"
+
+    restart: unless-stopped
+
+  openchamber:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: openchamber
+
+    depends_on:
+      - opencode
+
+    ports:
+      - "3000:3000"
+
+    environment:
+      OPENCHAMBER_UI_PASSWORD: ${OPENCHAMBER_UI_PASSWORD}
+
+    volumes:
+      - ./openchamber:/home/openchamber/.config/openchamber
+
+      # Important: both containers should see projects
+      # at the same filesystem path.
+      - ./workspace:/workspace
+
+    restart: unless-stopped

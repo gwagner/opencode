@@ -1,22 +1,36 @@
 ---
 name: spec-driven-implementation
 description: Implements code changes aligning a codebase with requirements and consistent approved specifications, including tests, migrations, validation, and regenerated documentation.
+classification: technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: bug-fixer
-      source: /code/agents/bug-fixer.md
-      allowed_skill: spec-driven-implementation
+  read: allow
+  glob: allow
+  grep: allow
+  edit: allow
+  skill:
+    specification-reconciliation: allow
+    project-validation: allow
 inputs:
   - confirmed reconciliation gap
   - consistent approved authority
   - implementation scope
+  - caller-provided permitted authority source test and generated-document paths
 compatibility: opencode
 metadata:
   domain: implementation
 ---
 
 # Specification-driven implementation
+
+## Inputs
+
+Require a confirmed reconciliation gap, consistent approved authority, implementation scope, and caller-provided permitted authority, source, test, and generated-document paths.
+
+Do not use this generic reconciliation procedure when the gap completes or changes a state-changing backend command, job, or worker workflow. The caller must select the dedicated backend workflow procedure.
+
+## Dead-code rule
+
+Within the approved affected source and test scope, remove unused functions and modules, commented-out code, and logic kept only for reference. Use Git history for reference; do not retain it in source. Preserve potentially live behavior and report uncertainty rather than guessing.
 
 ## Deterministic workflow
 
@@ -62,8 +76,8 @@ For each gap:
 5. Update persistence and migrations when needed.
 6. Update API, integration, and frontend layers.
 7. Add or update tests.
-8. Run focused validation.
-9. Run broader regression validation when safe.
+8. Use `project-validation` for focused validation.
+9. Use it for broader regression validation when safe.
 10. Regenerate `/code/specification/`.
 11. Re-run reconciliation.
 12. Mark the gap resolved only if the regenerated specification aligns.

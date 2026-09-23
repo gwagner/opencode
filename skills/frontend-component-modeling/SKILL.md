@@ -1,21 +1,16 @@
 ---
 name: frontend-component-modeling
 description: Designs or reconstructs frontend routes, screens, TypeScript components, Tailwind conventions, states, events, validation, accessibility, and backend dependencies.
+classification: non-technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: app-spec-architect
-      source: /code/agents/app-spec-architect.md
-      allowed_skill: frontend-component-modeling
-    - agent: code-spec-engineer
-      source: /code/agents/code-spec-engineer.md
-      allowed_skill: frontend-component-modeling
-    - agent: reverse-engineer-app-spec
-      source: /code/agents/reverse-engineer-app-spec.md
-      allowed_skill: frontend-component-modeling
+  read: allow
+  question: allow
+  skill:
+    server-driven-component-contract: allow
+    grillme: allow
 inputs:
   - frontend scope
-  - approved requirements or observed evidence
+  - caller-provided permitted authority source and observed evidence paths
 compatibility: opencode
 metadata:
   domain: frontend-architecture
@@ -23,6 +18,10 @@ metadata:
 ---
 
 # Frontend and component modeling
+
+## Inputs
+
+Require frontend scope and caller-provided permitted authority, source, and observed evidence paths.
 
 ## Deterministic workflow
 
@@ -56,9 +55,12 @@ For each screen define:
 - Primary actions
 - Navigation entry points
 - Loading state
+- Pending state
 - Empty state
 - Success state
 - Error state
+- Recovery state
+- Last-known-good behavior
 - Permission behavior
 
 ## Component table
@@ -76,6 +78,9 @@ For interactive components, describe:
 - Validation
 - Accessibility semantics
 - Styling conventions
+- Stable behavior-oriented hooks
+
+When frontend interaction logging is required, define one shared emitter contract rather than component-owned transport. Specify the effective mode supplied by trusted backend configuration, versioned allowlisted event codes and fields, exact interaction triggers and outcomes, bounded queue and batch limits, flush behavior, same-origin endpoint contract, authentication and request protection, retry and drop behavior, and user-workflow behavior when telemetry is unavailable. Diagnostic events MUST identify routes or surfaces, actions, state transitions, validation, failure, and recovery without raw field values, payloads, rendered content, credentials, session identifiers, or personal or regulated data. Browser code MUST NOT select a more permissive mode, severity, tenant, user identity, environment, or sink.
 
 ## UI discipline
 
@@ -84,8 +89,11 @@ For interactive components, describe:
 - Define confirmation behavior for destructive actions.
 - Specify field-level and form-level errors.
 - Define stale or concurrent update behavior.
+- For each asynchronous region, define initial-loading, populated, empty, pending, error, recovery, and last-known-good behavior. Empty is not error, and post-load failure must not erase valid unaffected content unless authority requires it.
+- Define a preservation matrix for applicable draft input, selection, pagination, filters, ranges, modal identity, focus, scroll, and unaffected sibling content.
+- Prefer native semantics, shared components and semantic tokens, visible focus, stable `data-*` behavior hooks, and one accessible action path.
 - Identify data shown to business users, not merely that a dashboard exists.
 - Do not invent frontend implementation when none exists; label required surfaces as proposed or expected.
 - Define a server-fragment versus client-component boundary: HTMX owns forms, requests, errors, and server-fragment swaps; client components own interaction behavior and emit events.
-- For every independently server-driven component, load `server-driven-component-contract` and specify mode, identity, HTTP method/URI or SSE stream, authorization, inputs/headers/body/content types, cache behavior, target/swap or event targets, complete fragment/event data, loading/error/recovery, and structural-update behavior. For HTMX automatic refresh specify trigger, exact interval, and override rule; SSE has reconnect behavior, not a polling interval. Mark values not established by authority as open questions.
+- For every independently server-driven component, load `server-driven-component-contract` and specify mode, identity, HTTP method/URI or SSE stream, authorization, inputs/headers/body/content types, cache behavior, target/swap or event targets, complete fragment/event data, loading/empty/pending/error/recovery states, preservation behavior, and structural-update behavior. For HTMX automatic refresh specify trigger, exact interval, and override rule; SSE has reconnect behavior, not a polling interval. Mark values not established by authority as open questions.
 - Never specify an HTMX swap inside client-component-owned DOM. Client components receive server-provided inputs and do not fetch or own backend-derived state.

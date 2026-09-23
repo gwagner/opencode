@@ -1,33 +1,24 @@
 ---
 name: graphify
 description: Investigates a codebase efficiently with graphify. Use when answering codebase questions, tracing code relationships, or updating an existing knowledge graph after code changes.
+classification: technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: api-integration-tester
-      source: /code/agents/api-integration-tester.md
-      allowed_skill: graphify
-    - agent: bug-fixer
-      source: /code/agents/bug-fixer.md
-      allowed_skill: graphify
-    - agent: code-implementor
-      source: /code/agents/code-implementor.md
-      allowed_skill: graphify
-    - agent: reverse-engineer-app-spec
-      source: /code/agents/reverse-engineer-app-spec.md
-      allowed_skill: graphify
-    - agent: spec-gap-detector
-      source: /code/agents/spec-gap-detector.md
-      allowed_skill: graphify
-    - agent: todo-planner
-      source: /code/agents/todo-planner.md
-      allowed_skill: graphify
+  read: allow
+  bash:
+    "graphify query *": allow
+    "graphify explain *": allow
+    "graphify path *": allow
+    "graphify update .": allow
 inputs:
   - codebase question or changed code
   - existing graph output
 ---
 
 # Graphify
+
+## Inputs
+
+Require a codebase question or changed code and existing graph output.
 
 The root directory of any graphify operation is always in `/code/`
 

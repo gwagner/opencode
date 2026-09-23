@@ -1,21 +1,29 @@
 ---
 name: git-main-sync
 description: Safely synchronizes a feature branch with local main before code work, checkpointing work and resolving conflicts from evidence.
+classification: technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: api-integration-tester
-      source: /code/agents/api-integration-tester.md
-      allowed_skill: git-main-sync
-    - agent: bug-fixer
-      source: /code/agents/bug-fixer.md
-      allowed_skill: git-main-sync
+  read: allow
+  glob: allow
+  bash:
+    "git status --porcelain=v1*": allow
+    "git rev-parse *": allow
+    "git diff *": allow
+    "git add -- *": allow
+    "git commit -m *": allow
+    "git merge --no-commit --no-ff main": allow
+    "git merge --abort": allow
+  task: allow
 inputs:
   - current feature Git worktree
   - local main
 ---
 
 # Git main sync
+
+## Inputs
+
+Require a current feature Git worktree and local main.
 
 ## Deterministic workflow
 

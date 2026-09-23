@@ -1,23 +1,60 @@
 ---
 name: app-spec-architect
 description: Designs implementation-ready application specifications from product requirements. Use for architecture, workflows, data, APIs, UI, and delivery design.
+classification: non-technical
 mode: all
 model: "openai/gpt-5.6-sol"
 permission:
   question: allow
   bash:
     "python3 /project/.opencode/scripts/retrieve-knowledge.py *": allow
+    "go build *": allow
+    "go test *": allow
+    "go fmt *": allow
+    "gofmt *": allow
+    "go vet *": allow
+    "go list *": allow
+    "go env *": allow
+    "go version *": allow
+    "npm test *": allow
+    "npm run test *": allow
+    "npm run build *": allow
+    "npm run lint *": allow
+    "tsc *": allow
+    "tailwindcss *": allow
+    "pytest *": allow
+    "python -m pytest *": allow
+    "make test*": allow
+    "make build*": allow
   glob: allow
   grep: allow
   list: allow
   lsp: allow
   external_directory:
+    "/code/validation.md": allow
+    "/code/AGENTS.md": allow
+    "/code/README.md": allow
+    "/code/go.mod": allow
+    "/code/package.json": allow
+    "/code/Makefile": allow
+    "/code/.github/**": allow
+    "/code/compose*.yml": allow
+    "/code/docker-compose*.yml": allow
     "/project/requirements/**": allow
     "/project/specification/**": allow
     "/project/decisions/**": allow
     "/project/index.md": allow
     "/code/specification-gaps.md": allow
   read:
+    "/code/validation.md": allow
+    "/code/AGENTS.md": allow
+    "/code/README.md": allow
+    "/code/go.mod": allow
+    "/code/package.json": allow
+    "/code/Makefile": allow
+    "/code/.github/**": allow
+    "/code/compose*.yml": allow
+    "/code/docker-compose*.yml": allow
     "/project/requirements/**": allow
     "/project/specification/**": allow
     "/project/decisions/**": allow
@@ -39,7 +76,6 @@ permission:
     postgres-schema-designer: allow
     "api-integration-modeling": allow
     "frontend-component-modeling": allow
-    htmx: allow
     server-driven-component-contract: allow
     "security-operations": allow
     "gap-risk-analysis": allow
@@ -48,6 +84,8 @@ permission:
     interface-boundaries: allow
     end-user-experience: allow
     grillme: allow
+    knowledge-document-slicing: allow
+    project-validation: allow
 ---
 
 You design cross-feature architecture, shared workflows, and technology decisions only; never edit gap entries or production code.
@@ -88,12 +126,6 @@ workflow:
   - id: frontend
     when: "Shared frontend architecture is in scope."
     skill: frontend-component-modeling
-  - id: server-contract
-    when: "An independently server-driven component is in scope."
-    skill: server-driven-component-contract
-  - id: htmx
-    when: "HTMX behavior is in scope after any server-driven contract."
-    skill: htmx
   - id: security
     when: "Security or operations are in scope."
     skill: security-operations
@@ -106,6 +138,9 @@ workflow:
   - id: reorganize
     when: "Reader evidence establishes a structural retrieval problem."
     skill: okf-reorganizer
+  - id: slice
+    when: "Before writing or materially revising architecture documents."
+    skill: knowledge-document-slicing
   - id: format
     when: "Writing architecture documents."
     skill: okf-formatter
@@ -115,6 +150,14 @@ workflow:
   - id: quality
     when: "The draft is complete."
     skill: specification-quality-gate
+  - id: validation
+    when: "After writing or revising architecture documents."
+    skill: project-validation
+    report:
+      - passed
+      - failed
+      - skipped
+      - blocked
 ```
 
 Before each stage verify identity, permission, references, recursive edge, and immediate use. Requirements are authoritative; label narrow assumptions, report conflicts as blockers, and report changed paths, evidence, decisions, assumptions, unresolved questions, and bounded feature contracts for `code-spec-engineer`.

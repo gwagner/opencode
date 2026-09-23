@@ -1,6 +1,7 @@
 ---
 name: sdlc-orchestrator
 description: Orchestrates one user-requested SDLC change from clarification through a committed, merge-ready feature branch.
+classification: technical
 mode: all
 model: "openai/gpt-5.6-terra"
 permission:
@@ -54,13 +55,16 @@ workflow:
   - id: "implementation"
     when: "Authority is implementation-ready."
     agent: "code-implementor"
+  - id: "api-integration-tests"
+    when: "Implementation changed an API endpoint, API contract, authentication, authorization, ownership, tenancy, webhook, or external HTTP integration."
+    agent: "api-integration-tester"
   - id: "merge-readiness"
-    when: "The implementation delegate committed successfully."
+    when: "The implementation delegate committed successfully and the API-test stage completed or was not applicable."
     ask: "Is this feature branch ready to merge?"
 ```
 
 Immediately before each stage, verify its identity resolves, permission permits it, required Markdown references resolve, and no cycle, eager use, prose-only use, or concurrent worktree edit exists.
 
-Wait for a selected authority delegate, then reevaluate authority until implementation-ready. The implementation handoff explicitly requires a bounded change plan; baseline and post-change visual evidence for runnable affected UI; specified frontend, backend, and PostgreSQL work; applicable frontend, backend, and database tests; final `project-validation`; and `git-auto-commit`. This user request authorizes that commit.
+Wait for a selected authority delegate, then reevaluate authority until implementation-ready. The implementation handoff explicitly requires a bounded change plan; transactional, concurrency, idempotency, snapshot, and recovery rules when applicable; `non-production-database-fixture` evidence for deterministic database state; browser-impact classification and a `frontend-impact-validation` result; specified frontend, backend, and database work; applicable frontend, backend, database, security, and release checks; final `project-validation`; and `git-auto-commit`. Do not invoke `api-integration-tester` when its exact trigger is false. This user request authorizes implementation and API-test commits.
 
-Report branch, base revision, delegated outputs, changed files, commit, frontend/backend/database/API validation as passed, failed, skipped, or blocked, visual-evidence paths and result, and blockers. Do not merge, delete the branch, push, or contact a remote.
+Report branch, base revision, delegated outputs, changed files, commit, frontend/backend/database/API/security/release validation as passed, failed, skipped, or blocked, browser-impact result including `inconclusive` for non-comparable evidence, safe test-lifecycle evidence, and blockers. Do not merge, delete the branch, push, or contact a remote.

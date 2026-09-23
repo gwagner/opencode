@@ -1,21 +1,12 @@
 ---
 name: data-persistence-modeling
 description: Designs or reconstructs application entities, PostgreSQL schemas, relationships, constraints, indexing, transactions, tenancy, and audit history.
+classification: non-technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: app-spec-architect
-      source: /code/agents/app-spec-architect.md
-      allowed_skill: data-persistence-modeling
-    - agent: code-spec-engineer
-      source: /code/agents/code-spec-engineer.md
-      allowed_skill: data-persistence-modeling
-    - agent: reverse-engineer-app-spec
-      source: /code/agents/reverse-engineer-app-spec.md
-      allowed_skill: data-persistence-modeling
+  read: allow
 inputs:
   - persistence scope
-  - requirements or schema evidence
+  - caller-provided permitted authority schema source and test evidence paths
 compatibility: opencode
 metadata:
   domain: data-architecture
@@ -23,6 +14,10 @@ metadata:
 ---
 
 # Data and persistence modeling
+
+## Inputs
+
+Require persistence scope and caller-provided permitted authority, schema, source, and test evidence paths.
 
 Use this skill to specify application data behavior.
 
@@ -56,6 +51,11 @@ When designing, prefer PostgreSQL-friendly constructs:
 - Separate history or audit records when lifecycle reconstruction matters
 - Explicit tenant keys where multi-tenant
 - Idempotency keys or event records for external ingestion
+- Persisted unique tie-breakers for every ordered collection
+
+For each concurrency-sensitive invariant, map the invariant to both the application transition guard and the strongest appropriate database constraint, exclusion rule, conditional update, lock, or unique key. Name the transaction owner, race behavior, and failure result; application checks alone do not prove race safety.
+
+For every paginated, timeline, history, queue, or latest query, define one total persisted order: authoritative business timestamp or state first, followed by a unique persisted identifier. Apply the complete order before slicing and reuse it across refresh, retry, cursor, and page traversal.
 
 ## Reverse-engineering reconciliation
 
@@ -88,5 +88,7 @@ Document:
 - Tenant isolation
 - Optimistic or pessimistic concurrency
 - Transaction boundaries
+- Service and database enforcement for concurrency-sensitive invariants
+- Complete `ORDER BY` and page-boundary behavior for ordered reads
 - Raw webhook or transcript retention
 - Personally identifiable or sensitive information

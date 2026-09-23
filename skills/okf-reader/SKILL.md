@@ -1,36 +1,24 @@
 ---
 name: okf-reader
 description: Read and answer questions from OKF knowledge bundles using indexes, concept frontmatter, markdown links, and citations.
+classification: non-technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: app-spec-architect
-      source: /code/agents/app-spec-architect.md
-      allowed_skill: okf-reader
-    - agent: bug-fixer
-      source: /code/agents/bug-fixer.md
-      allowed_skill: okf-reader
-    - agent: code-implementor
-      source: /code/agents/code-implementor.md
-      allowed_skill: okf-reader
-    - agent: code-spec-engineer
-      source: /code/agents/code-spec-engineer.md
-      allowed_skill: okf-reader
-    - agent: prd-strategist
-      source: /code/agents/prd-strategist.md
-      allowed_skill: okf-reader
-    - agent: spec-gap-detector
-      source: /code/agents/spec-gap-detector.md
-      allowed_skill: okf-reader
-    - agent: todo-planner
-      source: /code/agents/todo-planner.md
-      allowed_skill: okf-reader
+  read: allow
+  glob: allow
+  grep: allow
+  bash:
+    "python3 /project/.opencode/scripts/retrieve-knowledge.py *": allow
 inputs:
   - question
   - accessible OKF bundle root
+  - permitted retrieval command when indexed retrieval is needed
 ---
 
 # OKF reader
+
+## Inputs
+
+Require a question, accessible OKF bundle root, and the permitted retrieval command when indexed retrieval is needed.
 
 Use for questions answered from an OKF Markdown bundle. Read the smallest relevant subset.
 

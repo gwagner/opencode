@@ -1,12 +1,25 @@
 ---
 name: evidence-based-merge-resolution
 description: Resolves local-main merge conflicts in the current checkpointed feature branch using authoritative evidence, validation, and an explicit local-main tie-breaker.
+classification: technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: merge-evidence-resolver
-      source: /code/agents/merge-evidence-resolver.md
-      allowed_skill: evidence-based-merge-resolution
+  read: allow
+  glob: allow
+  grep: allow
+  edit: allow
+  bash:
+    "git status *": allow
+    "git rev-parse *": allow
+    "git merge-base *": allow
+    "git diff *": allow
+    "git diff --check": allow
+    "git add -- *": allow
+    "git commit -m *": allow
+    "git log *": allow
+    "git show *": allow
+    "git blame *": allow
+  skill:
+    project-validation: allow
 inputs:
   - active local-main merge conflict
   - checkpointed feature worktree
@@ -14,6 +27,14 @@ inputs:
 ---
 
 # Evidence-based merge resolution
+
+## Inputs
+
+Require an active local-main merge conflict, checkpointed feature worktree, and authority evidence.
+
+## Dead-code rule
+
+Within resolved conflict paths, remove unused functions and modules, commented-out code, and logic kept only for reference when cited authority proves it is dead. Use Git history for reference; preserve uncertain behavior and report it.
 
 ## Deterministic workflow
 

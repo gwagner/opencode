@@ -1,30 +1,29 @@
 ---
 name: postgres-schema-designer
 description: Designs PostgreSQL schema specification documents. Use with specification work involving entities, constraints, keys, indexes, relationships, or transaction rules.
+classification: non-technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: app-spec-architect
-      source: /code/agents/app-spec-architect.md
-      allowed_skill: postgres-schema-designer
-    - agent: code-spec-engineer
-      source: /code/agents/code-spec-engineer.md
-      allowed_skill: postgres-schema-designer
-    - agent: reverse-engineer-app-spec
-      source: /code/agents/reverse-engineer-app-spec.md
-      allowed_skill: postgres-schema-designer
+  read: allow
+  edit: allow
 inputs:
   - approved persistence requirements
+  - caller-provided permitted authority and schema evidence paths
   - permitted specification destination
 ---
 
 # PostgreSQL schema design
+
+## Inputs
+
+Require approved persistence requirements, caller-provided permitted authority and schema evidence paths, and a permitted specification destination.
 
 Use after `data-persistence-modeling` has established that PostgreSQL persistence is relevant.
 
 1. Read only the feature, workflow, API, and existing schema evidence relevant to the change.
 2. Produce focused, linked table documents in the calling agent's permitted specification directory.
 3. Define normalized entities, keys, constraints, indexes, relationships, tenancy, and transaction-aware lifecycle rules.
-4. Do not invent product behavior. Label assumptions and unresolved persistence questions.
+4. For each concurrency-sensitive invariant, name its application transition guard, PostgreSQL constraint or guarded update, transaction owner, race behavior, and failure result.
+5. For each paginated, timeline, history, queue, or latest query, specify a complete persisted `ORDER BY` ending in a unique persisted tie-breaker and define equal-key page-boundary behavior.
+6. Do not invent product behavior. Label assumptions and unresolved persistence questions.
 
-Keep schema documentation separate from executable migrations. Use `postgres-migration` only when an implementation task requires a forward-only migration.
+Keep schema documentation separate from executable migrations. Report an implementation handoff when a forward-only migration is required; the implementation caller owns its separately wired `postgres-migration` stage.

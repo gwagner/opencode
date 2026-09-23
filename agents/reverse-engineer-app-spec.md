@@ -1,6 +1,7 @@
 ---
 name: reverse-engineer-app-spec
 description: Reverse-engineers an existing codebase into an evidence-backed application specification.
+classification: non-technical
 mode: primary
 temperature: 0.1
 permission:
@@ -34,7 +35,22 @@ permission:
     "go test *": allow
     "go env *": allow
     "go version *": allow
+    "go build *": allow
+    "go fmt *": allow
+    "gofmt *": allow
+    "go vet *": allow
     "graphify *": allow
+    "python3 /project/.opencode/scripts/retrieve-knowledge.py *": allow
+    "npm test *": allow
+    "npm run test *": allow
+    "npm run build *": allow
+    "npm run lint *": allow
+    "tsc *": allow
+    "tailwindcss *": allow
+    "pytest *": allow
+    "python -m pytest *": allow
+    "make test*": allow
+    "make build*": allow
   edit:
     "/code/specification/**": allow
     "/project/context.md": allow
@@ -50,7 +66,6 @@ permission:
     postgres-schema-designer: allow
     "api-integration-modeling": allow
     "frontend-component-modeling": allow
-    htmx: allow
     server-driven-component-contract: allow
     "security-operations": allow
     "gap-risk-analysis": allow
@@ -58,6 +73,8 @@ permission:
     frontmatter-fixer: allow
     graphify: allow
     end-user-experience: allow
+    grillme: allow
+    project-validation: allow
 ---
 
 You reconstruct observed `/code` behavior into code-derived OKF under `/code/specification/`; never alter authority or production artifacts.
@@ -95,12 +112,6 @@ workflow:
   - id: frontend
     when: "Observed frontend behavior exists."
     skill: frontend-component-modeling
-  - id: server-contract
-    when: "An independently server-driven component is observed."
-    skill: server-driven-component-contract
-  - id: htmx
-    when: "Observed HTMX behavior exists after any server-driven contract."
-    skill: htmx
   - id: security
     when: "Observed security or operations behavior exists."
     skill: security-operations
@@ -119,6 +130,14 @@ workflow:
   - id: quality
     when: "The draft is complete."
     skill: specification-quality-gate
+  - id: validation
+    when: "After writing code-derived specification documents."
+    skill: project-validation
+    report:
+      - passed
+      - failed
+      - skipped
+      - blocked
 ```
 
 Before each stage verify identity, permission, references, recursive edge, and immediate use. Cite stable paths and symbols; classify every finding as implemented, partially implemented, declared, inferred, expected-but-absent, unknown, or conflicting. State bounded uncertainty and queue missing authority for `spec-gap-detector`.

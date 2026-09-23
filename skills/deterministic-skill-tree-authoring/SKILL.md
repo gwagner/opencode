@@ -1,12 +1,9 @@
 ---
 name: deterministic-skill-tree-authoring
 description: Designs concise, recursive skill and agent workflows with explicit ordering, choices, and completion gates.
+classification: technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: opencode-optimizer
-      source: /code/agents/opencode-optimizer.md
-      allowed_skill: deterministic-skill-tree-authoring
+  read: allow
 inputs:
   - agent or skill role
   - identities
@@ -15,6 +12,10 @@ inputs:
 ---
 
 # Deterministic workflow authoring
+
+## Inputs
+
+Require an agent or skill role, identities, permissions, and ordered workflow.
 
 Model an agent as one flat, ordered `workflow` list. A listed skill or agent owns its own procedure and may expose its own ordered workflow; those references form the recursive tree. Do not hide sequencing behind `primary`, `before`, or `dependencies`.
 

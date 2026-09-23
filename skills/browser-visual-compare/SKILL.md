@@ -1,18 +1,13 @@
 ---
 name: browser-visual-compare
-description: Compares caller-supplied deterministic baseline/post-change screenshot pairs against structured visual expectations.
+description: Compares caller-supplied deterministic baseline/post-change screenshot pairs as diagnostic evidence against structured visual expectations.
+classification: technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: bug-fixer
-      source: /code/agents/bug-fixer.md
-      allowed_skill: browser-visual-compare
-    - agent: code-implementor
-      source: /code/agents/code-implementor.md
-      allowed_skill: browser-visual-compare
-    - agent: todo-planner
-      source: /code/agents/todo-planner.md
-      allowed_skill: browser-visual-compare
+  bash:
+    "node /code/skills/browser-visual-compare/scripts/compare-screenshots.mjs *": allow
+  external_directory:
+    "/code/skills/browser-visual-compare/scripts/compare-screenshots.mjs": allow
+    "/tmp/**": allow
 inputs:
   - baseline summary
   - post-change summary
@@ -21,7 +16,13 @@ inputs:
 
 # Browser Visual Compare
 
+## Inputs
+
+Require baseline and post-change summaries and an approved expectation manifest.
+
 Use this skill for screenshot pairs supplied by the caller. The caller owns capture sequencing and supplies task-specific expectations from approved acceptance criteria; this skill owns reusable pixel comparison and pass/fail mechanics. Never infer product expectations from the screenshots.
+
+This is a diagnostic adapter. Its result cannot by itself establish browser-impact completion.
 
 ## CLI
 

@@ -1,18 +1,14 @@
 ---
 name: okf-reorganizer
 description: Reorganizes an OKF bundle while preserving concepts, links, metadata, and history.
+classification: non-technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: app-spec-architect
-      source: /code/agents/app-spec-architect.md
-      allowed_skill: okf-reorganizer
-    - agent: code-spec-engineer
-      source: /code/agents/code-spec-engineer.md
-      allowed_skill: okf-reorganizer
-    - agent: prd-strategist
-      source: /code/agents/prd-strategist.md
-      allowed_skill: okf-reorganizer
+  read: allow
+  glob: allow
+  grep: allow
+  edit: allow
+  skill:
+    okf-formatter: allow
 inputs:
   - OKF bundle root
   - bounded structural problem
@@ -20,6 +16,10 @@ inputs:
 ---
 
 # What I Do
+
+## Inputs
+
+Require an OKF bundle root, a bounded structural problem, and a permitted write destination.
 
 ## Deterministic workflow
 

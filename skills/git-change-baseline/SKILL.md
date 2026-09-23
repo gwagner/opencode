@@ -1,18 +1,21 @@
 ---
 name: git-change-baseline
 description: Records a safe ownership baseline for one authorized future task commit before editing begins.
+classification: technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: code-implementor
-      source: /code/agents/code-implementor.md
-      allowed_skill: git-change-baseline
+  read: allow
+  bash:
+    "git status --porcelain=v1 -z": allow
 inputs:
   - explicit task-commit authorization
   - current Git worktree
 ---
 
 # Git change baseline
+
+## Inputs
+
+Require explicit task-commit authorization and the current Git worktree.
 
 Use only when a task commit is authorized, before the first edit. This skill owns baseline capture only; it does not validate, stage, commit, merge, reset, restore, clean, stash, amend, push, or contact a remote.
 

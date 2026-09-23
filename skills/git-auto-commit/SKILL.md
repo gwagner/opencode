@@ -1,18 +1,14 @@
 ---
 name: git-auto-commit
 description: Creates a safe, verbose Git commit for agent-owned validated changes when the user explicitly requests a commit.
+classification: technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: api-integration-tester
-      source: /code/agents/api-integration-tester.md
-      allowed_skill: git-auto-commit
-    - agent: bug-fixer
-      source: /code/agents/bug-fixer.md
-      allowed_skill: git-auto-commit
-    - agent: code-implementor
-      source: /code/agents/code-implementor.md
-      allowed_skill: git-auto-commit
+  read: allow
+  bash:
+    "git status*": allow
+    "git diff*": allow
+    "git add -- *": allow
+    "git commit --only *": allow
 inputs:
   - explicit commit authorization
   - ownership baseline
@@ -20,6 +16,10 @@ inputs:
 ---
 
 # Git auto-commit
+
+## Inputs
+
+Require explicit commit authorization, an ownership baseline, and passed validation.
 
 Use only when the user explicitly requests a commit, after a recorded ownership baseline and passed project validation. This skill owns final staging and commit only.
 

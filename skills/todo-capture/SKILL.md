@@ -1,12 +1,12 @@
 ---
 name: todo-capture
 description: Captures detailed deferred work in /code/todo.md, or unresolved work in /code/blocked-todos.md, during normal non-loop work.
+classification: non-technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: todo-planner
-      source: /code/agents/todo-planner.md
-      allowed_skill: todo-capture
+  read: allow
+  edit: allow
+  skill:
+    todo-entry-contract: allow
 inputs:
   - one concrete deferred outcome
   - evidence
@@ -14,6 +14,10 @@ inputs:
 ---
 
 # Todo Capture
+
+## Inputs
+
+Require one concrete deferred outcome, evidence, and normal non-loop context.
 
 ## Deterministic workflow
 

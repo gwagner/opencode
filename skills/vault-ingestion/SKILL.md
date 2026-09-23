@@ -1,12 +1,13 @@
 ---
 name: vault-ingestion
 description: Ingests a URL into an Obsidian or OKF vault as a durable, searchable note. Use when saving web pages, articles, documentation, or research references.
+classification: non-technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: url-to-vault
-      source: /code/agents/url-to-vault.md
-      allowed_skill: vault-ingestion
+  read: allow
+  glob: allow
+  grep: allow
+  edit: allow
+  webfetch: allow
 inputs:
   - URL
   - existing confirmed vault destination
@@ -14,6 +15,10 @@ inputs:
 ---
 
 # Vault ingestion
+
+## Inputs
+
+Require a URL, an existing confirmed vault destination, and capture depth.
 
 1. Validate and fetch the URL.
 2. Extract the readable main content and available canonical metadata.

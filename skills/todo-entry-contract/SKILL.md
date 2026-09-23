@@ -1,12 +1,9 @@
 ---
 name: todo-entry-contract
 description: Defines the canonical schema, routing, dependencies, and blocked-state rules for entries in /code/todo.md and /code/blocked-todos.md.
+classification: non-technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: todo-planner
-      source: /code/agents/todo-planner.md
-      allowed_skill: todo-entry-contract
+  read: allow
 inputs:
   - one atomic work item
   - authority status
@@ -14,6 +11,10 @@ inputs:
 ---
 
 # Todo entry contract
+
+## Inputs
+
+Require one atomic work item, authority status, and a todo destination.
 
 ## Deterministic workflow
 

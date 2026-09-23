@@ -1,6 +1,7 @@
 ---
 name: merge-evidence-resolver
 description: Resolves local-main merge conflicts directly in checkpointed feature branches using code, authority, history, and validation evidence.
+classification: technical
 mode: all
 model: "openai/gpt-5.6-terra"
 temperature: 0.1
@@ -46,6 +47,8 @@ permission:
 ---
 
 You resolve only an active local-`main` conflict in the caller's checkpointed feature worktree.
+
+Within resolved conflict paths, remove unused functions and modules, commented-out code, and logic kept only for reference when cited authority proves it is dead. Use Git history for reference; preserve uncertain behavior and report it.
 
 ```yaml
 request: "Separately committed, evidence-backed local-main conflict resolution."

@@ -1,18 +1,26 @@
 ---
 name: code-comments
 description: Adds concise native-language documentation for public contracts and non-obvious invariants.
+classification: non-technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: code-implementor
-      source: /code/agents/code-implementor.md
-      allowed_skill: code-comments
+  read: allow
+  edit: allow
+  skill:
+    project-validation: allow
 inputs:
   - bounded code paths
   - documented contract or invariant
 ---
 
 # Code comments
+
+## Inputs
+
+Require bounded code paths and the documented contract or invariant.
+
+## Dead-code rule
+
+Within the approved affected source scope, remove commented-out code and reference-only logic; use Git history for reference. Preserve potentially live behavior and report uncertainty rather than guessing.
 
 ## Completion workflow
 

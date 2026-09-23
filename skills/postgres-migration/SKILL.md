@@ -1,27 +1,32 @@
 ---
 name: postgres-migration
-description: "Create safe, forward-only PostgreSQL schema migrations in /code/migrations. Use when adding, changing, or removing PostgreSQL tables, columns, indexes, constraints, types, functions, triggers, policies, or other schema objects. Existing migration files are immutable: never edit, rename, delete, replace, or reuse a migration after it has been written; create a new migration file for every subsequent change or correction."
+description: "Creates safe, forward-only PostgreSQL schema migrations in the caller-permitted project migration directory. Existing migration files are immutable; every later change or correction uses a new migration."
+classification: technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: bug-fixer
-      source: /code/agents/bug-fixer.md
-      allowed_skill: postgres-migration
-    - agent: code-implementor
-      source: /code/agents/code-implementor.md
-      allowed_skill: postgres-migration
+  read: allow
+  glob: allow
+  edit: allow
+  skill:
+    project-validation: allow
 inputs:
   - approved schema change
   - migration history
-  - migration directory
+  - caller-provided permitted migration directory and affected schema paths
 compatibility: opencode
 metadata:
   database: postgresql
-  migration-directory: /code/migrations
   strategy: forward-only
 ---
 
 # PostgreSQL schema migrations
+
+## Inputs
+
+Require an approved schema change, migration history, and caller-provided permitted migration directory and affected schema paths.
+
+## Dead-code rule
+
+Keep each new migration limited to active schema behavior: do not add commented-out SQL or logic kept only for reference. Use Git history for reference. Existing validated migrations remain immutable; preserve uncertain behavior and report it rather than guessing.
 
 ## Completion workflow
 
@@ -38,9 +43,9 @@ workflow:
       - "blocked"
 ```
 
-Create PostgreSQL schema migrations as immutable, forward-only SQL files in:
+Create PostgreSQL schema migrations as immutable, forward-only SQL files only in the caller-provided permitted migration directory.
 
-`/code/migrations/*.sql`
+Use `project-validation` for migration-specific formatting, linting, and non-destructive test commands.
 
 ## Non-negotiable rules
 
@@ -48,9 +53,9 @@ Create PostgreSQL schema migrations as immutable, forward-only SQL files in:
 2. Never rename, delete, truncate, overwrite, or replace an existing migration file.
 3. Never reuse an existing migration filename.
 4. If an existing migration is incorrect, create a new migration that corrects or reverses it.
-5. Before writing a migration, list and inspect `/code/migrations` to understand the current migration history.
+5. Before writing a migration, list and inspect the permitted migration directory to understand the current migration history.
 6. Treat a migration as immutable after validation or commit.
-7. Write only schema-migration SQL to `/code/migrations`. Do not place application code or generated artifacts there.
+7. Write only schema-migration SQL to the permitted migration directory. Do not place application code or generated artifacts there.
 8. Do not execute migrations against a database unless the user explicitly asks you to do so.
 
 If a requested task would require changing an existing migration, refuse that specific edit and create a new corrective migration instead.
@@ -61,7 +66,7 @@ If a requested task would require changing an existing migration, refuse that sp
 
 Before designing the migration:
 
-- List all existing files in `/code/migrations`.
+- List all existing files in the permitted migration directory.
 - Read relevant existing migrations.
 - Inspect the current schema definitions, database access code, and migration tooling when available.
 - Determine the repository's established filename and SQL conventions.

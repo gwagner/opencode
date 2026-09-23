@@ -1,18 +1,11 @@
 ---
 name: specification-quality-gate
 description: Performs a final completeness, consistency, evidence, stack, workflow, API, data, frontend, security, and implementation-readiness review.
+classification: non-technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: app-spec-architect
-      source: /code/agents/app-spec-architect.md
-      allowed_skill: specification-quality-gate
-    - agent: code-spec-engineer
-      source: /code/agents/code-spec-engineer.md
-      allowed_skill: specification-quality-gate
-    - agent: reverse-engineer-app-spec
-      source: /code/agents/reverse-engineer-app-spec.md
-      allowed_skill: specification-quality-gate
+  read: allow
+  skill:
+    okf-formatter: allow
 inputs:
   - draft specification
   - intended authority or evidence mode
@@ -23,6 +16,10 @@ metadata:
 ---
 
 # Specification quality gate
+
+## Inputs
+
+Require a draft specification, intended authority or evidence mode, and permitted destination.
 
 ## Deterministic workflow
 
@@ -52,6 +49,8 @@ Confirm:
 - State transitions have triggers and entry criteria.
 - Validation and failure recovery are described.
 - Security and operational concerns are addressed.
+- Forward-designed end-user interactions define environment-specific diagnostic and production-business logging modes, a named configuration variable with safe defaults and validation, permitted events and fields, privacy controls, volume and retention controls, verification, and controlled production override behavior. Reverse-engineered specifications classify observed evidence and any absence as a gap without asserting unobserved behavior.
+- Required browser interaction logging defines a shared frontend emitter, backend-owned effective mode and catalog, bounded same-origin ingestion command, authentication and request protection, untrusted-input validation and redaction, trusted server enrichment, structured application-logger emission, deployment-owned sink routing, failure isolation, and frontend, backend, and release verification.
 - Risks, assumptions, gaps, and open questions are visible.
 - Traceability exists for material claims.
 

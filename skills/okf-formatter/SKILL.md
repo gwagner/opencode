@@ -1,24 +1,12 @@
 ---
 name: okf-formatter
 description: Formats new or updated knowledge as focused, linked Open Knowledge Format Markdown concepts and indexes.
+classification: non-technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: app-spec-architect
-      source: /code/agents/app-spec-architect.md
-      allowed_skill: okf-formatter
-    - agent: code-spec-engineer
-      source: /code/agents/code-spec-engineer.md
-      allowed_skill: okf-formatter
-    - agent: prd-strategist
-      source: /code/agents/prd-strategist.md
-      allowed_skill: okf-formatter
-    - agent: reverse-engineer-app-spec
-      source: /code/agents/reverse-engineer-app-spec.md
-      allowed_skill: okf-formatter
-    - agent: url-to-vault
-      source: /code/agents/url-to-vault.md
-      allowed_skill: okf-formatter
+  read: allow
+  edit: allow
+  skill:
+    frontmatter-fixer: allow
 inputs:
   - OKF bundle root
   - bounded knowledge content
@@ -26,6 +14,10 @@ inputs:
 ---
 
 # OKF formatter
+
+## Inputs
+
+Require an OKF bundle root, bounded knowledge content, and a permitted write destination.
 
 ## Deterministic workflow
 

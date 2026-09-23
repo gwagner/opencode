@@ -1,21 +1,13 @@
 ---
 name: requirements-analysis
 description: Analyzes raw product requirements into explicit requirements, implications, assumptions, constraints, ambiguities, and traceable specification inputs.
+classification: non-technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: app-spec-architect
-      source: /code/agents/app-spec-architect.md
-      allowed_skill: requirements-analysis
-    - agent: code-spec-engineer
-      source: /code/agents/code-spec-engineer.md
-      allowed_skill: requirements-analysis
-    - agent: prd-strategist
-      source: /code/agents/prd-strategist.md
-      allowed_skill: requirements-analysis
-    - agent: todo-planner
-      source: /code/agents/todo-planner.md
-      allowed_skill: requirements-analysis
+  read: allow
+  glob: allow
+  grep: allow
+  skill:
+    okf-reader: allow
 inputs:
   - requirements scope
   - accessible requirements bundle
@@ -25,6 +17,10 @@ metadata:
 ---
 
 # Requirements analysis
+
+## Inputs
+
+Require requirements scope and an accessible requirements bundle.
 
 ## Deterministic workflow
 

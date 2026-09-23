@@ -1,12 +1,10 @@
 ---
 name: specification-gap-handoff
 description: Classifies code-to-authority documentation gaps and creates durable, evidence-backed handoffs for the correct requirements or specification owner.
+classification: non-technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: spec-gap-detector
-      source: /code/agents/spec-gap-detector.md
-      allowed_skill: specification-gap-handoff
+  read: allow
+  edit: allow
 inputs:
   - observed capability evidence
   - accessible authority sources
@@ -15,24 +13,9 @@ inputs:
 
 # Specification gap handoff
 
-## Deterministic workflow
+## Inputs
 
-```yaml
-request: "Durable specification-gap entry with its correct documentation owner"
-workflow:
-  - id: "select-documentation-owner"
-    when: "When a queued gap classification requires an authoritative owner."
-    select:
-      question: "Which owner must resolve the earliest missing authority?"
-      precedence: "Evaluate branches in listed order; the final branch is fallback."
-      branches:
-        - when: "When product intent, business rules, user-visible behavior, scope, or acceptance policy is missing."
-          agent: "prd-strategist"
-        - when: "When shared architecture, a cross-feature workflow, a system boundary, or a technology decision is missing."
-          agent: "app-spec-architect"
-        - when: "otherwise"
-          agent: "code-spec-engineer"
-```
+Require observed capability evidence, accessible authority sources, and a gap-report destination.
 
 Use when implemented behavior may lack authoritative requirements or specifications. This skill records and routes documentation work; it never approves observed code behavior or changes production code.
 

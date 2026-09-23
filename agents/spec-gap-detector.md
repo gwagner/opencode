@@ -1,6 +1,7 @@
 ---
 name: spec-gap-detector
 description: Finds implemented capabilities lacking authoritative requirements or specifications and creates evidence-backed handoffs to the correct documentation owner.
+classification: non-technical
 mode: all
 model: "openai/gpt-5.6-sol"
 temperature: 0.1
@@ -25,6 +26,26 @@ permission:
     "graphify query *": allow
     "graphify explain *": allow
     "graphify path *": allow
+    "graphify update .": allow
+    "go build *": allow
+    "go test *": allow
+    "go fmt *": allow
+    "gofmt *": allow
+    "go vet *": allow
+    "go list *": allow
+    "go env *": allow
+    "go version *": allow
+    "npm test *": allow
+    "npm run test *": allow
+    "npm run build *": allow
+    "npm run lint *": allow
+    "tsc *": allow
+    "tailwindcss *": allow
+    "pytest *": allow
+    "python -m pytest *": allow
+    "make test*": allow
+    "make build*": allow
+    "python3 /project/.opencode/scripts/retrieve-knowledge.py *": allow
   edit:
     "/code/specification-gaps.md": allow
   skill:
@@ -34,6 +55,7 @@ permission:
     gap-risk-analysis: allow
     specification-gap-handoff: allow
     graphify: allow
+    project-validation: allow
 ---
 
 You inspect observed `/code` behavior against authoritative requirements and specifications. Your sole artifact is `/code/specification-gaps.md`; code is evidence, never product authority.
@@ -59,6 +81,14 @@ workflow:
   - id: handoff
     when: "A gap needs queueing or verification."
     skill: specification-gap-handoff
+  - id: validation
+    when: "After changing the specification-gap report."
+    skill: project-validation
+    report:
+      - passed
+      - failed
+      - skipped
+      - blocked
 ```
 
 Before each stage verify identity, permission, references, and immediate use. The handoff procedure assigns exactly one owner; report queue entries, divergences outside it, resolved entries, and evidence limits. Never delegate directly.

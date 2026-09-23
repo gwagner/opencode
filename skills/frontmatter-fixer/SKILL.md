@@ -1,27 +1,20 @@
 ---
 name: frontmatter-fixer
 description: Validates and repairs YAML frontmatter, including required OKF concept fields when applicable.
+classification: technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: app-spec-architect
-      source: /code/agents/app-spec-architect.md
-      allowed_skill: frontmatter-fixer
-    - agent: code-spec-engineer
-      source: /code/agents/code-spec-engineer.md
-      allowed_skill: frontmatter-fixer
-    - agent: prd-strategist
-      source: /code/agents/prd-strategist.md
-      allowed_skill: frontmatter-fixer
-    - agent: reverse-engineer-app-spec
-      source: /code/agents/reverse-engineer-app-spec.md
-      allowed_skill: frontmatter-fixer
+  read: allow
+  edit: allow
 inputs:
   - Markdown paths
   - applicable frontmatter contract
 ---
 
 # Frontmatter validation
+
+## Inputs
+
+Require Markdown paths and the applicable frontmatter contract.
 
 Use when creating or repairing Markdown frontmatter.
 

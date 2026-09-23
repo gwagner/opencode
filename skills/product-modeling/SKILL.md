@@ -1,18 +1,9 @@
 ---
 name: product-modeling
 description: Recovers or defines product objectives, actors, business terminology, use cases, permissions, and end-to-end workflows from requirements or code evidence.
+classification: non-technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: app-spec-architect
-      source: /code/agents/app-spec-architect.md
-      allowed_skill: product-modeling
-    - agent: prd-strategist
-      source: /code/agents/prd-strategist.md
-      allowed_skill: product-modeling
-    - agent: reverse-engineer-app-spec
-      source: /code/agents/reverse-engineer-app-spec.md
-      allowed_skill: product-modeling
+  read: allow
 inputs:
   - requirements or code evidence
   - product scope
@@ -22,6 +13,10 @@ metadata:
 ---
 
 # Product modeling
+
+## Inputs
+
+Require requirements or code evidence and product scope.
 
 Use this skill to turn source material into a coherent product model.
 

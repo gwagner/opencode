@@ -1,21 +1,31 @@
 ---
 name: implement-stubs
 description: Find and safely implement unfinished functions in the current repository.
+classification: technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: bug-fixer
-      source: /code/agents/bug-fixer.md
-      allowed_skill: implement-stubs
-    - agent: code-implementor
-      source: /code/agents/code-implementor.md
-      allowed_skill: implement-stubs
+  read: allow
+  glob: allow
+  grep: allow
+  edit: allow
+  skill:
+    project-validation: allow
 inputs:
   - one bounded unfinished function or selection evidence
   - repository context
+  - caller-provided permitted source and test paths
 ---
 
 # Implement unfinished functions
+
+## Inputs
+
+Require one bounded unfinished function or selection evidence, repository context, and caller-provided permitted source and test paths.
+
+Do not use this procedure when the unfinished function participates in a state-changing backend command, job, or worker workflow. The caller must select the dedicated backend workflow procedure.
+
+## Dead-code rule
+
+Within the selected function's source and directly affected tests, remove unused functions and modules, commented-out code, and logic kept only for reference. Use Git history for reference; do not retain it in source. Preserve potentially live behavior and report uncertainty rather than guessing.
 
 ## Deterministic workflow
 
@@ -30,9 +40,6 @@ workflow:
       - "failed"
       - "skipped"
       - "blocked"
-  - id: "commit-validated-stub-implementation"
-    when: "When the user explicitly requests a commit after validation passes."
-    skill: "git-auto-commit"
 ```
 
 Work on exactly one unfinished function per invocation.
@@ -95,12 +102,11 @@ Do not implement behavior that is materially ambiguous.
 
 After editing:
 
-1. Run the appropriate formatter.
-2. Run the narrowest relevant tests.
-3. Run the package or repository build.
-4. Run the broader test suite when practical.
-5. Show `git diff --stat`.
-6. Summarize the change and validation results.
+1. Use `project-validation` to run the appropriate formatter.
+2. Use it to run the narrowest relevant tests.
+3. Use it to run the package or repository build.
+4. Use it to run the broader test suite when practical.
+5. Report changed paths and summarize the change and validation results.
 
 If validation fails:
 
@@ -108,4 +114,4 @@ If validation fails:
 - do not make unrelated changes;
 - leave the focused change in place and report the validation failure; do not revert collaborative work.
 
-Never push or open a pull request. Commit only when the user explicitly requests it and `git-auto-commit` safety gates pass.
+Never commit, push, or open a pull request. The calling agent owns any separately authorized commit after all post-change checks and final project validation pass.

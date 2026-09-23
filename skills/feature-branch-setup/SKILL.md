@@ -1,18 +1,25 @@
 ---
 name: feature-branch-setup
 description: Creates one clean local feature branch from local main before a bounded SDLC change.
+classification: technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: sdlc-orchestrator
-      source: /code/agents/sdlc-orchestrator.md
-      allowed_skill: feature-branch-setup
+  read: allow
+  bash:
+    "git status --porcelain=v1*": allow
+    "git rev-parse *": allow
+    "git branch --show-current": allow
+    "git branch --list *": allow
+    "git switch -c feature/* main": allow
 inputs:
   - bounded requested outcome
   - clean local-main Git worktree
 ---
 
 # Feature branch setup
+
+## Inputs
+
+Require a bounded requested outcome and a clean local-main Git worktree.
 
 Use once, before specification or implementation work that will change `/code/`. This skill owns only safe local branch creation; it does not implement, validate, commit task changes, merge, delete branches, or contact remotes.
 

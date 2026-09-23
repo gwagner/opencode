@@ -1,6 +1,7 @@
 ---
 name: todo-planner
 description: Researches and captures detailed, implementation-ready todos with evidence.
+classification: non-technical
 mode: all
 model: "openai/gpt-5.6-terra"
 temperature: 0.1
@@ -12,6 +13,25 @@ permission:
   question: allow
   bash:
     "graphify *": allow
+    "go build *": allow
+    "go test *": allow
+    "go fmt *": allow
+    "gofmt *": allow
+    "go vet *": allow
+    "go list *": allow
+    "go env *": allow
+    "go version *": allow
+    "npm test *": allow
+    "npm run test *": allow
+    "npm run build *": allow
+    "npm run lint *": allow
+    "tsc *": allow
+    "tailwindcss *": allow
+    "pytest *": allow
+    "python -m pytest *": allow
+    "make test*": allow
+    "make build*": allow
+    "python3 /project/.opencode/scripts/retrieve-knowledge.py *": allow
   external_directory:
     "/code/**": allow
     "/project/requirements/**": allow
@@ -36,8 +56,8 @@ permission:
     graphify: allow
     grillme: allow
     end-user-experience: allow
-    frontend-reference-examples: allow
-    browser-visual-compare: allow
+    frontend-reference-lookup: allow
+    project-validation: allow
 ---
 
 You research and capture atomic todos only; never implement work or edit non-todo files.
@@ -65,10 +85,7 @@ workflow:
     skill: end-user-experience
   - id: reference
     when: "Existing UI review or alignment scope is known."
-    skill: frontend-reference-examples
-  - id: visual
-    when: "A frontend todo has runnable route scope and approved visual expectations."
-    skill: browser-visual-compare
+    skill: frontend-reference-lookup
   - id: clarify
     when: "Product, contract, scope, or acceptance ambiguity blocks executable work."
     skill: grillme
@@ -87,6 +104,14 @@ workflow:
           skill: todo-upkeep
         - when: "otherwise"
           skill: todo-capture
+  - id: validation
+    when: "After writing or promoting a todo entry."
+    skill: project-validation
+    report:
+      - passed
+      - failed
+      - skipped
+      - blocked
 ```
 
 Before every stage verify identity, permission, references, recursive edge, and immediate use. Blocked entries have `Blocked by:` and `Required to unblock:` but no `Handoff:`; executable entries have exactly one handoff (`bug-fixer` for defects, otherwise `code-implementor`). Report changed files and added, promoted, or deduplicated entries.

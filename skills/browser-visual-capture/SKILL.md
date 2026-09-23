@@ -1,24 +1,29 @@
 ---
 name: browser-visual-capture
-description: Captures deterministic baseline and post-change Chromium screenshots for one URL or URL set. Use when frontend validation needs reproducible visual artifacts.
+description: Captures deterministic baseline and post-change Chromium screenshots for one URL or URL set as diagnostic artifacts.
+classification: technical
 opencode_permission:
-  authoritative: agent permissions are authoritative; this grants none.
-  direct_agent_callers:
-    - agent: bug-fixer
-      source: /code/agents/bug-fixer.md
-      allowed_skill: browser-visual-capture
-    - agent: code-implementor
-      source: /code/agents/code-implementor.md
-      allowed_skill: browser-visual-capture
+  bash:
+    "node /code/skills/browser-visual-capture/scripts/capture-screenshots.mjs *": allow
+  external_directory:
+    "/code/skills/browser-visual-capture/scripts/capture-screenshots.mjs": allow
+    "/tmp/**": allow
 inputs:
   - URLs
   - capture phase
   - deterministic run ID and viewport
+  - caller-provided permitted URL-list path when used
 ---
 
 # Browser Visual Capture
 
+## Inputs
+
+Require URLs, capture phase, deterministic run ID and viewport, and a caller-provided permitted URL-list path when file input is used.
+
 Use this skill to capture screenshots before and after a frontend change. It does not evaluate whether differences are acceptable; the caller owns any separate comparison procedure.
+
+This is a diagnostic adapter, not a browser-impact completion authority.
 
 ## What it does
 
