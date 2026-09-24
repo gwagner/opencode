@@ -1,8 +1,6 @@
 FROM node:22-bookworm-slim
 
-ARG USERNAME=openchamber
-ARG UID=1001
-ARG GID=1000
+ARG USERNAME=node
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
   bash \
@@ -12,14 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   openssh-client \
   && rm -rf /var/lib/apt/lists/*
 
-RUN useradd \
-  --uid ${UID} \
-  --gid ${GID} \
-  --create-home \
-  --shell /bin/bash \
-  ${USERNAME}
-
-RUN npm install -g @openchamber/web
+RUN npm install -g @openchamber/web @opencode/cli
 
 USER ${USERNAME}
 

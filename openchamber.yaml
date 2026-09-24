@@ -1,31 +1,52 @@
 services:
+  obsidian:
+    image: obsidian
+    container_name: obsidian
+
+    volumes:
+      # The actual Obsidian vault
+      - /opt/obsidian/vault:/vault
+
+      # Persist Obsidian headless authentication/config
+      - /opt/obsidian/config:/home/node/.config
+
+    command:
+      - sync
+      - --path
+      - /vault
+      - --continuous
+
+    restart: unless-stopped
+
   opencode:
     image: opencode_golang
     container_name: opencode
 
     command:
-      - opencode
       - serve
       - --hostname
       - "0.0.0.0"
       - --port
       - "4096"
 
+    depends_on:
+      - obsidian
+
     volumes:
-      - ./workspace:/workspace
-      - ./opencode/config:/home/opencode/.config/opencode
-      - ./opencode/share:/home/opencode/.local/share/opencode
+      - /opt/opencode/workspace:/workspace
+      - /opt/opencode/config:/home/opencode/.config/
+      - /opt/opencode/local:/home/opencode/.local/
+      - ./:/workspace/code/github.com/gwagner/endpoint-observer/.opencode/
+      - /opt/obsidian/vault:/vault
 
     expose:
       - "4096"
 
     restart: unless-stopped
 
-  openchamber:
-    build:
-      context: .
-      dockerfile: Dockerfile
 
+  openchamber:
+    image: openchamber
     container_name: openchamber
 
     depends_on:
@@ -38,10 +59,11 @@ services:
       OPENCHAMBER_UI_PASSWORD: ${OPENCHAMBER_UI_PASSWORD}
 
     volumes:
-      - ./openchamber:/home/openchamber/.config/openchamber
-
-      # Important: both containers should see projects
-      # at the same filesystem path.
-      - ./workspace:/workspace
+      - /opt/openchamber/config:/home/node/.config/
+      - ${HOME}/.ssh/id_ed25519:/home/node/.ssh/id_ed25519:ro
+      - ${HOME}/.ssh/id_ed25519.pub:/home/node/.ssh/id_ed25519.pub:ro
+      - ${HOME}/.ssh/known_hosts:/home/node/.ssh/known_hosts:ro
+      - /opt/opencode/workspace:/workspace
+        #- ./:/workspace/code/github.com/gwagner/endpoint-observer/.opencode/
 
     restart: unless-stopped
