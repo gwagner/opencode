@@ -61,6 +61,18 @@ github_sdlc="$root/agents/github-sdlc.md"
 issue_manager="$root/agents/github-issue-manager.md"
 sdlc_orchestrator="$root/agents/sdlc-orchestrator.md"
 
+assert_primary_implementation_route() {
+  awk '
+    /^        - when: "?Any approved action edits an agent or skill\."?$/ { if (state == 0) state = 1 }
+    /^          agent: "?agent-builder"?$/ { if (state == 1) state = 2 }
+    /^        - when: "?.*defect requiring diagnosis and correction\."?$/ { if (state == 2) state = 3 }
+    /^          agent: "?bug-fixer"?$/ { if (state == 3) state = 4 }
+    /^        - when: "?otherwise"?$/ { if (state == 4) state = 5 }
+    /^          agent: "?code-implementor"?$/ { if (state == 5) state = 6 }
+    END { exit state != 6 }
+  ' "$1"
+}
+
 test -f "$github_sdlc"
 test -f "$issue_manager"
 test ! -e "$root/agents/todo-planner.md"
@@ -81,12 +93,8 @@ fi
 grep -q 'refreshed remote-main revision' "$issue_worktree_skill"
 grep -q 'create a fresh issue worktree from the newest remote `main`' "$issue_worktree_skill"
 
-awk '
-  /^          agent: agent-builder$/ { if (state == 0) state = 1 }
-  /^          agent: bug-fixer$/ { if (state == 1) state = 2 }
-  /^          agent: code-implementor$/ { if (state == 2) state = 3 }
-  END { exit state != 3 }
-' "$github_sdlc"
+assert_primary_implementation_route "$github_sdlc"
+assert_primary_implementation_route "$sdlc_orchestrator"
 
 for skill in issue-worktree-validation git-change-baseline git-delegated-change-commit \
   github-pr-publication github-pr-check-validation github-pr-approved-merge \
@@ -127,6 +135,9 @@ done
 
 grep -q '^    git-delegated-change-commit: allow$' "$sdlc_orchestrator"
 grep -q '^  - id: "implementation-commit"$' "$sdlc_orchestrator"
+grep -q '^  - id: "api-integration-tests"$' "$sdlc_orchestrator"
+grep -q '^    when: "Implementation changed an API endpoint, API contract,' "$sdlc_orchestrator"
+grep -q '^    agent: "api-integration-tester"$' "$sdlc_orchestrator"
 grep -q '^  - id: "api-test-commit"$' "$sdlc_orchestrator"
 grep -Fq 'Delegates never stage or commit.' "$sdlc_orchestrator"
 grep -Fq 'Do not merge, delete the branch, push, open a pull request, mutate a GitHub issue, or contact a remote.' "$sdlc_orchestrator"

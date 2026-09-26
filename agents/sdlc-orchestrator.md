@@ -10,6 +10,8 @@ permission:
     prd-strategist: allow
     app-spec-architect: allow
     code-spec-engineer: allow
+    agent-builder: allow
+    bug-fixer: allow
     code-implementor: allow
     api-integration-tester: allow
   bash:
@@ -65,7 +67,16 @@ workflow:
           agent: "code-spec-engineer"
   - id: "implementation"
     when: "Authority is implementation-ready."
-    agent: "code-implementor"
+    select:
+      question: "Which specialist owns the requested edits?"
+      precedence: "Evaluate branches in listed order; the final branch is fallback."
+      branches:
+        - when: "Any approved action edits an agent or skill."
+          agent: "agent-builder"
+        - when: "The request reports or reproduces a defect requiring diagnosis and correction."
+          agent: "bug-fixer"
+        - when: "otherwise"
+          agent: "code-implementor"
   - id: "implementation-commit"
     when: "The implementation delegate returned complete owned paths and passed project-validation evidence."
     skill: "git-delegated-change-commit"
