@@ -10,6 +10,5 @@ log/log.log
 !/tests/todo-planner-routing.sh
 !/tests/loop-todo-dependencies.sh
 !/tests/agent-skill-architecture.sh
-!/tests/reorganize-knowledge-routing.sh
 /project-mounts.sh
 /start.sh
