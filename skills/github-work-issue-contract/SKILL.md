@@ -63,10 +63,11 @@ A ready issue has `openchamber:ready` as its only OpenChamber status label and m
 - `Evidence` — path-and-line evidence when available, otherwise an authoritative source or explicit evidence limitation.
 - `Acceptance` — observable outcomes and relevant validation.
 - `Execution route` — exactly `bug-fixer` for a reported or reproducible defect requiring diagnosis and correction; otherwise `code-implementor`.
+- `Processing handoff` — a required prominent section that repeats the exact literal `bug-fixer` or `code-implementor` value from `Execution route`, not a placeholder. It must say: “Before investigating, planning, or implementing this issue, the initially active session agent MUST hand the request to `<exact route value>`. An agent other than `<exact route value>` MUST NOT investigate, plan, or implement this issue.”
 - `Delivery` — fixed instructions that a user manually starts an OpenChamber worktree from the issue, explicitly selects local `main` as the starting branch, and selects `Execution route`; that action authorizes the selected agent to validate the worktree, implement, validate the change, and create one task commit after validation passes. Push, pull-request creation, review, and merge remain user-owned OpenChamber Git/PR actions. The pull-request body must include `Closes #<this issue number>`. After merge, the user archives or deletes the OpenChamber session and confirms OpenChamber worktree removal, choosing whether to delete local and remote branches.
 - Optional `Depends on` — one or more GitHub issue references that must close before work starts.
 
-OpenChamber does not natively route or start work from these labels or body fields. A user manually starts a worktree from the issue and selects the stated execution route. OpenChamber owns the resulting branch name, so the issue must not prescribe a branch.
+The processing handoff is issue-body text only: it does not natively select, route, or dispatch an OpenChamber agent. A user manually starts a worktree from the issue and selects the stated execution route. OpenChamber owns the resulting branch name, so the issue must not prescribe a branch.
 
 ## Blocked issues
 
@@ -80,4 +81,4 @@ Blocked issues do not use `Execution route`. Promote only after every execution 
 
 ## Completion
 
-Return the canonical title, ordered body, status label, execution route when ready, authority evidence, and duplicate-comparison key.
+Return the canonical title, ordered body, status label, execution route and processing handoff when ready, authority evidence, and duplicate-comparison key.

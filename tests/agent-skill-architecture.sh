@@ -56,6 +56,11 @@ for owner in prd-strategist app-spec-architect code-spec-engineer; do
 done
 
 issue_worktree_skill="$root/skills/issue-worktree-validation/SKILL.md"
+issue_contract="$root/skills/github-work-issue-contract/SKILL.md"
+grep -q '^- `Processing handoff` — a required prominent section that repeats the exact literal `bug-fixer` or `code-implementor` value from `Execution route`, not a placeholder\.' "$issue_contract"
+grep -q 'initially active session agent MUST hand the request to `<exact route value>`' "$issue_contract"
+grep -q 'An agent other than `<exact route value>` MUST NOT investigate, plan, or implement this issue' "$issue_contract"
+grep -q 'does not natively select, route, or dispatch an OpenChamber agent' "$issue_contract"
 grep -q '^description: .*refreshed origin/main\.$' "$issue_worktree_skill"
 grep -q '^    "git fetch origin main": allow$' "$issue_worktree_skill"
 grep -q '^    "git rev-parse origin/main": allow$' "$issue_worktree_skill"
