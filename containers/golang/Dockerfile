@@ -1,4 +1,4 @@
-FROM ghcr.io/anomalyco/opencode:1.18.30
+FROM ghcr.io/anomalyco/opencode:2.0.18
 
 ENV PATH="$PATH:/root/.local/bin/"
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1

@@ -32,12 +32,16 @@ services:
     depends_on:
       - obsidian
 
+    environment:
+      OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD}
+
     volumes:
       - /opt/opencode/workspace:/workspace
       - /opt/opencode/config:/home/opencode/.config/
+      - ./:/home/opencode/.config/opencode
       - /opt/opencode/local:/home/opencode/.local/
-      - ./:/workspace/code/github.com/gwagner/endpoint-observer/.opencode/
       - /opt/obsidian/vault:/vault
+      - /opt/opencode/worktrees:/worktrees
 
     expose:
       - "4096"
@@ -57,6 +61,7 @@ services:
 
     environment:
       OPENCHAMBER_UI_PASSWORD: ${OPENCHAMBER_UI_PASSWORD}
+      OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD}
 
     volumes:
       - /opt/openchamber/config:/home/node/.config/
@@ -64,6 +69,7 @@ services:
       - ${HOME}/.ssh/id_ed25519.pub:/home/node/.ssh/id_ed25519.pub:ro
       - ${HOME}/.ssh/known_hosts:/home/node/.ssh/known_hosts:ro
       - /opt/opencode/workspace:/workspace
+      - /opt/opencode/worktrees:/worktrees
         #- ./:/workspace/code/github.com/gwagner/endpoint-observer/.opencode/
 
     restart: unless-stopped
