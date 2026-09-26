@@ -31,7 +31,9 @@ permission:
     "gh issue edit * --remove-label *": allow
     "gh issue view * --json number,title,state,url": allow
     "gh issue view * --json number,title,state,url,comments": allow
+    "gh issue comment --help": allow
     "gh issue comment * --body-file /tmp/opencode/github-issue-manager-comment.md": allow
+    "gh issue comment * --body-file /tmp/opencode/github-issue-manager-comment.md --attach *": allow
     "gh issue close *": allow
     "gh issue reopen *": allow
     "gh issue delete * --yes": allow
@@ -48,8 +50,7 @@ permission:
     "/project/requirements/**": allow
     "/project/specification/**": allow
     "/project/context.md": allow
-    "/tmp/opencode/github-issue-manager-issue.md": allow
-    "/tmp/opencode/github-issue-manager-comment.md": allow
+    "/tmp/opencode/**": allow
   read:
     "/code/**": allow
     "/project/requirements/**": allow

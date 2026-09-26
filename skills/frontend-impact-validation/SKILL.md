@@ -4,26 +4,26 @@ description: Evaluates complete production-shaped browser-impact evidence using 
 classification: technical
 opencode_permission:
   read:
-    "/tmp/**": allow
+    "/tmp/opencode/**": allow
   external_directory:
-    "/tmp/**": allow
+    "/tmp/opencode/**": allow
   skill:
     browser-visual-capture: allow
     browser-visual-compare: allow
 inputs:
   - approved browser-impact contract and dependency-closure evidence
-  - caller-provided permitted baseline capture paths under /tmp
+  - caller-provided permitted baseline capture paths under /tmp/opencode
   - affected actor route state and deterministic scenario matrix
   - project-native production build server and state lifecycle evidence
   - completed frontend behavior and accessibility evidence
-  - caller-provided post-change capture and comparison paths under /tmp
+  - caller-provided post-change capture and comparison paths under /tmp/opencode
 ---
 
 # Frontend impact validation
 
 ## Inputs
 
-Require an approved browser-impact contract and dependency-closure evidence, caller-provided permitted baseline capture paths under `/tmp`, an affected actor, route, state, and deterministic scenario matrix, project-native production build, server, and state-lifecycle evidence, completed frontend behavior and accessibility evidence, and caller-provided post-change capture and comparison paths under `/tmp`.
+Require an approved browser-impact contract and dependency-closure evidence, caller-provided permitted baseline capture paths under `/tmp/opencode`, an affected actor, route, state, and deterministic scenario matrix, project-native production build, server, and state-lifecycle evidence, completed frontend behavior and accessibility evidence, and caller-provided post-change capture and comparison paths under `/tmp/opencode`.
 
 This skill is the browser-impact completion authority. It orchestrates existing adapters and project-native infrastructure; it does not create a browser runner, application server, fixture system, or custom command-line application.
 

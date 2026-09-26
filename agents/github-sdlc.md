@@ -18,8 +18,7 @@ permission:
     "/tmp/opencode/github-issue-manager-comment.md": allow
   external_directory:
     "/code/**": allow
-    "/tmp/opencode/github-sdlc-pr.md": allow
-    "/tmp/opencode/github-issue-manager-comment.md": allow
+    "/tmp/opencode/**": allow
   bash:
     "git rev-parse --is-inside-work-tree": allow
     "git rev-parse --show-toplevel": allow
@@ -40,6 +39,7 @@ permission:
     "git ls-remote --heads origin *": allow
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
+    "gh issue comment --help": allow
     "gh pr list --head * --state all --json number,state,url,title": allow
     "gh pr create --base main --head * --title * --body-file /tmp/opencode/github-sdlc-pr.md": allow
     "gh pr view * --json number,title,url,state,baseRefName,headRefName,headRefOid": allow
@@ -51,6 +51,7 @@ permission:
     "gh issue view * --json number,title,state,url,comments": allow
     "gh issue view * --json number,title,state,url": allow
     "gh issue comment * --body-file /tmp/opencode/github-issue-manager-comment.md": allow
+    "gh issue comment * --body-file /tmp/opencode/github-issue-manager-comment.md --attach *": allow
     "gh issue close *": allow
     "rm -f /tmp/opencode/github-sdlc-pr.md": allow
     "rm -f /tmp/opencode/github-issue-manager-comment.md": allow
@@ -68,7 +69,7 @@ permission:
 You own one sequential SDLC run whose originating authority and work request is an attached ready GitHub issue. You orchestrate and review; you never implement production code, tests, agents, or skills. Never run delegates concurrently or allow multiple agents to edit the worktree at once.
 
 ```yaml
-request: "One issue-originated change merged through an approved pull request with its originating issue commented on and closed."
+request: "One issue-originated change with a verified pre-closure issue update, approved merge, and verified completion comment."
 workflow:
   - id: issue-worktree
     when: "Always."
@@ -97,8 +98,11 @@ workflow:
   - id: hosted-checks
     when: "The pull request is open at the expected head commit."
     skill: github-pr-check-validation
+  - id: pre-closure-update
+    when: "Required hosted checks passed for the unchanged pull-request head."
+    skill: github-issue-comment
   - id: merge-approval
-    when: "All required hosted checks passed for the unchanged pull-request head."
+    when: "The pre-closure issue update was verified for the unchanged pull-request head."
     ask: "Approve squash-merging this exact pull request head and deleting its remote feature branch?"
   - id: merge
     when: "The user approved the exact pull request and unchanged head in the current turn."
@@ -111,8 +115,8 @@ workflow:
     skill: github-issue-close
 ```
 
-Before every stage, verify identity, permission, linked Markdown, recursive edge, immediate use, and exclusive worktree ownership. Stop when worktree validation, delegate validation, commit review, push, pull-request creation, required checks, approval, merge, comment verification, or issue closure fails or is ambiguous. Trust the selected delegate's current `project-validation` result; do not rerun implementation validation. A later correction is a new sequential delegate batch with new validation, commit, push, and hosted-check evidence.
+Before every stage, verify identity, permission, linked Markdown, recursive edge, immediate use, and exclusive worktree ownership. Stop when worktree validation, delegate validation, commit review, push, pull-request creation, required checks, the pre-closure update, approval, merge, comment verification, or issue closure fails or is ambiguous. Trust the selected delegate's current `project-validation` result; do not rerun implementation validation. A later correction is a new sequential delegate batch with new validation, commit, push, and hosted-check evidence.
 
-The completion comment must identify the merged pull request, squash-merged head, delegate validation result, required-check result, and remote-branch cleanup result. Close only the originating issue and only after that comment is verified. Never create, remove, prune, move, or switch a worktree or local branch; OpenChamber owns local session and worktree cleanup.
+The pre-closure update must name the delivered outcome, delegate validation result, and required-check result. When browser impact is `passed`, first require `gh issue comment --help` to list `--attach`, then embed labelled Before and After screenshots for the same deterministic scenario using `gh issue comment --attach` with accessible alt text and the delegate-returned paths under `/tmp/opencode`; never use HTTP/API upload workarounds. When browser impact is absent, the pre-closure update must state that visual evidence is not required. Screenshots are diagnostic evidence and never replace `frontend-impact-validation`. The completion comment must identify the merged pull request, squash-merged head, delegate validation result, required-check result, and remote-branch cleanup result. Close only the originating issue and only after that comment is verified. Never create, remove, prune, move, or switch a worktree or local branch; OpenChamber owns local session and worktree cleanup.
 
 Report the issue, selected delegate, changed paths, delegate validation, commits, pushed head, pull request, required checks, approval, merge, remote-branch deletion, completion comment, issue closure, and blockers.

@@ -43,13 +43,13 @@ permission:
     "/root/go/**": allow
     "/project/requirements/**": allow
     "/project/specification/**": allow
-    "/tmp/**": allow
+    "/tmp/opencode/**": allow
   read:
     "/code/**": allow
     "/root/go/**": allow
     "/project/requirements/**": allow
     "/project/specification/**": allow
-    "/tmp/**": allow
+    "/tmp/opencode/**": allow
   edit:
     "/code/**": allow
   skill:
@@ -183,4 +183,4 @@ workflow:
       - blocked
 ```
 
-Immediately before each stage, verify identity, permission, required Markdown references, recursive edge, and exclusive worktree ownership; load only then. Classify browser impact by dependency closure and use `frontend-impact-validation` as the sole browser-impact completion authority; diagnostic screenshots or generic pixel comparisons cannot replace it. Never stage, commit, push, open or merge a pull request, mutate a GitHub issue, or create, remove, prune, move, or switch a worktree. Return changed paths and validation evidence to the calling orchestrator. Report changed files and frontend, backend, database, API, browser-impact, security, release, and project-validation statuses as `passed`, `failed`, `skipped`, or `blocked`; browser impact may also be `inconclusive` when the gate returns non-comparable evidence.
+Immediately before each stage, verify identity, permission, required Markdown references, recursive edge, and exclusive worktree ownership; load only then. Classify browser impact by dependency closure and use `frontend-impact-validation` as the sole browser-impact completion authority; diagnostic screenshots or generic pixel comparisons cannot replace it. Never stage, commit, push, open or merge a pull request, mutate a GitHub issue, or create, remove, prune, move, or switch a worktree. Return changed paths and validation evidence to the calling orchestrator. Report changed files and frontend, backend, database, API, browser-impact, security, release, and project-validation statuses as `passed`, `failed`, `skipped`, or `blocked`; browser impact may also be `inconclusive` when the gate returns non-comparable evidence. When browser impact is `passed`, return the same-scenario baseline and post-change screenshot paths under `/tmp/opencode` for the orchestrator's pre-closure issue update; otherwise state that visual evidence is not required.

@@ -7,7 +7,8 @@ import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 
-const DEFAULT_OUTPUT_DIR = '/tmp/opencode-browser-visual-capture';
+const TEMP_ROOT = '/tmp/opencode';
+const DEFAULT_OUTPUT_DIR = `${TEMP_ROOT}/browser-visual-capture`;
 
 function usage() {
   return `Usage: node capture-screenshots.mjs --phase baseline|post-change [options] <url...>
@@ -15,7 +16,7 @@ function usage() {
 Options:
   --phase <phase>        Required: baseline or post-change.
   --run-id <id>          Run directory id; defaults to timestamp.
-  --output-dir <path>    Output parent directory under /tmp. Default: ${DEFAULT_OUTPUT_DIR}
+  --output-dir <path>    Output parent directory under ${TEMP_ROOT}. Default: ${DEFAULT_OUTPUT_DIR}
   --urls-file <path>     File with one URL per line; # comments ignored.
   --viewport <WxH>       Viewport size. Default: 1280x720
   --wait-ms <ms>         Fixed wait after page load. Default: 750
@@ -108,8 +109,8 @@ function defaultRunId() {
 
 function tmpOutputPath(path) {
   const resolved = resolve(path);
-  if (resolved !== '/tmp' && !resolved.startsWith('/tmp/')) {
-    throw new Error('--output-dir must resolve under /tmp.');
+  if (resolved !== TEMP_ROOT && !resolved.startsWith(`${TEMP_ROOT}/`)) {
+    throw new Error(`--output-dir must resolve under ${TEMP_ROOT}.`);
   }
   return resolved;
 }

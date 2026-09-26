@@ -7,7 +7,7 @@ opencode_permission:
     "node /code/skills/browser-visual-capture/scripts/capture-screenshots.mjs *": allow
   external_directory:
     "/code/skills/browser-visual-capture/scripts/capture-screenshots.mjs": allow
-    "/tmp/**": allow
+    "/tmp/opencode/**": allow
 inputs:
   - URLs
   - capture phase
@@ -30,7 +30,7 @@ This is a diagnostic adapter, not a browser-impact completion authority.
 - Accepts one URL or many URLs.
 - Launches Chromium with Chrome DevTools Protocol automation.
 - Captures `baseline` or `post-change` screenshots.
-- Saves PNG files and a JSON summary under `/tmp/` by default.
+- Saves PNG files and a JSON summary under `/tmp/opencode/` by default.
 - Uses deterministic viewport, device scale factor, reduced motion, light color scheme, and fixed post-load wait.
 - Reports every saved path and records graceful failures for unreachable pages.
 
@@ -66,7 +66,7 @@ Multiple URLs may be positional arguments or a file with one URL per line:
 ```sh
 node /code/skills/browser-visual-capture/scripts/capture-screenshots.mjs \
   --phase baseline \
-  --urls-file /tmp/urls.txt \
+  --urls-file /tmp/opencode/urls.txt \
   --viewport 1440x900 \
   --wait-ms 1000
 ```
@@ -78,7 +78,7 @@ node /code/skills/browser-visual-capture/scripts/capture-screenshots.mjs \
 | --- | --- | --- |
 | `--phase baseline\|post-change` | required | Capture phase in filenames and summary. |
 | `--run-id <id>` | timestamp | Collision-safe directory name. Reuse for baseline/post-change pair. |
-| `--output-dir <path>` | `/tmp/opencode-browser-visual-capture` | Parent directory for run output; must stay under `/tmp/`. |
+| `--output-dir <path>` | `/tmp/opencode/browser-visual-capture` | Parent directory for run output; must stay under `/tmp/opencode/`. |
 | `--urls-file <path>` | none | Reads one URL per line; blank lines and `#` comments ignored. |
 | `--viewport <WxH>` | `1280x720` | Deterministic screenshot viewport. |
 | `--wait-ms <ms>` | `750` | Fixed wait after page load for stable UI. |

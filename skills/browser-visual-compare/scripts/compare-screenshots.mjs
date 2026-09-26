@@ -4,6 +4,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { inflateSync } from 'node:zlib';
 
+const TEMP_ROOT = '/tmp/opencode';
+
 function usage() {
   return `Usage: node compare-screenshots.mjs --manifest <path> --baseline-summary <path> --post-change-summary <path> [--output <path>]\n`;
 }
@@ -33,8 +35,8 @@ function parseArgs(argv) {
 
 function tmpPath(path) {
   const absolute = resolve(path);
-  if (absolute !== '/tmp' && !absolute.startsWith('/tmp/')) {
-    throw new Error('--output must resolve under /tmp.');
+  if (absolute !== TEMP_ROOT && !absolute.startsWith(`${TEMP_ROOT}/`)) {
+    throw new Error(`--output must resolve under ${TEMP_ROOT}.`);
   }
   return absolute;
 }

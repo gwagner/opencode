@@ -7,7 +7,7 @@ opencode_permission:
     "node /code/skills/browser-visual-compare/scripts/compare-screenshots.mjs *": allow
   external_directory:
     "/code/skills/browser-visual-compare/scripts/compare-screenshots.mjs": allow
-    "/tmp/**": allow
+    "/tmp/opencode/**": allow
 inputs:
   - baseline summary
   - post-change summary
@@ -28,13 +28,13 @@ This is a diagnostic adapter. Its result cannot by itself establish browser-impa
 
 ```sh
 node /code/skills/browser-visual-compare/scripts/compare-screenshots.mjs \
-  --manifest /tmp/visual-expectations.json \
-  --baseline-summary /tmp/opencode-browser-visual-capture/example/baseline-summary.json \
-  --post-change-summary /tmp/opencode-browser-visual-capture/example/post-change-summary.json \
-  --output /tmp/opencode-browser-visual-capture/example/comparison.json
+  --manifest /tmp/opencode/visual-expectations.json \
+  --baseline-summary /tmp/opencode/browser-visual-capture/example/baseline-summary.json \
+  --post-change-summary /tmp/opencode/browser-visual-capture/example/post-change-summary.json \
+  --output /tmp/opencode/browser-visual-capture/example/comparison.json
 ```
 
-`--output` defaults to `comparison.json` beside the post-change summary. Output must resolve under `/tmp/`. The comparator uses exact RGBA pixel differences, requires equal image dimensions, and needs no npm packages.
+`--output` defaults to `comparison.json` beside the post-change summary. Output must resolve under `/tmp/opencode/`. The comparator uses exact RGBA pixel differences, requires equal image dimensions, and needs no npm packages.
 
 Exit codes:
 
