@@ -118,6 +118,9 @@ grep -Fq '"gh issue comment * --body-file /tmp/opencode/github-issue-manager-com
 grep -Fq 'native `gh issue comment --attach`' "$issue_comment"
 grep -Fq 'run `gh issue comment --help`. Stop unless it lists `--attach`.' "$issue_comment"
 grep -Fq 'never use an HTTP/API upload workaround' "$issue_comment"
+grep -q '^    "gh issue comment --help": allow$' "$issue_manager"
+grep -Fq '"gh issue comment * --body-file /tmp/opencode/github-issue-manager-comment.md --attach *": allow' "$issue_manager"
+grep -q '^    "/tmp/opencode/\*\*": allow$' "$issue_manager"
 for delegate in code-implementor bug-fixer; do
   file="$root/agents/$delegate.md"
   grep -Fq 'same-scenario baseline and post-change screenshot paths under `/tmp/opencode`' "$file"
