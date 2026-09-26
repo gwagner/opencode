@@ -27,26 +27,10 @@ permission:
     "make build*": allow
     "git status*": allow
     "git diff*": allow
-    "git rev-parse --is-inside-work-tree": allow
-    "git rev-parse --show-toplevel": allow
-    "git rev-parse --git-dir": allow
-    "git rev-parse --git-common-dir": allow
-    "git rev-parse HEAD": allow
-    "git fetch origin main": allow
-    "git rev-parse origin/main": allow
-    "git branch --show-current": allow
-    "git worktree list --porcelain": allow
-    "git status --porcelain=v1": allow
     "git show *": allow
-    "git merge --no-commit --no-ff main": allow
-    "git merge --abort": allow
-    "git add -- *": allow
-    "git commit -m *": allow
     "ls *": allow
     "git ls-files*": allow
     "git grep*": allow
-    "git add *": allow
-    "git commit --only *": allow
     "rg *": allow
     "graphify *": allow
     "tsc *": allow
@@ -69,7 +53,6 @@ permission:
   edit:
     "/code/**": allow
   skill:
-    issue-worktree-validation: allow
     safe-code-change: allow
     backend-workflow-implementation: allow
     interface-boundaries: allow
@@ -85,13 +68,13 @@ permission:
     okf-reader: allow
     graphify: allow
     root-cause-analysis: allow
-    git-auto-commit: allow
     frontend-reference-lookup: allow
     frontend-reference-examples: allow
     server-driven-component-contract: allow
-    git-main-sync: allow
     grillme: allow
     specification-reconciliation: allow
+    okf-formatter: allow
+    frontmatter-fixer: allow
     frontend-behavior-testing: allow
     accessibility-testing: allow
     browser-visual-capture: allow
@@ -113,12 +96,6 @@ Do not enter preparation or implementation when root-cause analysis reports an u
 ```yaml
 request: "Diagnosed defect, focused fix, regression evidence, and validation result."
 workflow:
-  - id: issue-worktree
-    when: "The request was started from a GitHub issue in an OpenChamber worktree session."
-    skill: issue-worktree-validation
-  - id: sync
-    when: "In a Git-controlled feature branch before investigation."
-    skill: git-main-sync
   - id: authority
     when: "Approved authority is needed to establish intended behavior."
     skill: okf-reader
@@ -204,9 +181,6 @@ workflow:
       - failed
       - skipped
       - blocked
-  - id: commit
-    when: "The user explicitly requests a commit and validation passed."
-    skill: git-auto-commit
 ```
 
-Immediately before each stage, verify identity, permission, required Markdown references, recursive edge, and exclusive worktree ownership; load only then. Classify browser impact by dependency closure and use `frontend-impact-validation` as the sole browser-impact completion authority; diagnostic screenshots or generic pixel comparisons cannot replace it. Never create, remove, prune, move, or switch worktrees; OpenChamber owns physical worktree and session lifecycle. For issue-originated work, report worktree validation and, after the task commit, report lifecycle cleanup as pending user-owned push, pull request with `Closes #<issue>`, merge, and OpenChamber session archive or deletion with worktree removal. Report changed files and frontend, backend, database, API, browser-impact, security, release, and project-validation statuses as `passed`, `failed`, `skipped`, or `blocked`; browser impact may also be `inconclusive` when the gate returns non-comparable evidence.
+Immediately before each stage, verify identity, permission, required Markdown references, recursive edge, and exclusive worktree ownership; load only then. Classify browser impact by dependency closure and use `frontend-impact-validation` as the sole browser-impact completion authority; diagnostic screenshots or generic pixel comparisons cannot replace it. Never stage, commit, push, open or merge a pull request, mutate a GitHub issue, or create, remove, prune, move, or switch a worktree. Return changed paths and validation evidence to the calling orchestrator. Report changed files and frontend, backend, database, API, browser-impact, security, release, and project-validation statuses as `passed`, `failed`, `skipped`, or `blocked`; browser impact may also be `inconclusive` when the gate returns non-comparable evidence.

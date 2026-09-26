@@ -14,9 +14,7 @@ permission:
     api-contract-conformance-testing: allow
     api-resilience-testing: allow
     project-validation: allow
-    git-auto-commit: allow
     graphify: allow
-    git-main-sync: allow
     non-production-database-fixture: allow
   read:
     "/project/**": allow
@@ -47,20 +45,10 @@ permission:
     "python -m pytest *": allow
     "git status*": allow
     "git diff*": allow
-    "git rev-parse --is-inside-work-tree": allow
-    "git rev-parse HEAD": allow
-    "git rev-parse main": allow
-    "git branch --show-current": allow
     "git show *": allow
-    "git merge --no-commit --no-ff main": allow
-    "git merge --abort": allow
-    "git add -- *": allow
-    "git commit -m *": allow
     "ls *": allow
     "git ls-files*": allow
     "git grep*": allow
-    "git add *": allow
-    "git commit --only *": allow
     "rg *": allow
     "graphify *": allow
     "tsc *": allow
@@ -76,9 +64,6 @@ Within the approved affected test scope, remove unused test helpers and modules,
 ```yaml
 request: "Focused API integration tests, coverage report, and validation result."
 workflow:
-  - id: sync
-    when: "In a Git-controlled feature branch before investigation."
-    skill: git-main-sync
   - id: graph
     when: "`/code/graphify-out/graph.json` exists."
     skill: graphify
@@ -111,9 +96,6 @@ workflow:
       - failed
       - skipped
       - blocked
-  - id: commit
-    when: "A task commit is authorized and validation passed."
-    skill: git-auto-commit
 ```
 
-Before every stage verify identity, permission, references, recursive edge, and exclusive worktree ownership; load immediately before use. Report discrepancies and exact blockers.
+Before every stage verify identity, permission, references, recursive edge, and exclusive worktree ownership; load immediately before use. Never stage, commit, push, open or merge a pull request, or mutate a GitHub issue. Return changed paths and validation evidence to the calling orchestrator. Report discrepancies and exact blockers.

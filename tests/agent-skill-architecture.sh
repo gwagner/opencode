@@ -57,11 +57,19 @@ done
 
 issue_worktree_skill="$root/skills/issue-worktree-validation/SKILL.md"
 issue_contract="$root/skills/github-work-issue-contract/SKILL.md"
-grep -q '^- `Execution route` — exactly `agent-builder` when any approved action edits `agents/\*\*` or `skills/\*\*`, including defect correction and mixed-scope work; otherwise `bug-fixer`' "$issue_contract"
-grep -q '^- `Processing handoff` — a required prominent section that repeats the exact literal `agent-builder`, `bug-fixer`, or `code-implementor` value from `Execution route`, not a placeholder\.' "$issue_contract"
-grep -q 'initially active session agent MUST hand the request to `<exact route value>`' "$issue_contract"
-grep -q 'An agent other than `<exact route value>` MUST NOT investigate, plan, or implement this issue' "$issue_contract"
-grep -q 'does not natively select, route, or dispatch an OpenChamber agent' "$issue_contract"
+github_sdlc="$root/agents/github-sdlc.md"
+issue_manager="$root/agents/github-issue-manager.md"
+sdlc_orchestrator="$root/agents/sdlc-orchestrator.md"
+
+test -f "$github_sdlc"
+test -f "$issue_manager"
+test ! -e "$root/agents/todo-planner.md"
+test ! -e "$root/skills/git-auto-commit/SKILL.md"
+test ! -e "$root/skills/github-issue-state-change/SKILL.md"
+grep -Fq -- '- `Execution route` — exactly `github-sdlc` for every ready issue.' "$issue_contract"
+grep -Fq 'MUST hand the request to `github-sdlc`' "$issue_contract"
+grep -Fq 'Any other agent MUST NOT process this issue directly.' "$issue_contract"
+grep -Fq 'does not natively select, route, or dispatch an OpenChamber agent' "$issue_contract"
 grep -q '^description: .*refreshed origin/main\.$' "$issue_worktree_skill"
 grep -q '^    "git fetch origin main": allow$' "$issue_worktree_skill"
 grep -q '^    "git rev-parse origin/main": allow$' "$issue_worktree_skill"
@@ -72,21 +80,60 @@ if grep -q 'git rev-parse main' "$issue_worktree_skill"; then
 fi
 grep -q 'refreshed remote-main revision' "$issue_worktree_skill"
 grep -q 'create a fresh issue worktree from the newest remote `main`' "$issue_worktree_skill"
-for route in agent-builder bug-fixer code-implementor; do
-  grep -q '^    "git fetch origin main": allow$' "$root/agents/$route.md"
-  grep -q '^    "git rev-parse origin/main": allow$' "$root/agents/$route.md"
+
+awk '
+  /^          agent: agent-builder$/ { if (state == 0) state = 1 }
+  /^          agent: bug-fixer$/ { if (state == 1) state = 2 }
+  /^          agent: code-implementor$/ { if (state == 2) state = 3 }
+  END { exit state != 3 }
+' "$github_sdlc"
+
+for skill in issue-worktree-validation git-change-baseline git-delegated-change-commit \
+  github-pr-publication github-pr-check-validation github-pr-approved-merge \
+  github-issue-comment github-issue-close; do
+  test -f "$root/skills/$skill/SKILL.md"
+  grep -q "^    $skill: allow$" "$github_sdlc"
+  grep -q "^    skill: $skill$" "$github_sdlc"
+done
+grep -Fq 'Approve squash-merging this exact pull request head and deleting its remote feature branch?' "$github_sdlc"
+approved_merge="$root/skills/github-pr-approved-merge/SKILL.md"
+grep -Fq 'explicit user merge approval naming the exact pull request and head commit' "$approved_merge"
+grep -q '^    "gh pr merge \* --squash --match-head-commit \*": allow$' "$approved_merge"
+grep -q '^    "git ls-remote --heads origin \*": allow$' "$approved_merge"
+grep -q '^    "git push origin --delete \*": allow$' "$approved_merge"
+grep -Fq 'gh pr merge <pr> --squash --match-head-commit <approved head>' "$approved_merge"
+grep -Fq 'require a second `git ls-remote --heads origin <head branch>` to return no ref' "$approved_merge"
+grep -Fq 'Never delete or switch the local branch or worktree.' "$approved_merge"
+grep -q '^    "gh pr merge \* --squash --match-head-commit \*": allow$' "$github_sdlc"
+grep -q '^    "git ls-remote --heads origin \*": allow$' "$github_sdlc"
+grep -q '^    "git push origin --delete \*": allow$' "$github_sdlc"
+
+for skill in github-work-issue-contract github-issue-capture \
+  github-blocked-issue-resolution github-issue-update github-issue-comment \
+  github-issue-close github-issue-reopen github-issue-deletion; do
+  test -f "$root/skills/$skill/SKILL.md"
+  grep -q "^    $skill: allow$" "$issue_manager"
+done
+grep -Fq 'explicitly confirms permanent deletion of that exact issue in the current turn' "$root/skills/github-issue-deletion/SKILL.md"
+
+for delegate in agent-builder bug-fixer code-implementor api-integration-tester; do
+  file="$root/agents/$delegate.md"
+  grep -q 'Never stage, commit, push' "$file"
+  if grep -Eq '^    "git (add|commit)|^    (git-auto-commit|git-delegated-change-commit): allow$|^  - id: "?[^"[:space:]]*commit' "$file"; then
+    printf '%s\n' "$delegate still owns a commit permission, skill, or stage" >&2
+    exit 1
+  fi
 done
 
-agent_builder="$root/agents/agent-builder.md"
-grep -q '^    "/code/\*\*": allow$' "$agent_builder"
-grep -q '^    "/code/\.opencode/\*\*": deny$' "$agent_builder"
-grep -q '^    issue-worktree-validation: allow$' "$agent_builder"
-grep -q '^    git-change-baseline: allow$' "$agent_builder"
-grep -q '^    git-auto-commit: allow$' "$agent_builder"
-grep -q '^    "git commit --only \*": allow$' "$agent_builder"
-grep -q '^  - id: issue-worktree$' "$agent_builder"
-grep -q '^  - id: commit-baseline$' "$agent_builder"
-grep -q '^  - id: commit$' "$agent_builder"
+grep -q '^    git-delegated-change-commit: allow$' "$sdlc_orchestrator"
+grep -q '^  - id: "implementation-commit"$' "$sdlc_orchestrator"
+grep -q '^  - id: "api-test-commit"$' "$sdlc_orchestrator"
+grep -Fq 'Delegates never stage or commit.' "$sdlc_orchestrator"
+grep -Fq 'Do not merge, delete the branch, push, open a pull request, mutate a GitHub issue, or contact a remote.' "$sdlc_orchestrator"
+if grep -Eq '^    "(git push|gh )' "$sdlc_orchestrator"; then
+  printf '%s\n' 'sdlc-orchestrator still has remote lifecycle permissions' >&2
+  exit 1
+fi
 
 grep -q 'under `/code/specification/`' "$root/agents/reverse-engineer-app-spec.md"
 grep -q '/project/.opencode/scripts/retrieve-knowledge.py' "$root/skills/okf-reader/SKILL.md"

@@ -40,20 +40,6 @@ permission:
     "python -m pytest *": allow
     "make test*": allow
     "make build*": allow
-    "git status*": allow
-    "git diff*": allow
-    "git rev-parse --is-inside-work-tree": allow
-    "git rev-parse --show-toplevel": allow
-    "git rev-parse --git-dir": allow
-    "git rev-parse --git-common-dir": allow
-    "git rev-parse HEAD": allow
-    "git fetch origin main": allow
-    "git rev-parse origin/main": allow
-    "git branch --show-current": allow
-    "git worktree list --porcelain": allow
-    "git status --porcelain=v1": allow
-    "git add -- *": allow
-    "git commit --only *": allow
   skill:
     grillme: allow
     deterministic-skill-tree-authoring: allow
@@ -62,9 +48,6 @@ permission:
     technical-agent-skill-builder: allow
     non-technical-agent-skill-builder: allow
     project-validation: allow
-    issue-worktree-validation: allow
-    git-change-baseline: allow
-    git-auto-commit: allow
 ---
 
 You are Agent-Builder. Build or audit deterministic OpenCode agents and skills. Classify every agent and skill as exactly `technical` or `non-technical`. Use `grillme` only when ambiguity blocks safe work.
@@ -84,12 +67,6 @@ Completely ignore `/code/.opencode/`: do not inventory it, read it, check refere
 ```yaml
 request: "Approved deterministic agent-and-skill architecture refactor or audit."
 workflow:
-  - id: issue-worktree
-    when: "The request was started from a GitHub issue in an OpenChamber worktree session."
-    skill: issue-worktree-validation
-  - id: commit-baseline
-    when: "A task commit is authorized."
-    skill: git-change-baseline
   - id: clarify
     when: "A recommendation or change is blocked by ambiguity."
     skill: grillme
@@ -117,14 +94,11 @@ workflow:
       - failed
       - skipped
       - blocked
-  - id: commit
-    when: "A task commit is authorized and validation passed."
-    skill: git-auto-commit
 ```
 
 Immediately before each stage verify identity, permission, linked Markdown, recursive edge, and immediate use. These are the only skill calls; the numbered text defines inspection and reporting, not additional loads.
 
-Never create, remove, prune, move, or switch worktrees; OpenChamber owns physical worktree and session lifecycle. For issue-originated work, report worktree validation and, after the task commit, report lifecycle cleanup as pending user-owned push, pull request with `Closes #<issue>`, merge, and OpenChamber session archive or deletion with worktree removal.
+Never stage, commit, push, open or merge a pull request, mutate a GitHub issue, or create, remove, prune, move, or switch a worktree. Return changed paths and validation evidence to the calling orchestrator.
 
 ## Goals
 
