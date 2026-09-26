@@ -9,6 +9,7 @@ log/log.log
 /tests/*
 !/tests/todo-planner-routing.sh
 !/tests/agent-skill-architecture.sh
+!/tests/asset-reference-audit.sh
 /project-mounts.sh
 /start.sh
 /important-paths.md

@@ -17,12 +17,9 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | --- | --- |
 | api-integration-tester | Builds API integration tests. |
 | app-spec-architect | Defines cross-feature architecture and shared workflows from requirements. |
-| backend-scaffolder | Scaffolds specified backend features. |
 | bug-fixer | Reproduces, diagnoses, and fixes defects with regression coverage. |
 | code-implementor | Implements approved, focused code changes. |
 | code-spec-engineer | Produces bounded implementation-ready feature contracts. |
-| frontend-scaffolder | Scaffolds TypeScript, HTMX, and Tailwind frontend code. |
-| opencode-optimizer | Audits OpenCode agents and skills, then applies explicitly user-approved Markdown refactors. |
 | prd-strategist | Creates and refines OKF requirements. |
 | reverse-engineer-app-spec | Recovers an evidence-backed specification from code. |
 | spec-gap-detector | Finds implemented capabilities missing authoritative documentation and queues evidence-backed owner handoffs. |
@@ -41,7 +38,6 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | application-specification | Defines specification conventions. |
 | backend-scaffolding | Scaffolds reachable backend layers. |
 | browser-visual-capture | Captures baseline/post-change Chromium screenshots for URL-based UI validation. |
-| blocked-todo-resolution | Resolves self-contained blocked todos without code access, coordinates authoritative updates, and promotes resolved work. |
 | code-comments | Adds code comments. |
 | codebase-reverse-engineering | Recovers behavior and architecture from code. |
 | data-persistence-modeling | Models data persistence and PostgreSQL schemas. |
@@ -66,8 +62,6 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | safe-code-change | Performs focused, collaborative-safe code changes. |
 | security-operations | Reviews security and operational behavior. |
 | tailwind | Configures standalone Tailwind CLI builds and static output. |
-| todo-capture | Captures detailed deferred work in `/code/todo.md` or unresolved work in `/code/blocked-todos.md`. |
-| todo-entry-contract | Defines the canonical ready/blocked todo schema, dependency rules, and handoff routing. |
 | spec-driven-implementation | Implements authoritative specifications. |
 | specification-quality-gate | Reviews specification readiness. |
 | specification-gap-handoff | Classifies code-to-authority documentation gaps and defines durable owner handoffs. |
@@ -78,6 +72,14 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 ## Graphify
 
 Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exists. The skill selects focused graph queries before broad reports or raw source search, and updates the graph after relevant code changes.
+
+## Repository validation
+
+Audit README catalog entries and architecture-test asset references from any checkout location:
+
+```sh
+python3 scripts/audit-asset-references.py
+```
 
 ## Workflow ownership
 
