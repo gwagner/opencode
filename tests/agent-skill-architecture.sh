@@ -57,7 +57,8 @@ done
 
 issue_worktree_skill="$root/skills/issue-worktree-validation/SKILL.md"
 issue_contract="$root/skills/github-work-issue-contract/SKILL.md"
-grep -q '^- `Processing handoff` — a required prominent section that repeats the exact literal `bug-fixer` or `code-implementor` value from `Execution route`, not a placeholder\.' "$issue_contract"
+grep -q '^- `Execution route` — exactly `agent-builder` when any approved action edits `agents/\*\*` or `skills/\*\*`, including defect correction and mixed-scope work; otherwise `bug-fixer`' "$issue_contract"
+grep -q '^- `Processing handoff` — a required prominent section that repeats the exact literal `agent-builder`, `bug-fixer`, or `code-implementor` value from `Execution route`, not a placeholder\.' "$issue_contract"
 grep -q 'initially active session agent MUST hand the request to `<exact route value>`' "$issue_contract"
 grep -q 'An agent other than `<exact route value>` MUST NOT investigate, plan, or implement this issue' "$issue_contract"
 grep -q 'does not natively select, route, or dispatch an OpenChamber agent' "$issue_contract"
@@ -71,10 +72,21 @@ if grep -q 'git rev-parse main' "$issue_worktree_skill"; then
 fi
 grep -q 'refreshed remote-main revision' "$issue_worktree_skill"
 grep -q 'create a fresh issue worktree from the newest remote `main`' "$issue_worktree_skill"
-for route in bug-fixer code-implementor; do
+for route in agent-builder bug-fixer code-implementor; do
   grep -q '^    "git fetch origin main": allow$' "$root/agents/$route.md"
   grep -q '^    "git rev-parse origin/main": allow$' "$root/agents/$route.md"
 done
+
+agent_builder="$root/agents/agent-builder.md"
+grep -q '^    "/code/\*\*": allow$' "$agent_builder"
+grep -q '^    "/code/\.opencode/\*\*": deny$' "$agent_builder"
+grep -q '^    issue-worktree-validation: allow$' "$agent_builder"
+grep -q '^    git-change-baseline: allow$' "$agent_builder"
+grep -q '^    git-auto-commit: allow$' "$agent_builder"
+grep -q '^    "git commit --only \*": allow$' "$agent_builder"
+grep -q '^  - id: issue-worktree$' "$agent_builder"
+grep -q '^  - id: commit-baseline$' "$agent_builder"
+grep -q '^  - id: commit$' "$agent_builder"
 
 grep -q 'under `/code/specification/`' "$root/agents/reverse-engineer-app-spec.md"
 grep -q '/project/.opencode/scripts/retrieve-knowledge.py' "$root/skills/okf-reader/SKILL.md"
