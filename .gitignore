@@ -13,3 +13,4 @@ log/log.log
 !/tests/reorganize-knowledge-routing.sh
 /project-mounts.sh
 /start.sh
+/important-paths.md
