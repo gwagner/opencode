@@ -55,6 +55,22 @@ for owner in prd-strategist app-spec-architect code-spec-engineer; do
   grep -q '^    "python3 /project/\.opencode/scripts/retrieve-knowledge\.py \*": allow$' "$file"
 done
 
+issue_worktree_skill="$root/skills/issue-worktree-validation/SKILL.md"
+grep -q '^description: .*refreshed origin/main\.$' "$issue_worktree_skill"
+grep -q '^    "git fetch origin main": allow$' "$issue_worktree_skill"
+grep -q '^    "git rev-parse origin/main": allow$' "$issue_worktree_skill"
+grep -q 'Run `git fetch origin main`, then resolve `git rev-parse HEAD` and `git rev-parse origin/main`' "$issue_worktree_skill"
+if grep -q 'git rev-parse main' "$issue_worktree_skill"; then
+  printf '%s\n' 'issue-worktree validation still compares against local main' >&2
+  exit 1
+fi
+grep -q 'refreshed remote-main revision' "$issue_worktree_skill"
+grep -q 'create a fresh issue worktree from the newest remote `main`' "$issue_worktree_skill"
+for route in bug-fixer code-implementor; do
+  grep -q '^    "git fetch origin main": allow$' "$root/agents/$route.md"
+  grep -q '^    "git rev-parse origin/main": allow$' "$root/agents/$route.md"
+done
+
 grep -q 'under `/code/specification/`' "$root/agents/reverse-engineer-app-spec.md"
 grep -q '/project/.opencode/scripts/retrieve-knowledge.py' "$root/skills/okf-reader/SKILL.md"
 if grep -R -q '/code/scripts/retrieve-knowledge.py' "$root/agents" "$root/skills"; then

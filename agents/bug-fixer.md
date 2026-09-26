@@ -32,7 +32,8 @@ permission:
     "git rev-parse --git-dir": allow
     "git rev-parse --git-common-dir": allow
     "git rev-parse HEAD": allow
-    "git rev-parse main": allow
+    "git fetch origin main": allow
+    "git rev-parse origin/main": allow
     "git branch --show-current": allow
     "git worktree list --porcelain": allow
     "git status --porcelain=v1": allow
