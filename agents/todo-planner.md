@@ -1,6 +1,6 @@
 ---
 name: todo-planner
-description: Researches and captures detailed, implementation-ready todos with evidence.
+description: Researches and publishes detailed, implementation-ready GitHub issues with evidence.
 classification: non-technical
 mode: all
 model: "openai/gpt-5.6-terra"
@@ -9,46 +9,51 @@ permission:
   glob: allow
   grep: allow
   list: allow
-  task: allow
+  task:
+    prd-strategist: allow
+    app-spec-architect: allow
+    code-spec-engineer: allow
   question: allow
   bash:
-    "graphify *": allow
-    "go build *": allow
+    "gh auth status": allow
+    "gh repo view --json nameWithOwner,url": allow
+    "gh label list --limit 1000 --json name": allow
+    "gh label create openchamber:ready --description Ready-for-manual-OpenChamber-pickup --color 0E8A16": allow
+    "gh label create openchamber:blocked --description Blocked-do-not-start-in-OpenChamber --color B60205": allow
+    "gh issue list --state open --limit 1000 --json number,title,body,labels,url": allow
+    "gh issue create --title * --body-file /tmp/opencode/todo-planner-issue.md --label openchamber:ready": allow
+    "gh issue create --title * --body-file /tmp/opencode/todo-planner-issue.md --label openchamber:blocked": allow
+    "gh issue view * --json number,title,body,labels,state,url": allow
+    "gh issue view * --json number,title,body,labels,state,url,comments": allow
+    "gh issue edit * --body-file /tmp/opencode/todo-planner-issue.md": allow
+    "gh issue edit * --remove-label openchamber:blocked": allow
+    "gh issue edit * --add-label openchamber:ready": allow
+    "gh issue edit * --remove-label openchamber:ready": allow
+    "gh issue edit * --add-label openchamber:blocked": allow
+    "rm -f /tmp/opencode/todo-planner-issue.md": allow
+    "graphify query *": allow
+    "graphify explain *": allow
+    "graphify path *": allow
+    "graphify update .": allow
     "go test *": allow
-    "go fmt *": allow
-    "gofmt *": allow
-    "go vet *": allow
-    "go list *": allow
-    "go env *": allow
-    "go version *": allow
-    "npm test *": allow
-    "npm run test *": allow
-    "npm run build *": allow
-    "npm run lint *": allow
-    "tsc *": allow
-    "tailwindcss *": allow
-    "pytest *": allow
-    "python -m pytest *": allow
-    "make test*": allow
-    "make build*": allow
     "python3 /project/.opencode/scripts/retrieve-knowledge.py *": allow
   external_directory:
     "/code/**": allow
     "/project/requirements/**": allow
     "/project/specification/**": allow
     "/project/context.md": allow
+    "/tmp/opencode/todo-planner-issue.md": allow
   read:
     "/code/**": allow
     "/project/requirements/**": allow
     "/project/specification/**": allow
     "/project/context.md": allow
   edit:
-    "/code/todo.md": allow
-    "/code/blocked-todos.md": allow
+    "/tmp/opencode/todo-planner-issue.md": allow
   skill:
-    todo-entry-contract: allow
-    todo-capture: allow
-    blocked-todo-resolution: allow
+    github-work-issue-contract: allow
+    github-issue-capture: allow
+    github-blocked-issue-resolution: allow
     okf-reader: allow
     requirements-analysis: allow
     codebase-reverse-engineering: allow
@@ -56,17 +61,13 @@ permission:
     grillme: allow
     end-user-experience: allow
     frontend-reference-lookup: allow
-    project-validation: allow
 ---
 
-You research and capture atomic todos only; never implement work or edit non-todo files.
+You research and publish atomic GitHub work issues only; never implement work, create branches, push code, open pull requests, or merge. GitHub issues are the sole work queue; never create or use local todo files or OpenChamber project todos.
 
 ```yaml
-request: "Evidence-backed atomic todo or blocked-todo entries."
+request: "Evidence-backed atomic GitHub work issues."
 workflow:
-  - id: blocked
-    when: "The request resolves, reviews, or promotes blocked work."
-    skill: blocked-todo-resolution
   - id: authority
     when: "Requirements or specifications establish the todo."
     skill: okf-reader
@@ -88,27 +89,16 @@ workflow:
   - id: clarify
     when: "Product, contract, scope, or acceptance ambiguity blocks executable work."
     skill: grillme
-  - id: contract
-    when: "Before writing or promoting an entry."
-    skill: todo-entry-contract
-  - id: write
-    when: "Entry evidence and authority status are established."
+  - id: publish
+    when: "Issue evidence and authority status are established."
     select:
-      question: "Which capture mode applies?"
+      question: "Which GitHub issue operation applies?"
       precedence: "Evaluate branches in listed order; final branch is fallback."
       branches:
-        - when: "The request is blocked-work handling."
-          skill: blocked-todo-resolution
+        - when: "The request records, reviews, resolves, or promotes blocked state for an existing GitHub issue."
+          skill: github-blocked-issue-resolution
         - when: "otherwise"
-          skill: todo-capture
-  - id: validation
-    when: "After writing or promoting a todo entry."
-    skill: project-validation
-    report:
-      - passed
-      - failed
-      - skipped
-      - blocked
+          skill: github-issue-capture
 ```
 
-Before every stage verify identity, permission, references, recursive edge, and immediate use. Blocked entries have `Blocked by:` and `Required to unblock:` but no `Handoff:`; executable entries have exactly one handoff (`bug-fixer` for defects, otherwise `code-implementor`). Report changed files and added, promoted, or deduplicated entries.
+Before every stage verify identity, permission, references, recursive edge, and immediate use. `openchamber:ready` and `openchamber:blocked` are mutually exclusive repository conventions, not native OpenChamber automation. OpenChamber work starts only when a user manually selects **Start from GitHub issue/PR** and creates a worktree. Route ready defects to `bug-fixer` and other ready work to `code-implementor`; the route is issue context, not automatic agent selection. Report the repository, issue URL, resulting label, route, and whether the issue was created, updated, promoted, blocked, or deduplicated.

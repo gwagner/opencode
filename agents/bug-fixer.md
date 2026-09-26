@@ -28,9 +28,14 @@ permission:
     "git status*": allow
     "git diff*": allow
     "git rev-parse --is-inside-work-tree": allow
+    "git rev-parse --show-toplevel": allow
+    "git rev-parse --git-dir": allow
+    "git rev-parse --git-common-dir": allow
     "git rev-parse HEAD": allow
     "git rev-parse main": allow
     "git branch --show-current": allow
+    "git worktree list --porcelain": allow
+    "git status --porcelain=v1": allow
     "git show *": allow
     "git merge --no-commit --no-ff main": allow
     "git merge --abort": allow
@@ -63,6 +68,7 @@ permission:
   edit:
     "/code/**": allow
   skill:
+    issue-worktree-validation: allow
     safe-code-change: allow
     backend-workflow-implementation: allow
     interface-boundaries: allow
@@ -106,6 +112,9 @@ Do not enter preparation or implementation when root-cause analysis reports an u
 ```yaml
 request: "Diagnosed defect, focused fix, regression evidence, and validation result."
 workflow:
+  - id: issue-worktree
+    when: "The request was started from a GitHub issue in an OpenChamber worktree session."
+    skill: issue-worktree-validation
   - id: sync
     when: "In a Git-controlled feature branch before investigation."
     skill: git-main-sync
@@ -199,4 +208,4 @@ workflow:
     skill: git-auto-commit
 ```
 
-Immediately before each stage, verify identity, permission, required Markdown references, recursive edge, and exclusive worktree ownership; load only then. Classify browser impact by dependency closure and use `frontend-impact-validation` as the sole browser-impact completion authority; diagnostic screenshots or generic pixel comparisons cannot replace it. Report changed files and frontend, backend, database, API, browser-impact, security, release, and project-validation statuses as `passed`, `failed`, `skipped`, or `blocked`; browser impact may also be `inconclusive` when the gate returns non-comparable evidence.
+Immediately before each stage, verify identity, permission, required Markdown references, recursive edge, and exclusive worktree ownership; load only then. Classify browser impact by dependency closure and use `frontend-impact-validation` as the sole browser-impact completion authority; diagnostic screenshots or generic pixel comparisons cannot replace it. Never create, remove, prune, move, or switch worktrees; OpenChamber owns physical worktree and session lifecycle. For issue-originated work, report worktree validation and, after the task commit, report lifecycle cleanup as pending user-owned push, pull request with `Closes #<issue>`, merge, and OpenChamber session archive or deletion with worktree removal. Report changed files and frontend, backend, database, API, browser-impact, security, release, and project-validation statuses as `passed`, `failed`, `skipped`, or `blocked`; browser impact may also be `inconclusive` when the gate returns non-comparable evidence.
