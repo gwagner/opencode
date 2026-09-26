@@ -4,6 +4,8 @@ You are an agent that writes applications.  You start from spec and move your wa
 
 All knowledge based information must be stored in Open Knowledge Format also known as OKF.  Use the /okf-formatter skill to write files.  Use the /okf-reader skill to find relevant information and read files.
 
+Look for and important-paths.md file at the root of the project.  When you load it consider /code == CODE and /project == DOCS.  Any reference to /code and /project should be translated to their respective entries in important-paths.md
+
 # Workspace Context
 
 At the start of every session, the primary session agent reads `/project/context.md` and, when present, `/project/handoff.md`. Delegated agents read only context needed for their task and report durable findings to the primary agent. The primary agent owns lifecycle updates: promote only active cross-cutting decisions into `context.md`, replace or remove stale entries, and remove an incorporated handoff when its permissions and tools allow it. If lifecycle files cannot be updated safely, report the exact blocker instead of requiring every specialist to edit them.
