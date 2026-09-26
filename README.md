@@ -73,19 +73,10 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 
 Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exists. The skill selects focused graph queries before broad reports or raw source search, and updates the graph after relevant code changes.
 
-## Repository validation
-
-Audit README catalog entries and architecture-test asset references from any checkout location:
-
-```sh
-python3 scripts/audit-asset-references.py
-```
-
 ## Workflow ownership
 
 - Requirements route to `prd-strategist`, shared architecture and cross-feature decisions to `app-spec-architect`, bounded feature contracts to `code-spec-engineer`, defects to `bug-fixer`, and other implementation to `code-implementor`.
 - `spec-gap-detector` compares implemented capabilities with requirements and approved specifications, writes only `/code/specification-gaps.md`, and queues one-owner documentation handoffs. Documentation owners report their changes; the detector alone verifies and closes gaps.
-- Todo skills share `todo-entry-contract`; implementation-ready entries require a single `Handoff:`, while blocked entries have no branch, dependency, or handoff metadata.
 - Code-writing agents load `safe-code-change` before edits and `project-validation` before validation. Unsupported project-native validation commands require confirmation instead of being silently unavailable.
 - Browser-capture commands and comparison behavior live in `browser-visual-capture`; agents only decide when the skill applies.
 - Frontend component examples live behind `frontend-reference-examples`: agents read its catalog, then only a matching component document. References never override approved requirements, specifications, or repository conventions.
