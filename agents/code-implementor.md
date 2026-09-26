@@ -43,13 +43,13 @@ permission:
     "/root/go/**": allow
     "/project/requirements/**": allow
     "/project/specification/**": allow
-    "/tmp/**": allow
+    "/tmp/opencode/**": allow
   read:
     "/code/**": allow
     "/root/go/**": allow
     "/project/requirements/**": allow
     "/project/specification/**": allow
-    "/tmp/**": allow
+    "/tmp/opencode/**": allow
   edit:
     "/code/**": allow
   skill:
@@ -160,4 +160,4 @@ workflow:
       - "blocked"
 ```
 
-Before every stage, verify its identity, permission, Markdown references, and recursive edge; load it immediately before use. Never eagerly load, use an unlisted skill, or edit concurrently with another agent in this worktree. For incomplete independently server-driven contracts, stop and report the gap. Classify browser impact by dependency closure and use `frontend-impact-validation` as the sole browser-impact completion authority; diagnostic screenshots or generic pixel comparisons cannot replace it. Never stage, commit, push, open or merge a pull request, mutate a GitHub issue, or create, remove, prune, move, or switch a worktree. Return changed paths and validation evidence to the calling orchestrator. Report changed files, frontend/backend/database/browser-impact validation statuses, and blockers.
+Before every stage, verify its identity, permission, Markdown references, and recursive edge; load it immediately before use. Never eagerly load, use an unlisted skill, or edit concurrently with another agent in this worktree. For incomplete independently server-driven contracts, stop and report the gap. Classify browser impact by dependency closure and use `frontend-impact-validation` as the sole browser-impact completion authority; diagnostic screenshots or generic pixel comparisons cannot replace it. Never stage, commit, push, open or merge a pull request, mutate a GitHub issue, or create, remove, prune, move, or switch a worktree. Return changed paths and validation evidence to the calling orchestrator. Report changed files, frontend/backend/database/browser-impact validation statuses, and blockers. When browser impact is `passed`, return the same-scenario baseline and post-change screenshot paths under `/tmp/opencode` for the orchestrator's pre-closure issue update; otherwise state that visual evidence is not required.

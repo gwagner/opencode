@@ -104,6 +104,32 @@ for skill in issue-worktree-validation git-change-baseline git-delegated-change-
   grep -q "^    skill: $skill$" "$github_sdlc"
 done
 grep -Fq 'Approve squash-merging this exact pull request head and deleting its remote feature branch?' "$github_sdlc"
+grep -Fq 'id: pre-closure-update' "$github_sdlc"
+grep -Fq 'The pre-closure issue update was verified for the unchanged pull-request head.' "$github_sdlc"
+grep -Fq 'gh issue comment --attach' "$github_sdlc"
+grep -q '^    "gh issue comment --help": allow$' "$github_sdlc"
+grep -Fq 'never use HTTP/API upload workarounds' "$github_sdlc"
+grep -Fq 'pre-closure issue update' "$issue_contract"
+grep -Fq 'gh issue comment --attach' "$issue_contract"
+grep -Fq 'When browser impact is absent, the update must state that visual evidence is not required.' "$issue_contract"
+issue_comment="$root/skills/github-issue-comment/SKILL.md"
+grep -Fq '"gh issue comment * --body-file /tmp/opencode/github-issue-manager-comment.md": allow' "$issue_comment"
+grep -Fq '"gh issue comment * --body-file /tmp/opencode/github-issue-manager-comment.md --attach *": allow' "$issue_comment"
+grep -Fq 'native `gh issue comment --attach`' "$issue_comment"
+grep -Fq 'run `gh issue comment --help`. Stop unless it lists `--attach`.' "$issue_comment"
+grep -Fq 'never use an HTTP/API upload workaround' "$issue_comment"
+for delegate in code-implementor bug-fixer; do
+  file="$root/agents/$delegate.md"
+  grep -Fq 'same-scenario baseline and post-change screenshot paths under `/tmp/opencode`' "$file"
+done
+for visual_skill in browser-visual-capture browser-visual-compare frontend-impact-validation; do
+  if grep -q '"/tmp/\*\*": allow' "$root/skills/$visual_skill/SKILL.md"; then
+    printf '%s\n' "$visual_skill still permits artifacts outside /tmp/opencode" >&2
+    exit 1
+  fi
+done
+grep -Fq "const TEMP_ROOT = '/tmp/opencode';" "$root/skills/browser-visual-capture/scripts/capture-screenshots.mjs"
+grep -Fq "const TEMP_ROOT = '/tmp/opencode';" "$root/skills/browser-visual-compare/scripts/compare-screenshots.mjs"
 approved_merge="$root/skills/github-pr-approved-merge/SKILL.md"
 grep -Fq 'explicit user merge approval naming the exact pull request and head commit' "$approved_merge"
 grep -q '^    "gh pr merge \* --squash --match-head-commit \*": allow$' "$approved_merge"
