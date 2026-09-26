@@ -138,24 +138,6 @@ Runner output is captured through a temporary file. NUL bytes are stripped befor
 
 Successful squash merges retain Git's useful output. Merge or commit errors surface, preserve the completed branch, and leave any staged squash result available for inspection.
 
-## Knowledge reorganization runner
-
-Convert existing project requirements and specifications into smaller, linked, lossless OKF concepts one source file at a time:
-
-```sh
-./reorganize-knowledge <project>
-./reorganize-knowledge --test <project>
-./reorganize-knowledge --test=20 <project>
-```
-
-The runner snapshots and sorts Markdown source files before processing. It skips reserved `index.md`, `log.md`, and `.reorganization/` content. Requirements route to `prd-strategist`; `specification/api`, `specification/features`, and `specification/schema` route to `code-spec-engineer`; remaining specifications route to `app-spec-architect`.
-
-Safety is phased: a deterministic Markdown parser creates semantic segments from heading hierarchy and blank-line block boundaries. YAML frontmatter is excluded from content segmentation and passed separately as organizational metadata for identity, provenance, classification, ownership, and placement. Agents may use it to guide reorganization but may not extract it into prose or reorganize it as an independent concept. Metadata-only documents remain unchanged. Fenced code, tables, lists, and other indivisible blocks stay intact even when they exceed the preferred size. Heading ancestry and the containing source's size/segment profile travel with each segment so agents retain structural context. Each segment first receives a read-only assessment. Focused sources within the preferred size default to keep; oversized, multi-segment sources default to replacement when a segment provides a safe, meaningful concept boundary. Extraction must produce at least two smaller linked concepts and handles at most one candidate per pass; segment coverage and each candidate are re-reviewed independently. The original stays immutable until staged navigation and promoted replacements pass a final read-only compatibility review. Failed final review rolls promoted files back. Successful review finalizes automatically and archives the original under the ignored bundle-local `.reorganization/` directory.
-
-Set `REORGANIZE_PREFERRED_SEGMENT_LINES` to tune the preferred semantic-segment size and `REORGANIZE_MAX_PASSES` to limit adjustment attempts. `REORGANIZE_CHUNK_LINES` remains a deprecated compatibility alias. Processing stops safely on invalid segmentation, missing decision tokens, pass exhaustion, source mutation, multi-candidate changes, source collisions, or failed reviews.
-
-Dry-run mode performs no agent calls or edits. Instead of printing every generated prompt, it displays a concise sample containing source path, routed agent, line range, and structural context. The default is the first 10 semantic units; use `--test=N` or `REORGANIZE_TEST_LIMIT=N` to change the limit.
-
 ## Read-only knowledge retrieval
 
 Search Markdown sections without returning full documents or modifying the bundle:
