@@ -5,7 +5,6 @@ set -eu
 planner=/code/agents/todo-planner.md
 resolver=/code/skills/blocked-todo-resolution/SKILL.md
 capture=/code/skills/todo-capture/SKILL.md
-upkeep=/code/skills/todo-upkeep/SKILL.md
 contract=/code/skills/todo-entry-contract/SKILL.md
 
 grep -q '^  question: allow$' "$planner"
@@ -61,7 +60,6 @@ grep -q 'Require exactly one nonempty value for each label' "$contract"
 grep -q '`Handoff:` — exactly `bug-fixer`' "$contract"
 grep -q 'Blocked entries never use `Branch:`, `Depends on:`, or `Handoff:`' "$contract"
 grep -q 'Load and apply `todo-entry-contract`' "$capture"
-grep -q 'Load and apply `todo-entry-contract`' "$upkeep"
 grep -q 'load `todo-entry-contract`' "$resolver"
 
 if grep -q 'with at least one delegation' "$planner"; then

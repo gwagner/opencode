@@ -48,7 +48,6 @@ permission:
   skill:
     todo-entry-contract: allow
     todo-capture: allow
-    todo-upkeep: allow
     blocked-todo-resolution: allow
     okf-reader: allow
     requirements-analysis: allow
@@ -100,8 +99,6 @@ workflow:
       branches:
         - when: "The request is blocked-work handling."
           skill: blocked-todo-resolution
-        - when: "The active prompt contains `TODO_LOOP_MODE=true`."
-          skill: todo-upkeep
         - when: "otherwise"
           skill: todo-capture
   - id: validation

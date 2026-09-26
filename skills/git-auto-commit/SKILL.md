@@ -23,8 +23,6 @@ Require explicit commit authorization, an ownership baseline, and passed validat
 
 Use only when the user explicitly requests a commit, after a recorded ownership baseline and passed project validation. This skill owns final staging and commit only.
 
-In todo-loop work, ownership is iteration-scoped: record a baseline before editing in every iteration and commit that iteration before returning CONTINUE or DONE. The loop may create a safety checkpoint for work left after a clean iteration baseline; that checkpoint does not transfer unrelated pre-existing work to the agent.
-
 1. Confirm the recorded baseline has an empty index. Preserve all pre-existing worktree paths and exclude them from this commit.
 2. Track only files created or edited by this agent after the baseline. Do not commit when ownership of a changed path is uncertain.
 3. Confirm `project-validation` and every task-required check passed. Do not commit after a failed, blocked, or required-but-skipped check.

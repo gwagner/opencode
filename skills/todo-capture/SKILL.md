@@ -1,6 +1,6 @@
 ---
 name: todo-capture
-description: Captures detailed deferred work in /code/todo.md, or unresolved work in /code/blocked-todos.md, during normal non-loop work.
+description: Captures detailed deferred work in /code/todo.md, or unresolved work in /code/blocked-todos.md.
 classification: non-technical
 opencode_permission:
   read: allow
@@ -10,28 +10,26 @@ opencode_permission:
 inputs:
   - one concrete deferred outcome
   - evidence
-  - normal non-loop context
+  - work context
 ---
 
 # Todo Capture
 
 ## Inputs
 
-Require one concrete deferred outcome, evidence, and normal non-loop context.
+Require one concrete deferred outcome, evidence, and work context.
 
 ## Deterministic workflow
 
 ```yaml
-request: "Concrete deferred or blocked non-loop work entry"
+request: "Concrete deferred or blocked work entry"
 workflow:
   - id: "apply-entry-contract"
     when: "Before writing a deferred or blocked todo entry."
     skill: "todo-entry-contract"
 ```
 
-Use this skill when normal non-loop work reveals an actionable task that should be saved for later execution.
-
-If the active prompt contains `TODO_LOOP_MODE=true`, do not use this skill. Use `todo-upkeep` instead.
+Use this skill when work reveals an actionable task that should be saved for later execution.
 
 ## Target files
 
