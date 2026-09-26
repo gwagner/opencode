@@ -42,6 +42,11 @@ services:
       - /opt/opencode/local:/home/opencode/.local/
       - /opt/obsidian/vault:/vault
       - /opt/opencode/worktrees:/worktrees
+      - ~/.gitconfig/:/home/opencode/.gitconfig
+      - ${HOME}/.container-ssh/id_ed25519:/home/node/.ssh/id_ed25519:U
+      - ${HOME}/.container-ssh/id_ed25519.pub:/home/node/.ssh/id_ed25519.pub:U
+      - ${HOME}/.container-ssh/known_hosts:/home/node/.ssh/known_hosts:U
+      - ${HOME}/.gitconfig/:/home/opencode/.gitconfig
 
     expose:
       - "4096"
@@ -65,11 +70,11 @@ services:
 
     volumes:
       - /opt/openchamber/config:/home/node/.config/
-      - ${HOME}/.ssh/id_ed25519:/home/node/.ssh/id_ed25519:ro
-      - ${HOME}/.ssh/id_ed25519.pub:/home/node/.ssh/id_ed25519.pub:ro
-      - ${HOME}/.ssh/known_hosts:/home/node/.ssh/known_hosts:ro
       - /opt/opencode/workspace:/workspace
       - /opt/opencode/worktrees:/worktrees
-        #- ./:/workspace/code/github.com/gwagner/endpoint-observer/.opencode/
+      - ${HOME}/.container-ssh/id_ed25519:/home/node/.ssh/id_ed25519:U
+      - ${HOME}/.container-ssh/id_ed25519.pub:/home/node/.ssh/id_ed25519.pub:U
+      - ${HOME}/.container-ssh/known_hosts:/home/node/.ssh/known_hosts:U
+      - ${HOME}/.gitconfig/:/home/opencode/.gitconfig
 
     restart: unless-stopped

@@ -13,3 +13,4 @@ log/log.log
 /project-mounts.sh
 /start.sh
 /important-paths.md
+/.opencode/opencode.json
