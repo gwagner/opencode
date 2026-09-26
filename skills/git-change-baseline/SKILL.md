@@ -1,6 +1,6 @@
 ---
 name: git-change-baseline
-description: Records a safe ownership baseline for one authorized future task commit before editing begins.
+description: Records a safe ownership baseline for later orchestrator-owned commits before delegated editing begins.
 classification: technical
 opencode_permission:
   read: allow
@@ -17,8 +17,8 @@ inputs:
 
 Require explicit task-commit authorization and the current Git worktree.
 
-Use only when a task commit is authorized, before the first edit. This skill owns baseline capture only; it does not validate, stage, commit, merge, reset, restore, clean, stash, amend, push, or contact a remote.
+Use only when orchestrator-owned task commits are authorized, before the first delegated edit. This skill owns baseline capture only; it does not validate, stage, commit, merge, reset, restore, clean, stash, amend, push, or contact a remote.
 
 1. Record `git status --porcelain=v1 -z` and require an empty index.
 2. Record every pre-existing worktree path. Preserve and exclude those paths from the later task commit.
-3. Report the baseline result for `git-auto-commit`.
+3. Report the baseline result for later `git-delegated-change-commit` invocations.

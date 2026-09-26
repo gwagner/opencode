@@ -62,11 +62,12 @@ A ready issue has `openchamber:ready` as its only OpenChamber status label and m
 - `Actions` — no more than three concrete implementation steps.
 - `Evidence` — path-and-line evidence when available, otherwise an authoritative source or explicit evidence limitation.
 - `Acceptance` — observable outcomes and relevant validation.
-- `Execution route` — exactly `bug-fixer` for a reported or reproducible defect requiring diagnosis and correction; otherwise `code-implementor`.
-- `Delivery` — fixed instructions that a user manually starts an OpenChamber worktree from the issue, explicitly selects local `main` as the starting branch, and selects `Execution route`; that action authorizes the selected agent to validate the worktree, implement, validate the change, and create one task commit after validation passes. Push, pull-request creation, review, and merge remain user-owned OpenChamber Git/PR actions. The pull-request body must include `Closes #<this issue number>`. After merge, the user archives or deletes the OpenChamber session and confirms OpenChamber worktree removal, choosing whether to delete local and remote branches.
+- `Execution route` — exactly `github-sdlc` for every ready issue. The route is the issue-originated lifecycle owner, not the implementation specialist.
+- `Processing handoff` — a required prominent section that says: “Before investigating, planning, or implementing this issue, the initially active session agent MUST hand the request to `github-sdlc`. Any other agent MUST NOT process this issue directly.”
+- `Delivery` — fixed instructions that a user manually starts an OpenChamber worktree from the issue, explicitly selects local `main` as the starting branch, and selects `github-sdlc`. That action authorizes `github-sdlc` to validate the worktree, select exactly one implementation specialist, review and commit validated delegate-owned changes, push, open a pull request, and wait for required checks. `github-sdlc` must obtain explicit user approval for the exact pull-request head before squash merge, then delete only the remote feature branch, post a verified completion comment, and close the issue. The user remains responsible for archiving or deleting the OpenChamber session and confirming local worktree removal.
 - Optional `Depends on` — one or more GitHub issue references that must close before work starts.
 
-OpenChamber does not natively route or start work from these labels or body fields. A user manually starts a worktree from the issue and selects the stated execution route. OpenChamber owns the resulting branch name, so the issue must not prescribe a branch.
+The processing handoff is issue-body text only: it does not natively select, route, or dispatch an OpenChamber agent. A user manually starts a worktree from the issue and selects `github-sdlc`. OpenChamber owns the resulting branch name, so the issue must not prescribe a branch.
 
 ## Blocked issues
 
@@ -80,4 +81,4 @@ Blocked issues do not use `Execution route`. Promote only after every execution 
 
 ## Completion
 
-Return the canonical title, ordered body, status label, execution route when ready, authority evidence, and duplicate-comparison key.
+Return the canonical title, ordered body, status label, execution route and processing handoff when ready, authority evidence, and duplicate-comparison key.

@@ -20,10 +20,12 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | bug-fixer | Reproduces, diagnoses, and fixes defects with regression coverage. |
 | code-implementor | Implements approved, focused code changes. |
 | code-spec-engineer | Produces bounded implementation-ready feature contracts. |
+| github-issue-manager | Researches and manages GitHub issues through creation, updates, comments, state changes, and explicitly confirmed permanent deletion. |
+| github-sdlc | Orchestrates issue-originated work through delegated implementation, commits, pull-request checks, approved squash merge, completion comment, and issue closure. |
 | prd-strategist | Creates and refines OKF requirements. |
 | reverse-engineer-app-spec | Recovers an evidence-backed specification from code. |
+| sdlc-orchestrator | Orchestrates manually initiated CLI work through local delegated-change commits without remote lifecycle operations. |
 | spec-gap-detector | Finds implemented capabilities missing authoritative documentation and queues evidence-backed owner handoffs. |
-| todo-planner | Researches work, coordinates authoritative document updates, and captures detailed executable or blocked todos. |
 | url-to-vault | Ingests URLs into an OKF or Obsidian vault. |
 
 ## Skills
@@ -46,10 +48,18 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | frontend-reference-examples | Progressively loads matching HTML, CSS, JavaScript, accessibility, and illustrative data references for frontend components. |
 | htmx | Implements server-fragment requests and safe swap ownership. |
 | gap-risk-analysis | Identifies gaps, risks, and assumptions. |
-| git-auto-commit | Creates an explicit-request commit for validated agent-owned changes. |
+| git-delegated-change-commit | Reviews and commits one validated delegate-owned change batch. |
 | go-code-standards | Applies focused Go standards. |
 | graphify | Efficiently queries and updates an existing code knowledge graph. |
 | grillme | Clarifies open design questions. |
+| github-issue-close | Closes one GitHub issue and verifies its closed state. |
+| github-issue-comment | Posts and verifies one GitHub issue comment. |
+| github-issue-deletion | Permanently deletes one GitHub issue after issue-specific confirmation. |
+| github-issue-reopen | Reopens one GitHub issue and verifies its open state. |
+| github-issue-update | Updates and verifies one GitHub issue's title, body, or labels. |
+| github-pr-approved-merge | Head-matches and squash-merges an approved pull request, then verifies deletion of only its remote branch. |
+| github-pr-check-validation | Validates required checks for an unchanged pull-request head. |
+| github-pr-publication | Pushes committed issue work and creates or returns its pull request. |
 | implement-stubs | Safely implements unfinished functions. |
 | okf-formatter | Formats content as OKF. |
 | okf-reader | Reads OKF knowledge bundles. |
@@ -76,6 +86,10 @@ Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exi
 ## Workflow ownership
 
 - Requirements route to `prd-strategist`, shared architecture and cross-feature decisions to `app-spec-architect`, bounded feature contracts to `code-spec-engineer`, defects to `bug-fixer`, and other implementation to `code-implementor`.
+- Every ready GitHub issue routes and hands off to `github-sdlc`. It selects `agent-builder` for any agent or skill edit, `bug-fixer` for defects, and otherwise `code-implementor`; dedicated API integration tests may be delegated separately.
+- Implementation delegates edit and validate only. `github-sdlc` owns issue-worktree validation, ownership baselines, delegated-change commits, pull-request publication, required checks, head-specific merge approval, squash merge, remote-branch deletion, completion comments, and issue closure.
+- `sdlc-orchestrator` serves manually initiated CLI work and owns only reviewed local delegated-change commits; it never publishes or merges remotely or mutates GitHub issues.
+- `github-issue-manager` uses shared issue skills for creation, blocked-state reconciliation, updates, comments, closure or reopening, and explicitly confirmed permanent deletion.
 - `spec-gap-detector` compares implemented capabilities with requirements and approved specifications, writes only `/code/specification-gaps.md`, and queues one-owner documentation handoffs. Documentation owners report their changes; the detector alone verifies and closes gaps.
 - Code-writing agents load `safe-code-change` before edits and `project-validation` before validation. Unsupported project-native validation commands require confirmation instead of being silently unavailable.
 - Browser-capture commands and comparison behavior live in `browser-visual-capture`; agents only decide when the skill applies.

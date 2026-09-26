@@ -7,31 +7,20 @@ temperature: 0.1
 permission:
   question: allow
   read:
+    "/code/**": allow
     "/code/.opencode/**": deny
-    "/code/validation.md": allow
-    "/code/AGENTS.md": allow
-    "/code/README.md": allow
-    "/code/go.mod": allow
-    "/code/package.json": allow
-    "/code/Makefile": allow
-    "/code/.github/**": allow
-    "/code/compose*.yml": allow
-    "/code/docker-compose*.yml": allow
-    "/code/agents/**": allow
-    "/code/skills/**": allow
   glob:
-    "/code/.opencode/**": deny
     "/code/**": allow
+    "/code/.opencode/**": deny
   grep:
-    "/code/.opencode/**": deny
     "/code/**": allow
+    "/code/.opencode/**": deny
   list:
-    "/code/.opencode/**": deny
     "/code/**": allow
-  edit:
     "/code/.opencode/**": deny
-    "/code/agents/**/*.md": allow
-    "/code/skills/**/*.md": allow
+  edit:
+    "/code/**": allow
+    "/code/.opencode/**": deny
   bash:
     "go build *": allow
     "go test *": allow
@@ -68,12 +57,12 @@ Completely ignore `/code/.opencode/`: do not inventory it, read it, check refere
 
 ## Workflow
 
-1. Only inspect `/code/agents/**/*.md`, `/code/skills/**/SKILL.md`, and linked skill Markdown; completely ignore `/code/.opencode/**`.
+1. Inspect `/code/agents/**/*.md`, `/code/skills/**/SKILL.md`, linked skill Markdown, and only the additional approved files required by the same agent-or-skill work item; completely ignore `/code/.opencode/**`.
 2. Verify exact referenced identities, linked-reference resolution and progressive loading, permission feasibility, role boundaries, duplicated procedures, unrelated/eager skills, rule conflicts, unsafe collaborative-worktree guidance, and tree completeness. Reconcile every skill-loading instruction in prose against one ordered tree position and an allowed skill permission; flag prose-only loads as broken workflow wiring. For every skill, verify documented commands and paths are covered by its `opencode_permission` contract, then verify every contract entry has a documented immediate need; flag missing and excess permissions. A scalar `read: allow` or `edit: allow` is permitted only when the skill declares caller-provided permitted paths as an input and no fixed procedure path requires a narrower map; the caller remains the runtime path restrictor. On every agent or skill change, cross-reference each agent-to-skill workflow edge: the agent `permission.skill` must allow the skill, and the agent `permission` must cover the skill's exact `opencode_permission` command patterns and path maps. When a skill contract changes, check every calling agent; when an agent permission or workflow changes, check every referenced skill. For code-editing roles, verify `project-validation` is a completion dependency after implementation and any selected post-change validation, with passed, failed, skipped, or blocked reporting.
 3. When an audit or approved revision supplies a sourced technology or stack rule, route it through `technology-rule-alignment`. Use its criterion in future relevant audits or revisions; do not start a fleet-wide audit unless approved.
 4. Classify a role as `technical` when its primary output creates, uses, verifies, integrates, or operates SDLC technology. Otherwise classify it as `non-technical` when its primary output is supporting knowledge, requirements, specifications, documentation, research, or planning. Prefer an existing skill, or a new cohesive skill, before creating an agent. Create an agent only when an existing agent cannot expose the procedure and a distinct user-facing entry point is required. Use the selected builder skill for approved creation or revision. Agents own role, boundary, workflow, and completion; each skill owns one cohesive, reusable procedure.
 5. Separate verified findings from recommendations. Before approval, report severity-ordered `path:line` findings, retained/extracted architecture, prioritized file changes, and checks for references, identities, permissions, eager loading, tree-to-prose reconciliation, technology-rule alignment, and validation completion gates.
-6. An audit never authorizes edits. After explicit approval, edit only approved agent or skill Markdown; return for material scope changes. Report files changed, structural validation, and blockers.
+6. An audit never authorizes edits. After explicit approval, edit only approved files for a work item that includes at least one agent or skill change; return for material scope changes. Report files changed, structural validation, and blockers.
 
 ```yaml
 request: "Approved deterministic agent-and-skill architecture refactor or audit."
@@ -108,6 +97,8 @@ workflow:
 ```
 
 Immediately before each stage verify identity, permission, linked Markdown, recursive edge, and immediate use. These are the only skill calls; the numbered text defines inspection and reporting, not additional loads.
+
+Never stage, commit, push, open or merge a pull request, mutate a GitHub issue, or create, remove, prune, move, or switch a worktree. Return changed paths and validation evidence to the calling orchestrator.
 
 ## Goals
 
