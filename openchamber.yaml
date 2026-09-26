@@ -43,9 +43,11 @@ services:
       - /opt/obsidian/vault:/vault
       - /opt/opencode/worktrees:/worktrees
       - ~/.gitconfig/:/home/opencode/.gitconfig
-      - ${HOME}/.container-ssh/id_ed25519:/home/node/.ssh/id_ed25519:U
-      - ${HOME}/.container-ssh/id_ed25519.pub:/home/node/.ssh/id_ed25519.pub:U
-      - ${HOME}/.container-ssh/known_hosts:/home/node/.ssh/known_hosts:U
+      - /opt/opencode/tmp:/tmp/opencode
+      - ${HOME}/.container-ssh/id_ed25519:/home/opencode/.ssh/id_ed25519:U
+      - ${HOME}/.container-ssh/id_ed25519.pub:/home/opencode/.ssh/id_ed25519.pub:U
+      - ${HOME}/.container-ssh/known_hosts:/home/opencode/.ssh/known_hosts:U
+      - ${HOME}/.config-gh/hosts.yml:/home/opencode/.config/gh/hosts.yml:U
       - ${HOME}/.gitconfig/:/home/opencode/.gitconfig
 
     expose:
@@ -67,14 +69,17 @@ services:
     environment:
       OPENCHAMBER_UI_PASSWORD: ${OPENCHAMBER_UI_PASSWORD}
       OPENCODE_SERVER_PASSWORD: ${OPENCODE_SERVER_PASSWORD}
+      XDG_DATA_HOME: /worktrees
 
     volumes:
       - /opt/openchamber/config:/home/node/.config/
       - /opt/opencode/workspace:/workspace
       - /opt/opencode/worktrees:/worktrees
+      - /opt/opencode/tmp:/tmp/opencode
       - ${HOME}/.container-ssh/id_ed25519:/home/node/.ssh/id_ed25519:U
       - ${HOME}/.container-ssh/id_ed25519.pub:/home/node/.ssh/id_ed25519.pub:U
       - ${HOME}/.container-ssh/known_hosts:/home/node/.ssh/known_hosts:U
-      - ${HOME}/.gitconfig/:/home/opencode/.gitconfig
+      - ${HOME}/.config-gh/hosts.yml:/home/node/.config/gh/hosts.yml:U
+      - ${HOME}/.gitconfig/:/home/node/.gitconfig
 
     restart: unless-stopped
