@@ -157,7 +157,8 @@ for file in "$check_validation" "$approved_merge"; do
   grep -q '^    "gh pr checks \* --required --json bucket,name,state,workflow,link": allow$' "$file"
   grep -q '^    "gh api --include repos/\*/branches/\*/protection": allow$' "$file"
   grep -Fq "'gh api \"repos/*/rulesets?includes_parents=true\"': allow" "$file"
-  grep -Fq "stderr is exactly \`no required checks reported on the '<base branch>' branch\`" "$file"
+  grep -Fq "stderr is exactly \`no required checks reported on the '<head branch>' branch\`" "$file"
+  grep -Fq 'where `<head branch>` is the exact checked `headRefName`' "$file"
   grep -Fq 'verify configuration instead of accepting the CLI outcome alone' "$file"
   grep -Fq 'HTTP status `404` and a parseable JSON `message` exactly `Branch not protected`' "$file"
   grep -Fq 'Only that combination verifies zero configured required checks' "$file"
@@ -167,8 +168,10 @@ for file in "$check_validation" "$approved_merge"; do
     exit 1
   fi
 done
+grep -q '^    "gh pr view \* --json number,url,state,baseRefName,headRefName,headRefOid": allow$' "$check_validation"
+grep -Fq 'require the head commit, head branch, and base branch to remain unchanged.' "$check_validation"
 grep -Fq 'gh pr merge <pr> --squash --match-head-commit <approved head>' "$approved_merge"
-grep -Fq 'Require open state, base `main`, mergeable status, and an exact match between its head, the approved head, and the passed-check evidence.' "$approved_merge"
+grep -Fq 'Require open state, base `main`, mergeable status, an exact match between its head, the approved head, and the passed-check evidence, and unchanged head commit, head branch, and base branch.' "$approved_merge"
 grep -Fq 'require a second `git ls-remote --heads origin <head branch>` to return no ref' "$approved_merge"
 grep -Fq 'Never delete or switch the local branch or worktree.' "$approved_merge"
 grep -q '^    "gh pr merge \* --squash --match-head-commit \*": allow$' "$github_sdlc"
@@ -178,6 +181,7 @@ grep -q '^    "gh pr checks \* --required --json bucket,name,state,workflow,link
 grep -q '^    "gh api --include repos/\*/branches/\*/protection": allow$' "$github_sdlc"
 grep -Fq "'gh api \"repos/*/rulesets?includes_parents=true\"': allow" "$github_sdlc"
 grep -Fq 'known CLI 2.100.0 outcome of exit `1`, empty stdout' "$github_sdlc"
+grep -Fq "stderr \`no required checks reported on the '<head branch>' branch\`, where \`<head branch>\` is the exact checked pull-request head branch" "$github_sdlc"
 grep -Fq 'HTTP `404` with JSON `message` `Branch not protected`' "$github_sdlc"
 grep -Fq 'Failed, pending, cancelled, skipped-required, timed-out, unavailable, or other ambiguous evidence blocks.' "$github_sdlc"
 grep -Fq 'Optional checks never become required.' "$github_sdlc"
