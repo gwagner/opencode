@@ -32,6 +32,8 @@ permission:
     "git rev-parse HEAD": allow
     "git fetch origin main": allow
     "git rev-parse origin/main": allow
+    "git merge-base --is-ancestor HEAD origin/main": allow
+    "git merge --ff-only origin/main": allow
     "git branch --show-current": allow
     "git worktree list --porcelain": allow
     "git status --porcelain=v1": allow
@@ -85,7 +87,7 @@ workflow:
     when: "Always, before consulting local Git state."
     skill: github-sdlc-lifecycle-recovery
   - id: issue-worktree
-    when: "Lifecycle recovery reports the unique no-pull-request fresh-start state."
+    when: "Lifecycle recovery reports the unique no-pull-request fresh-start state; it validates equality with refreshed origin/main or performs its only permitted safe fast-forward."
     skill: issue-worktree-validation
   - id: ownership-baseline
     when: "Issue-worktree validation passed after the unique no-pull-request fresh-start state and the ready issue authorizes task commits."
@@ -115,7 +117,7 @@ workflow:
     when: "Required hosted checks passed for the unchanged open pull-request head and no verified pre-closure comment exists, or lifecycle recovery reports merged-needs-pre-closure."
     skill: github-issue-comment
   - id: merge-approval
-    when: "The pre-closure issue update was verified for the unchanged open pull-request head."
+    when: "The pre-closure issue update was verified for the unchanged pull-request head."
     ask: "Approve squash-merging this exact pull request head and deleting its remote feature branch?"
   - id: merge
     when: "The user approved the exact open pull request and unchanged head in the current turn."

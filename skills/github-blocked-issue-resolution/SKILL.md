@@ -19,6 +19,7 @@ opencode_permission:
     "rm -f /tmp/opencode/github-issue-manager-issue.md": allow
   external_directory:
     "/tmp/opencode/github-issue-manager-issue.md": allow
+  read: allow
   edit:
     "/tmp/opencode/github-issue-manager-issue.md": allow
   skill:
@@ -27,6 +28,7 @@ opencode_permission:
 inputs:
   - requested open GitHub issue URL or number
   - recorded blocker evidence
+  - caller-permitted paths to authoritative sources
   - current Git checkout for the issue repository
   - authenticated GitHub CLI
 ---
@@ -35,7 +37,7 @@ inputs:
 
 ## Inputs
 
-Require one requested open GitHub issue URL or number, its recorded blocker evidence, the current Git checkout for that issue's repository, and an authenticated GitHub CLI.
+Require one requested open GitHub issue URL or number, its recorded blocker evidence, caller-permitted paths to authoritative sources, the current Git checkout for that issue's repository, and an authenticated GitHub CLI. Read only the supplied authority paths; the caller remains the runtime path restrictor.
 
 ## Deterministic workflow
 
