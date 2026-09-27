@@ -85,7 +85,21 @@ grep -Fq 'does not natively select, route, or dispatch an OpenChamber agent' "$i
 grep -q '^description: .*refreshed origin/main\.$' "$issue_worktree_skill"
 grep -q '^    "git fetch origin main": allow$' "$issue_worktree_skill"
 grep -q '^    "git rev-parse origin/main": allow$' "$issue_worktree_skill"
+if grep -Eqi 'caller[- ]attest|attestation' "$issue_worktree_skill"; then
+  printf '%s\n' 'issue-worktree validation still requires caller attestation' >&2
+  exit 1
+fi
+grep -Fq 'sufficient alternate safety evidence to begin implementation' "$issue_worktree_skill"
+grep -Fq 'They establish current-worktree eligibility, not OpenChamber lifecycle provenance' "$issue_worktree_skill"
+grep -Fq 'Do not request or block on provenance evidence that is not machine-verifiable.' "$issue_worktree_skill"
+grep -Fq 'Require distinct resolved directories' "$issue_worktree_skill"
+grep -Fq 'Require the current root to appear exactly once and reject duplicate, missing, detached, locked, or prunable entries' "$issue_worktree_skill"
+grep -Fq 'Require a nonempty branch other than `main`.' "$issue_worktree_skill"
+grep -Fq 'Require no staged, unstaged, untracked, or conflicted state before implementation begins.' "$issue_worktree_skill"
 grep -q 'Run `git fetch origin main`, then resolve `git rev-parse HEAD` and `git rev-parse origin/main`' "$issue_worktree_skill"
+grep -Fq 'Require identical revisions' "$issue_worktree_skill"
+grep -Fq 'Require `openchamber:ready`, absence of `openchamber:blocked`, and an `Execution route` equal to the active agent identity.' "$issue_worktree_skill"
+grep -Fq 'require caller-provided evidence that every referenced issue is closed' "$issue_worktree_skill"
 if grep -q 'git rev-parse main' "$issue_worktree_skill"; then
   printf '%s\n' 'issue-worktree validation still compares against local main' >&2
   exit 1
