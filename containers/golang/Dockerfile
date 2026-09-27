@@ -19,12 +19,14 @@ RUN addgroup -g ${GID} ${USERNAME} \
   -s /bin/bash \
   ${USERNAME}
 
+RUN echo "@community http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories 
+
 # Install core packages
 RUN apk update && apk add --no-cache go git curl uv python3 ripgrep \
   py3-pip python3-dev build-base graphviz graphviz-dev nodejs npm bash neovim \
   chromium nss freetype harfbuzz ca-certificates ttf-freefont \
   shellcheck ffmpeg postgresql-client mesa-gles gst-libav openssh-client \
-  yq yamllint jq github-cli
+  yq yamllint jq github-cli@community
 
 # Install Graphify
 RUN uv tool install graphifyy@${GRAPHIFY_VERSION}
