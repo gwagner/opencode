@@ -148,16 +148,47 @@ done
 grep -Fq "const TEMP_ROOT = '/tmp/opencode';" "$root/skills/browser-visual-capture/scripts/capture-screenshots.mjs"
 grep -Fq "const TEMP_ROOT = '/tmp/opencode';" "$root/skills/browser-visual-compare/scripts/compare-screenshots.mjs"
 approved_merge="$root/skills/github-pr-approved-merge/SKILL.md"
+check_validation="$root/skills/github-pr-check-validation/SKILL.md"
 grep -Fq 'explicit user merge approval naming the exact pull request and head commit' "$approved_merge"
 grep -q '^    "gh pr merge \* --squash --match-head-commit \*": allow$' "$approved_merge"
 grep -q '^    "git ls-remote --heads origin \*": allow$' "$approved_merge"
 grep -q '^    "git push origin --delete \*": allow$' "$approved_merge"
+for file in "$check_validation" "$approved_merge"; do
+  grep -q '^    "gh pr checks \* --required --json bucket,name,state,workflow,link": allow$' "$file"
+  grep -q '^    "gh api --include repos/\*/branches/\*/protection": allow$' "$file"
+  grep -Fq "'gh api \"repos/*/rulesets?includes_parents=true\"': allow" "$file"
+  grep -Fq "stderr is exactly \`no required checks reported on the '<head branch>' branch\`" "$file"
+  grep -Fq 'where `<head branch>` is the exact checked `headRefName`' "$file"
+  grep -Fq 'verify configuration instead of accepting the CLI outcome alone' "$file"
+  grep -Fq 'HTTP status `404` and a parseable JSON `message` exactly `Branch not protected`' "$file"
+  grep -Fq 'Only that combination verifies zero configured required checks' "$file"
+  grep -Fq 'failed, pending, cancelled, skipped-required, timed-out, unavailable, and ambiguous evidence' "$file"
+  if grep -Fq 'A successful empty array (`[]`) is a verified empty required-check set and passes.' "$file"; then
+    printf '%s\n' "$file still accepts empty required checks without configuration evidence" >&2
+    exit 1
+  fi
+done
+grep -q '^    "gh pr view \* --json number,url,state,baseRefName,headRefName,headRefOid": allow$' "$check_validation"
+grep -Fq 'require the head commit, head branch, and base branch to remain unchanged.' "$check_validation"
 grep -Fq 'gh pr merge <pr> --squash --match-head-commit <approved head>' "$approved_merge"
+grep -Fq 'Require open state, base `main`, mergeable status, an exact match between its head, the approved head, and the passed-check evidence, and unchanged head commit, head branch, and base branch.' "$approved_merge"
 grep -Fq 'require a second `git ls-remote --heads origin <head branch>` to return no ref' "$approved_merge"
 grep -Fq 'Never delete or switch the local branch or worktree.' "$approved_merge"
 grep -q '^    "gh pr merge \* --squash --match-head-commit \*": allow$' "$github_sdlc"
 grep -q '^    "git ls-remote --heads origin \*": allow$' "$github_sdlc"
 grep -q '^    "git push origin --delete \*": allow$' "$github_sdlc"
+grep -q '^    "gh pr checks \* --required --json bucket,name,state,workflow,link": allow$' "$github_sdlc"
+grep -q '^    "gh api --include repos/\*/branches/\*/protection": allow$' "$github_sdlc"
+grep -Fq "'gh api \"repos/*/rulesets?includes_parents=true\"': allow" "$github_sdlc"
+grep -Fq 'known CLI 2.100.0 outcome of exit `1`, empty stdout' "$github_sdlc"
+grep -Fq "stderr \`no required checks reported on the '<head branch>' branch\`, where \`<head branch>\` is the exact checked pull-request head branch" "$github_sdlc"
+grep -Fq 'HTTP `404` with JSON `message` `Branch not protected`' "$github_sdlc"
+grep -Fq 'Failed, pending, cancelled, skipped-required, timed-out, unavailable, or other ambiguous evidence blocks.' "$github_sdlc"
+grep -Fq 'Optional checks never become required.' "$github_sdlc"
+if grep -Fq 'verified empty required-check set' "$github_sdlc"; then
+  printf '%s\n' 'github-sdlc still accepts empty required checks without configuration evidence' >&2
+  exit 1
+fi
 
 for skill in github-work-issue-contract github-issue-capture \
   github-blocked-issue-resolution github-issue-update github-issue-comment \
