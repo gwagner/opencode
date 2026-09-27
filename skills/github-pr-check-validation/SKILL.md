@@ -1,13 +1,12 @@
 ---
 name: github-pr-check-validation
-description: Waits for and verifies all required checks on one open GitHub pull request.
+description: Verifies all required checks on one open GitHub pull request.
 classification: technical
 opencode_permission:
   bash:
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
     "gh pr view * --json number,url,state,headRefOid": allow
-    "gh pr checks * --required --watch": allow
     "gh pr checks * --required --json bucket,name,state,workflow,link": allow
 inputs:
   - one open GitHub pull request
@@ -24,9 +23,8 @@ Require one open GitHub pull request, its expected head commit, and an authentic
 ## Procedure
 
 1. Run `gh auth status`, `gh repo view --json nameWithOwner,url`, and `gh pr view <pr> --json number,url,state,headRefOid`. Require authentication, one repository, open state, and the expected head commit.
-2. Run `gh pr checks <pr> --required --watch` and require it to complete successfully. Treat a command failure as `blocked`; this includes failed, pending, cancelled, skipped-required, timed-out, unavailable, and ambiguous results.
-3. After the watch succeeds, run `gh pr checks <pr> --required --json bucket,name,state,workflow,link`. Require a successful command and one parseable JSON array. A successful empty array (`[]`) is a verified empty required-check set and passes. For every returned required-check record, require a nonempty `name`, `bucket` equal to `pass`, and `state` equal to `SUCCESS` or `NEUTRAL`. Treat a command or JSON failure, a missing or unknown field, or any other bucket or state as `blocked`; this includes failed, pending, cancelled, skipped-required, timed-out, unavailable, and ambiguous evidence. Record each check's name, workflow when present, link when present, bucket, and state. Do not combine `--watch` and `--json`.
-4. Re-read the pull request and require the head commit to remain unchanged. A changed head invalidates the check evidence and requires a new invocation.
+2. Run `gh pr checks <pr> --required --json bucket,name,state,workflow,link`. Require a successful command and one parseable JSON array. A successful empty array (`[]`) is a verified empty required-check set and passes. For every returned required-check record, require a nonempty `name`, `bucket` equal to `pass`, and `state` equal to `SUCCESS` or `NEUTRAL`. Treat a command or JSON failure, a missing or unknown field, or any other bucket or state as `blocked`; this includes failed, pending, cancelled, skipped-required, timed-out, unavailable, and ambiguous evidence. Record each check's name, workflow when present, link when present, bucket, and state.
+3. Re-read the pull request and require the head commit to remain unchanged. A changed head invalidates the check evidence and requires a new invocation.
 
 ## Boundaries
 
