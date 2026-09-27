@@ -153,8 +153,14 @@ grep -Fq 'explicit user merge approval naming the exact pull request and head co
 grep -q '^    "gh pr merge \* --squash --match-head-commit \*": allow$' "$approved_merge"
 grep -q '^    "git ls-remote --heads origin \*": allow$' "$approved_merge"
 grep -q '^    "git push origin --delete \*": allow$' "$approved_merge"
-grep -q '^    "gh pr checks \* --required --watch --json bucket,name,state,workflow,link": allow$' "$check_validation"
+grep -q '^    "gh pr checks \* --required --watch": allow$' "$check_validation"
+grep -q '^    "gh pr checks \* --required --json bucket,name,state,workflow,link": allow$' "$check_validation"
 grep -q '^    "gh pr checks \* --required --json bucket,name,state,workflow,link": allow$' "$approved_merge"
+if grep -Fq -- '--watch --json' "$check_validation" "$github_sdlc"; then
+  printf '%s\n' 'hosted-check validation combines incompatible --watch and --json flags' >&2
+  exit 1
+fi
+grep -Fq 'After the watch succeeds, run `gh pr checks <pr> --required --json bucket,name,state,workflow,link`.' "$check_validation"
 grep -Fq 'A successful empty array (`[]`) is a verified empty required-check set and passes.' "$check_validation"
 grep -Fq 'A successful empty array (`[]`) is a verified empty required-check set and passes.' "$approved_merge"
 grep -Fq 'state` equal to `SUCCESS` or `NEUTRAL`' "$check_validation"
@@ -168,7 +174,7 @@ grep -Fq 'Never delete or switch the local branch or worktree.' "$approved_merge
 grep -q '^    "gh pr merge \* --squash --match-head-commit \*": allow$' "$github_sdlc"
 grep -q '^    "git ls-remote --heads origin \*": allow$' "$github_sdlc"
 grep -q '^    "git push origin --delete \*": allow$' "$github_sdlc"
-grep -q '^    "gh pr checks \* --required --watch --json bucket,name,state,workflow,link": allow$' "$github_sdlc"
+grep -q '^    "gh pr checks \* --required --watch": allow$' "$github_sdlc"
 grep -q '^    "gh pr checks \* --required --json bucket,name,state,workflow,link": allow$' "$github_sdlc"
 grep -Fq 'verified empty required-check set' "$github_sdlc"
 grep -Fq 'Optional checks never become required.' "$github_sdlc"

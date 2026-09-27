@@ -45,7 +45,7 @@ permission:
     "gh pr view * --json number,title,url,state,baseRefName,headRefName,headRefOid": allow
     "gh pr view * --json number,url,state,headRefOid": allow
     "gh pr view * --json number,url,state,mergeable,baseRefName,headRefName,headRefOid": allow
-    "gh pr checks * --required --watch --json bucket,name,state,workflow,link": allow
+    "gh pr checks * --required --watch": allow
     "gh pr checks * --required --json bucket,name,state,workflow,link": allow
     "gh pr merge * --squash --match-head-commit *": allow
     "gh issue view * --json number,title,state,url,comments": allow
