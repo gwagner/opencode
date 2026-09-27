@@ -213,6 +213,69 @@ for skill in github-work-issue-contract github-issue-capture \
   test -f "$root/skills/$skill/SKILL.md"
   grep -q "^    $skill: allow$" "$issue_manager"
 done
+grep -Fq 'contract_status `validated_ready`' "$issue_manager"
+grep -Fq 'Reuse complete authority unchanged.' "$issue_manager"
+grep -Fq 'Delegate only incomplete authority, serially, to `prd-strategist`, then `app-spec-architect`, then `code-spec-engineer`.' "$issue_manager"
+grep -Fq 'agent: prd-strategist' "$issue_manager"
+grep -Fq 'agent: app-spec-architect' "$issue_manager"
+grep -Fq 'agent: code-spec-engineer' "$issue_manager"
+grep -Fq 'Re-read each returned path' "$issue_manager"
+grep -Fq 'use `grillme` once with established context, re-evaluate its answer, and ask no further question until that re-evaluation identifies another blocker.' "$issue_manager"
+grep -Fq 'requires refusal: report the blocker and exact next need without calling capture or creating an issue.' "$issue_manager"
+grep -Fq 'Pass only a `new_candidate` with complete authority to `github-work-issue-contract`' "$issue_manager"
+grep -Fq 'call capture only when it returns `contract_status: validated_ready`.' "$issue_manager"
+grep -Fq 'A duplicate open issue is returned without mutation.' "$issue_manager"
+grep -Fq 'github-blocked-issue-resolution' "$issue_manager"
+grep -Fq 'Existing issues bypass new-candidate readiness and retain their applicable operation, including `github-blocked-issue-resolution` for blocked-state reconciliation.' "$issue_manager"
+
+# Authority gaps are owned in upstream-to-downstream order; complete authority
+# has no owner stage whose condition can apply.
+assert_authority_owner_order() {
+  awk '
+    /^  - id: product-authority$/ { if (state == 0) state = 1; next }
+    /^    when: "Verified readiness assessment identifies missing or changed product intent\."$/ { if (state == 1) state = 2; next }
+    /^    agent: prd-strategist$/ { if (state == 2) state = 3; next }
+    /^  - id: shared-authority$/ { if (state == 3) state = 4; next }
+    /^    when: "Verified readiness assessment identifies missing shared architecture or a cross-feature decision after product intent is sufficient\."$/ { if (state == 4) state = 5; next }
+    /^    agent: app-spec-architect$/ { if (state == 5) state = 6; next }
+    /^  - id: feature-authority$/ { if (state == 6) state = 7; next }
+    /^    when: "Verified readiness assessment identifies a missing bounded feature contract after upstream authority is sufficient\."$/ { if (state == 7) state = 8; next }
+    /^    agent: code-spec-engineer$/ { if (state == 8) state = 9; next }
+    END { exit state != 9 }
+  ' "$1"
+}
+assert_authority_owner_order "$issue_manager"
+
+if grep -Fq 'gh issue create --title * --body-file /tmp/opencode/github-issue-manager-issue.md --label openchamber:blocked' "$issue_manager"; then
+  printf '%s\n' 'github-issue-manager still permits new blocked issue creation' >&2
+  exit 1
+fi
+for lifecycle in new_candidate existing_issue; do
+  grep -Fq "$lifecycle" "$issue_contract"
+done
+for failure in authority_missing authority_conflict blocking_question non_atomic_scope schema_incomplete route_unknown new_blocked_forbidden; do
+  grep -Fq "$failure" "$issue_contract"
+done
+grep -Fq 'contract_status: validated_ready' "$issue_contract"
+grep -Fq 'For `lifecycle_context: new_candidate`, return `contract_status: validated_ready` only when authority is complete and consistent, there are no blocking questions, the scope is atomic, the route is known, and the complete ready schema is present.' "$issue_contract"
+grep -Fq '`status_label: openchamber:ready`, `execution_route: github-sdlc`' "$issue_contract"
+grep -Fq 'Reject any `new_candidate` that selects or contains blocked status as `new_blocked_forbidden`.' "$issue_contract"
+grep -Fq 'Only for `lifecycle_context: existing_issue`, a blocked issue may have `openchamber:blocked`' "$issue_contract"
+grep -Fq 'contract_status: validated_ready' "$root/skills/github-issue-capture/SKILL.md"
+grep -Fq 'verified authority references' "$root/skills/github-issue-capture/SKILL.md"
+capture_skill="$root/skills/github-issue-capture/SKILL.md"
+grep -Fq 'Never infer readiness from a caller assertion.' "$capture_skill"
+grep -Fq 'If an equivalent open issue exists, return its URL and do not create another issue.' "$capture_skill"
+grep -Fq 'Never coordinate authority, infer readiness, create a blocked issue, or mutate an existing issue.' "$capture_skill"
+grep -Fq 'Create exactly one ready issue with `gh issue create --title <title> --body-file /tmp/opencode/github-issue-manager-issue.md --label openchamber:ready`.' "$capture_skill"
+grep -Fq 'Completion requires an open issue, the exact canonical body, `openchamber:ready`, and absence of `openchamber:blocked`.' "$capture_skill"
+grep -Fq 'execution_route: github-sdlc' "$capture_skill"
+if grep -Fq 'gh label create openchamber:blocked' "$capture_skill" || \
+  grep -Fq 'gh issue create --title * --body-file /tmp/opencode/github-issue-manager-issue.md --label openchamber:blocked' "$capture_skill" || \
+  grep -Fq 'ready or blocked status' "$capture_skill"; then
+  printf '%s\n' 'github-issue-capture still contains blocked-label creation or input behavior' >&2
+  exit 1
+fi
 grep -Fq 'explicitly confirms permanent deletion of that exact issue in the current turn' "$root/skills/github-issue-deletion/SKILL.md"
 
 for delegate in agent-builder bug-fixer code-implementor api-integration-tester; do
