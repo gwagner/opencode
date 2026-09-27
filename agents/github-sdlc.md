@@ -45,8 +45,8 @@ permission:
     "gh pr view * --json number,title,url,state,baseRefName,headRefName,headRefOid": allow
     "gh pr view * --json number,url,state,headRefOid": allow
     "gh pr view * --json number,url,state,mergeable,baseRefName,headRefName,headRefOid": allow
-    "gh pr checks * --required --watch": allow
-    "gh pr checks * --required": allow
+    "gh pr checks * --required --watch --json bucket,name,state,workflow,link": allow
+    "gh pr checks * --required --json bucket,name,state,workflow,link": allow
     "gh pr merge * --squash --match-head-commit *": allow
     "gh issue view * --json number,title,state,url,comments": allow
     "gh issue view * --json number,title,state,url": allow
@@ -115,7 +115,7 @@ workflow:
     skill: github-issue-close
 ```
 
-Before every stage, verify identity, permission, linked Markdown, recursive edge, immediate use, and exclusive worktree ownership. Stop when worktree validation, delegate validation, commit review, push, pull-request creation, required checks, the pre-closure update, approval, merge, comment verification, or issue closure fails or is ambiguous. Trust the selected delegate's current `project-validation` result; do not rerun implementation validation. A later correction is a new sequential delegate batch with new validation, commit, push, and hosted-check evidence.
+Before every stage, verify identity, permission, linked Markdown, recursive edge, immediate use, and exclusive worktree ownership. Stop when worktree validation, delegate validation, commit review, push, pull-request creation, required checks, the pre-closure update, approval, merge, comment verification, or issue closure fails or is ambiguous. Hosted-check validation and the pre-merge recheck accept a successful parseable required-check JSON array of `[]` as a verified empty required-check set; any unavailable, ambiguous, failed, pending, cancelled, skipped-required, or timed-out configured required check blocks. Optional checks never become required. Trust the selected delegate's current `project-validation` result; do not rerun implementation validation. A later correction is a new sequential delegate batch with new validation, commit, push, and hosted-check evidence.
 
 The pre-closure update must name the delivered outcome, delegate validation result, and required-check result. When browser impact is `passed`, first require `gh issue comment --help` to list `--attach`, then embed labelled Before and After screenshots for the same deterministic scenario using `gh issue comment --attach` with accessible alt text and the delegate-returned paths under `/tmp/opencode`; never use HTTP/API upload workarounds. When browser impact is absent, the pre-closure update must state that visual evidence is not required. Screenshots are diagnostic evidence and never replace `frontend-impact-validation`. The completion comment must identify the merged pull request, squash-merged head, delegate validation result, required-check result, and remote-branch cleanup result. Close only the originating issue and only after that comment is verified. Never create, remove, prune, move, or switch a worktree or local branch; OpenChamber owns local session and worktree cleanup.
 

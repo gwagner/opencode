@@ -7,7 +7,7 @@ opencode_permission:
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
     "gh pr view * --json number,url,state,headRefOid": allow
-    "gh pr checks * --required --watch": allow
+    "gh pr checks * --required --watch --json bucket,name,state,workflow,link": allow
 inputs:
   - one open GitHub pull request
   - expected pull-request head commit
@@ -23,7 +23,7 @@ Require one open GitHub pull request, its expected head commit, and an authentic
 ## Procedure
 
 1. Run `gh auth status`, `gh repo view --json nameWithOwner,url`, and `gh pr view <pr> --json number,url,state,headRefOid`. Require authentication, one repository, open state, and the expected head commit.
-2. Run `gh pr checks <pr> --required --watch`. Require every required check to complete successfully. Treat failed, cancelled, skipped-required, timed-out, unavailable, or ambiguous results as `blocked`.
+2. Run `gh pr checks <pr> --required --watch --json bucket,name,state,workflow,link`. Require a successful command and one parseable JSON array. A successful empty array (`[]`) is a verified empty required-check set and passes. For every returned required-check record, require a nonempty `name`, `bucket` equal to `pass`, and `state` equal to `SUCCESS` or `NEUTRAL`. Treat a command or JSON failure, a missing or unknown field, or any other bucket or state as `blocked`; this includes failed, pending, cancelled, skipped-required, timed-out, unavailable, and ambiguous evidence. Record each check's name, workflow when present, link when present, bucket, and state.
 3. Re-read the pull request and require the head commit to remain unchanged. A changed head invalidates the check evidence and requires a new invocation.
 
 ## Boundaries
@@ -33,4 +33,4 @@ Require one open GitHub pull request, its expected head commit, and an authentic
 
 ## Completion
 
-Report `passed` or `blocked`, repository, pull-request URL, checked head commit, required checks, and failures.
+Report `passed` or `blocked`, repository, pull-request URL, checked head commit, required-check JSON evidence (including `[]` when empty), and failures.
