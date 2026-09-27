@@ -1,45 +1,24 @@
 ---
 name: github-work-issue-contract
-description: Defines the canonical schema, authority prerequisite, routing, dependency, and blocked-state rules for GitHub work issues.
+description: Validates lifecycle-aware canonical GitHub work-issue contracts without publishing or changing authority.
 classification: non-technical
 opencode_permission:
-  task:
-    prd-strategist: allow
-    app-spec-architect: allow
-    code-spec-engineer: allow
+  read: allow
 inputs:
   - one atomic work item
-  - authority status
+  - lifecycle_context: new_candidate or existing_issue
+  - caller-permitted paths to verified authority references
   - current GitHub repository
-  - ready or blocked status
+  - candidate or existing-issue lifecycle evidence
 ---
 
 # GitHub work issue contract
 
 ## Inputs
 
-Require one atomic work item, its authority status, the current GitHub repository, and a ready or blocked status.
+Require one atomic work item, `lifecycle_context` equal to `new_candidate` or `existing_issue`, caller-permitted paths to verified authority references, the current GitHub repository, and lifecycle evidence for the candidate or existing issue. Read the supplied authority paths to validate the candidate; the caller remains the runtime path restrictor.
 
-## Deterministic workflow
-
-```yaml
-request: "Canonical authority-ready GitHub work issue"
-workflow:
-  - id: "select-authority-owner"
-    when: "Authoritative documents require updates before issue publication or promotion."
-    select:
-      question: "Which authority owner must update the missing source?"
-      precedence: "Evaluate branches in listed order; the final branch is fallback."
-      branches:
-        - when: "Product intent requires an update."
-          agent: "prd-strategist"
-        - when: "Shared architecture or a cross-feature decision requires an update."
-          agent: "app-spec-architect"
-        - when: "otherwise"
-          agent: "code-spec-engineer"
-```
-
-Use whenever creating, updating, validating, or promoting a GitHub work issue.
+Use to validate a proposed new issue or an identified existing issue. The caller owns authority coordination, clarification, GitHub operations, and publication.
 
 ## Issue boundary
 
@@ -51,11 +30,13 @@ Use whenever creating, updating, validating, or promoting a GitHub work issue.
 
 ## Authority prerequisite
 
-Before publishing or promoting a ready issue, determine whether authoritative documents need updates. Route product intent to `prd-strategist`, shared architecture or cross-feature decisions to `app-spec-architect`, and bounded feature contracts to `code-spec-engineer`. Each owner updates its authority and reports paths, evidence, decisions, assumptions, and remaining questions. Complete required updates before ready work. A blocked issue may record decision-dependent authority updates under `Required to unblock`; issue metadata never substitutes for authority.
+For `new_candidate`, verified authority references must support every ready-schema field. Issue text, repository behavior, caller assertions, and assumptions are not authority. Authority is incomplete when product intent, shared or cross-feature architecture, or a bounded feature contract is missing; the manager classifies the owner. A requirements/specification conflict is `authority_conflict`. A non-blocking uncertainty is an explicit assumption; an execution-blocking ambiguity is `blocking_question`. Issue metadata never substitutes for authority.
 
-## Ready issues
+## New-candidate ready result
 
-A ready issue has `openchamber:ready` as its only OpenChamber status label and must not have `openchamber:blocked`. Unrelated repository labels may remain. Its body uses these sections in order:
+For `lifecycle_context: new_candidate`, return `contract_status: validated_ready` only when authority is complete and consistent, there are no blocking questions, the scope is atomic, the route is known, and the complete ready schema is present. The result includes canonical title and ordered body, `status_label: openchamber:ready`, `execution_route: github-sdlc`, verified authority references, explicit assumptions, empty blocking questions, and a duplicate-comparison key. Otherwise reject with exactly one applicable category: `authority_missing`, `authority_conflict`, `blocking_question`, `non_atomic_scope`, `schema_incomplete`, `route_unknown`, or `new_blocked_forbidden`.
+
+A valid new candidate has `openchamber:ready` as its only OpenChamber status label and must not have `openchamber:blocked`. Unrelated repository labels may remain. Its body uses these sections in order:
 
 - `Scope` — bounded files, subsystem, or contract.
 - `Why` — user or system impact.
@@ -69,16 +50,16 @@ A ready issue has `openchamber:ready` as its only OpenChamber status label and m
 
 The processing handoff is issue-body text only: it does not natively select, route, or dispatch an OpenChamber agent. A user manually starts a worktree from the issue and selects `github-sdlc`. OpenChamber owns the resulting branch name, so the issue must not prescribe a branch.
 
-## Blocked issues
+## Existing-issue blocked result
 
-A blocked issue has `openchamber:blocked` as its only OpenChamber status label and must not have `openchamber:ready`. Unrelated repository labels may remain. Its body uses `Scope`, `Why`, `Actions`, `Evidence`, and `Acceptance`, followed by:
+Only for `lifecycle_context: existing_issue`, a blocked issue may have `openchamber:blocked` as its only OpenChamber status label and must not have `openchamber:ready`. Unrelated repository labels may remain. Its body uses `Scope`, `Why`, `Actions`, `Evidence`, and `Acceptance`, followed by:
 
 - `Blocked by` — the current execution-critical obstacle.
 - `Required to unblock` — decisions, information, actions, dependency closures, or authoritative updates needed.
 - Optional `Questions` and `Assumptions`.
 
-Blocked issues do not use `Execution route`. Promote only after every execution blocker is resolved; then apply the complete ready schema before changing labels.
+Blocked issues do not use `Execution route`. Promote only after every execution blocker is resolved; then apply the complete ready schema before changing labels. Reject any `new_candidate` that selects or contains blocked status as `new_blocked_forbidden`.
 
 ## Completion
 
-Return the canonical title, ordered body, status label, execution route and processing handoff when ready, authority evidence, and duplicate-comparison key.
+Return the lifecycle context and either the valid new-candidate result or one rejection category. For `validated_ready`, return the canonical title, ordered body, ready label, execution route, processing handoff, authority references, assumptions, empty blocking questions, and duplicate-comparison key. For `existing_issue`, return the applicable ready or blocked contract result.
