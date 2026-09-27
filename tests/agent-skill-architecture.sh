@@ -5,6 +5,23 @@ set -eu
 script_dir=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
 root=$(CDPATH='' cd -- "$script_dir/.." && pwd)
 
+root_agents="$root/AGENTS.md"
+grep -Fq 'dynamically resolve `/code` by running `git rev-parse --show-toplevel`' "$root_agents"
+grep -Fq 'returned Git root of the current linked worktree is the code root' "$root_agents"
+grep -Fq 'Resolve `/project` from the `references.docs.path` value in `/code/.opencode/opencode.json`.' "$root_agents"
+grep -Fq 'exact path `/code` or `/project`, or when it is followed immediately by `/`' "$root_agents"
+grep -Fq 'Preserve the unmatched suffix' "$root_agents"
+grep -Fq 'resolve `/code/src` but do not rewrite `/codebase`' "$root_agents"
+grep -Fq '`.opencode/opencode.json` is missing or malformed' "$root_agents"
+grep -Fq '`references.docs.path` is missing' "$root_agents"
+grep -Fq 'configured docs directory is missing or inaccessible' "$root_agents"
+grep -Fq 'treat `/project` as not configured and continue without project documentation' "$root_agents"
+grep -Fq 'None of these conditions is a blocker.' "$root_agents"
+if grep -Fq 'important-paths.md' "$root_agents"; then
+  printf '%s\n' 'root agent instructions still depend on important-paths.md' >&2
+  exit 1
+fi
+
 for file in "$root"/agents/*.md; do
   expected=$(basename "$file" .md)
   grep -q "^name: $expected$" "$file"

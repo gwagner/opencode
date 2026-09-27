@@ -4,7 +4,13 @@ You are an agent that writes applications.  You start from spec and move your wa
 
 All knowledge based information must be stored in Open Knowledge Format also known as OKF.  Use the /okf-formatter skill to write files.  Use the /okf-reader skill to find relevant information and read files.
 
-Look for and important-paths.md file at the root of the project.  When you load it consider /code == CODE and /project == DOCS.  Any reference to /code and /project should be translated to their respective entries in important-paths.md
+## Important path aliases
+
+At the start of every session, dynamically resolve `/code` by running `git rev-parse --show-toplevel`; the returned Git root of the current linked worktree is the code root. Resolve `/project` from the `references.docs.path` value in `/code/.opencode/opencode.json`.
+
+Replace an alias only when it is the exact path `/code` or `/project`, or when it is followed immediately by `/`. Preserve the unmatched suffix: for example, resolve `/code/src` but do not rewrite `/codebase`.
+
+If `.opencode/opencode.json` is missing or malformed, `references.docs.path` is missing, or the configured docs directory is missing or inaccessible, treat `/project` as not configured and continue without project documentation. None of these conditions is a blocker.
 
 # Workspace Context
 
