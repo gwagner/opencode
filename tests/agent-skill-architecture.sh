@@ -99,13 +99,16 @@ grep -Fq -- '- `Execution route` — exactly `github-sdlc` for every ready issue
 grep -Fq 'MUST hand the request to `github-sdlc`' "$issue_contract"
 grep -Fq 'Any other agent MUST NOT process this issue directly.' "$issue_contract"
 grep -Fq 'does not natively select, route, or dispatch an OpenChamber agent' "$issue_contract"
-grep -q '^description: .*refreshed origin/main\.$' "$issue_worktree_skill"
+grep -q '^description: .*fast-forwards a clean issue worktree to refreshed origin/main before implementation\.$' "$issue_worktree_skill"
 grep -q '^    "git fetch origin main": allow$' "$issue_worktree_skill"
 grep -q '^    "git rev-parse origin/main": allow$' "$issue_worktree_skill"
+grep -q '^    "git merge-base --is-ancestor HEAD origin/main": allow$' "$issue_worktree_skill"
+grep -q '^    "git merge --ff-only origin/main": allow$' "$issue_worktree_skill"
 if grep -Eqi 'caller[- ]attest|attestation' "$issue_worktree_skill"; then
   printf '%s\n' 'issue-worktree validation still requires caller attestation' >&2
   exit 1
 fi
+grep -Fq 'refreshed `origin/main` equality or safe fast-forward' "$issue_worktree_skill"
 grep -Fq 'sufficient alternate safety evidence to begin implementation' "$issue_worktree_skill"
 grep -Fq 'They establish current-worktree eligibility, not OpenChamber lifecycle provenance' "$issue_worktree_skill"
 grep -Fq 'Do not request or block on provenance evidence that is not machine-verifiable.' "$issue_worktree_skill"
@@ -113,8 +116,13 @@ grep -Fq 'Require distinct resolved directories' "$issue_worktree_skill"
 grep -Fq 'Require the current root to appear exactly once and reject duplicate, missing, detached, locked, or prunable entries' "$issue_worktree_skill"
 grep -Fq 'Require a nonempty branch other than `main`.' "$issue_worktree_skill"
 grep -Fq 'Require no staged, unstaged, untracked, or conflicted state before implementation begins.' "$issue_worktree_skill"
-grep -q 'Run `git fetch origin main`, then resolve `git rev-parse HEAD` and `git rev-parse origin/main`' "$issue_worktree_skill"
-grep -Fq 'Require identical revisions' "$issue_worktree_skill"
+grep -Fq 'do not fetch or synchronize' "$issue_worktree_skill"
+grep -Fq 'retain the status and HEAD as recovery evidence' "$issue_worktree_skill"
+grep -Fq 'run `git merge-base --is-ancestor HEAD origin/main`' "$issue_worktree_skill"
+grep -Fq 'updated with `git merge --ff-only origin/main`' "$issue_worktree_skill"
+grep -Fq 'This is the only permitted synchronization' "$issue_worktree_skill"
+grep -Fq 'a branch that is ahead of or divergent from refreshed `origin/main`' "$issue_worktree_skill"
+grep -Fq 'preserve the branch as recovery evidence' "$issue_worktree_skill"
 grep -Fq 'Require `openchamber:ready`, absence of `openchamber:blocked`, and an `Execution route` equal to the active agent identity.' "$issue_worktree_skill"
 grep -Fq 'require caller-provided evidence that every referenced issue is closed' "$issue_worktree_skill"
 if grep -q 'git rev-parse main' "$issue_worktree_skill"; then
@@ -122,7 +130,15 @@ if grep -q 'git rev-parse main' "$issue_worktree_skill"; then
   exit 1
 fi
 grep -q 'refreshed remote-main revision' "$issue_worktree_skill"
-grep -q 'create a fresh issue worktree from the newest remote `main`' "$issue_worktree_skill"
+grep -Fq 'recreate the issue worktree from the named refreshed remote-main revision' "$issue_worktree_skill"
+grep -q '^    "git merge-base --is-ancestor HEAD origin/main": allow$' "$github_sdlc"
+grep -q '^    "git merge --ff-only origin/main": allow$' "$github_sdlc"
+grep -Fq 'performs its only permitted safe fast-forward' "$github_sdlc"
+grep -Fq 'Local `main` is the OpenChamber creation starting point' "$issue_contract"
+grep -Fq 'may fast-forward only a clean eligible issue branch when Git proves it is a true fast-forward' "$issue_contract"
+grep -Fq 'A dirty, ahead, or divergent branch remains blocked with recovery evidence' "$issue_contract"
+grep -q '^  read: allow$' "$root/skills/github-blocked-issue-resolution/SKILL.md"
+grep -Fq 'caller-permitted paths to authoritative sources' "$root/skills/github-blocked-issue-resolution/SKILL.md"
 
 assert_primary_implementation_route "$github_sdlc"
 assert_primary_implementation_route "$sdlc_orchestrator"
