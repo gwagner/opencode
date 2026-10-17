@@ -15,6 +15,7 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 
 | Agent | Purpose |
 | --- | --- |
+| agent-builder | Audits and creates deterministic agents and skills; directly invoked, explicitly authorized changes may be committed and pushed after validation. |
 | api-integration-tester | Builds API integration tests. |
 | app-spec-architect | Defines cross-feature architecture and shared workflows from requirements. |
 | bug-fixer | Reproduces, diagnoses, and fixes defects with regression coverage. |
@@ -48,6 +49,8 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | frontend-reference-examples | Progressively loads matching HTML, CSS, JavaScript, accessibility, and illustrative data references for frontend components. |
 | htmx | Implements server-fragment requests and safe swap ownership. |
 | gap-risk-analysis | Identifies gaps, risks, and assumptions. |
+| git-agent-skill-change-publication | Commits and pushes one validated directly owned agent or skill change batch without creating a pull request. |
+| git-change-baseline | Records a safe ownership baseline before task-owned editing begins. |
 | git-delegated-change-commit | Reviews and commits one validated delegate-owned change batch. |
 | go-code-standards | Applies focused Go standards. |
 | graphify | Efficiently queries and updates an existing code knowledge graph. |
@@ -90,6 +93,7 @@ Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exi
 - Implementation delegates edit and validate only. `github-sdlc` owns issue-worktree validation, ownership baselines, delegated-change commits, pull-request publication, required checks, head-specific merge approval, squash merge, remote-branch deletion, completion comments, and issue closure.
 - `sdlc-orchestrator` serves manually initiated CLI work and owns only reviewed local delegated-change commits; it never publishes or merges remotely or mutates GitHub issues.
 - `github-issue-manager` uses shared issue skills for creation, blocked-state reconciliation, updates, comments, closure or reopening, and explicitly confirmed permanent deletion.
+- A directly invoked `agent-builder` may commit and push only its validated agent or skill change batch after an ownership baseline and explicit user authorization. When delegated, it returns changes to the orchestrator without staging, committing, or pushing.
 - `spec-gap-detector` compares implemented capabilities with requirements and approved specifications, writes only `/code/specification-gaps.md`, and queues one-owner documentation handoffs. Documentation owners report their changes; the detector alone verifies and closes gaps.
 - Code-writing agents load `safe-code-change` before edits and `project-validation` before validation. Unsupported project-native validation commands require confirmation instead of being silently unavailable.
 - Browser-capture commands and comparison behavior live in `browser-visual-capture`; agents only decide when the skill applies.
