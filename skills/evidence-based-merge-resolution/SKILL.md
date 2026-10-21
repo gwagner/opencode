@@ -7,7 +7,7 @@ opencode_permission:
   glob: allow
   grep: allow
   edit: allow
-  bash:
+  shell:
     "git status *": allow
     "git rev-parse *": allow
     "git merge-base *": allow

@@ -6,7 +6,7 @@ opencode_permission:
   read: allow
   glob: allow
   grep: allow
-  bash:
+  shell:
     "go test *": allow
 inputs:
   - repository scope

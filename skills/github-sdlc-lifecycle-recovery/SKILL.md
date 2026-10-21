@@ -3,7 +3,7 @@ name: github-sdlc-lifecycle-recovery
 description: Selects the one safe GitHub-authoritative resume point for an issue-originated SDLC lifecycle.
 classification: technical
 opencode_permission:
-  bash:
+  shell:
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
     "gh issue view * --json number,title,state,url,comments": allow

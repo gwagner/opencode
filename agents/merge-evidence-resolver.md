@@ -21,7 +21,7 @@ permission:
     "/project/decisions/**": allow
   edit:
     "/code/**": allow
-  bash:
+  shell:
     "git status *": allow
     "git diff *": allow
     "git rev-parse *": allow

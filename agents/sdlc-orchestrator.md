@@ -14,7 +14,7 @@ permission:
     bug-fixer: allow
     code-implementor: allow
     api-integration-tester: allow
-  bash:
+  shell:
     "git rev-parse *": allow
     "git branch --show-current": allow
     "git branch --list *": allow

@@ -4,7 +4,7 @@ description: Commits and pushes one validated directly owned agent or skill chan
 classification: technical
 opencode_permission:
   read: allow
-  bash:
+  shell:
     "git branch --show-current": allow
     "git status --porcelain=v1 -z": allow
     "git diff -- *": allow

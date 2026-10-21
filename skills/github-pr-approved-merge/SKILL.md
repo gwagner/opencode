@@ -3,7 +3,7 @@ name: github-pr-approved-merge
 description: Squash-merges one fully checked GitHub pull request after head-specific user approval and deletes only its remote branch.
 classification: technical
 opencode_permission:
-  bash:
+  shell:
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
     "gh pr view * --json number,url,state,mergeable,baseRefName,headRefName,headRefOid": allow

@@ -5,7 +5,7 @@ classification: technical
 opencode_permission:
   read: allow
   glob: allow
-  bash:
+  shell:
     "git status --porcelain=v1*": allow
     "git rev-parse *": allow
     "git diff *": allow

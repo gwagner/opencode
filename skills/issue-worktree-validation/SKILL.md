@@ -3,7 +3,7 @@ name: issue-worktree-validation
 description: Validates and, only when safe, fast-forwards a clean issue worktree to refreshed origin/main before implementation.
 classification: technical
 opencode_permission:
-  bash:
+  shell:
     "git rev-parse --is-inside-work-tree": allow
     "git rev-parse --show-toplevel": allow
     "git rev-parse --git-dir": allow

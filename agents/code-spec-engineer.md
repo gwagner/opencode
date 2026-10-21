@@ -6,7 +6,7 @@ mode: all
 model: "openai/gpt-5.6-sol"
 permission:
   question: allow
-  bash:
+  shell:
     "python3 /project/.opencode/scripts/retrieve-knowledge.py *": allow
     "go build *": allow
     "go test *": allow

@@ -19,7 +19,7 @@ permission:
   external_directory:
     "/code/**": allow
     "/tmp/opencode/**": allow
-  bash:
+  shell:
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
     "gh issue view * --json number,title,state,url,comments": allow
@@ -46,8 +46,6 @@ permission:
     "git push origin *": allow
     "git push origin --delete *": allow
     "git ls-remote --heads origin *": allow
-    "gh auth status": allow
-    "gh repo view --json nameWithOwner,url": allow
     "gh issue comment --help": allow
     "gh pr list --head * --state all --json number,state,url,title": allow
     "gh pr create --base main --head * --title * --body-file /tmp/opencode/github-sdlc-pr.md": allow
@@ -59,7 +57,6 @@ permission:
     "gh api --include repos/*/branches/*/protection": allow
     'gh api "repos/*/rulesets?includes_parents=true"': allow
     "gh pr merge * --squash --match-head-commit *": allow
-    "gh issue view * --json number,title,state,url,comments": allow
     "gh issue view * --json number,title,state,url": allow
     "gh issue comment * --body-file /tmp/opencode/github-issue-manager-comment.md": allow
     "gh issue comment * --body-file /tmp/opencode/github-issue-manager-comment.md --attach *": allow

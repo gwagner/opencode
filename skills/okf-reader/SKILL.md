@@ -6,7 +6,7 @@ opencode_permission:
   read: allow
   glob: allow
   grep: allow
-  bash:
+  shell:
     "python3 /project/.opencode/scripts/retrieve-knowledge.py *": allow
 inputs:
   - question

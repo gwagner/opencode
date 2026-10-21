@@ -3,7 +3,7 @@ name: github-issue-comment
 description: Posts one verified progress or completion comment to an existing GitHub issue.
 classification: non-technical
 opencode_permission:
-  bash:
+  shell:
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
     "gh issue comment --help": allow

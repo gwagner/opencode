@@ -3,7 +3,7 @@ name: browser-visual-capture
 description: Captures deterministic baseline and post-change Chromium screenshots for one URL or URL set as diagnostic artifacts.
 classification: technical
 opencode_permission:
-  bash:
+  shell:
     "node /code/skills/browser-visual-capture/scripts/capture-screenshots.mjs *": allow
   external_directory:
     "/code/skills/browser-visual-capture/scripts/capture-screenshots.mjs": allow

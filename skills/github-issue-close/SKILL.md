@@ -3,7 +3,7 @@ name: github-issue-close
 description: Closes one existing GitHub issue and verifies its closed state.
 classification: non-technical
 opencode_permission:
-  bash:
+  shell:
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
     "gh issue view * --json number,title,state,url": allow

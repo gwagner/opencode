@@ -3,7 +3,7 @@ name: github-pr-check-validation
 description: Verifies all required checks on one open GitHub pull request.
 classification: technical
 opencode_permission:
-  bash:
+  shell:
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
     "gh pr view * --json number,url,state,baseRefName,headRefName,headRefOid": allow

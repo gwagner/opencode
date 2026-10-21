@@ -8,7 +8,7 @@ permission:
   question: allow
   glob: allow
   grep: allow
-  bash:
+  shell:
     "go build *": allow
     "go test *": allow
     "go fmt *": allow

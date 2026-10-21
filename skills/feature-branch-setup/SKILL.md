@@ -4,7 +4,7 @@ description: Creates one clean local feature branch from local main before a bou
 classification: technical
 opencode_permission:
   read: allow
-  bash:
+  shell:
     "git status --porcelain=v1*": allow
     "git rev-parse *": allow
     "git branch --show-current": allow

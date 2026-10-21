@@ -10,7 +10,7 @@ permission:
   grep: allow
   list: allow
   question: allow
-  bash:
+  shell:
     "go build *": allow
     "go test *": allow
     "go fmt *": allow

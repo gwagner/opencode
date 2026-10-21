@@ -4,7 +4,7 @@ description: Permanently deletes one GitHub issue only after explicit issue-spec
 classification: non-technical
 opencode_permission:
   question: allow
-  bash:
+  shell:
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
     "gh issue view * --json number,title,state,url": allow

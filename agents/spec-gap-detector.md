@@ -17,7 +17,7 @@ permission:
   list: allow
   lsp: allow
   task: deny
-  bash:
+  shell:
     "git status *": allow
     "git diff *": allow
     "git log *": allow

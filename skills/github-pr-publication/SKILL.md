@@ -3,7 +3,7 @@ name: github-pr-publication
 description: Pushes committed issue work and creates its single GitHub pull request after recovery excludes an existing match.
 classification: technical
 opencode_permission:
-  bash:
+  shell:
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
     "git branch --show-current": allow

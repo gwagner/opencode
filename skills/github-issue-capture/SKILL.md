@@ -3,7 +3,7 @@ name: github-issue-capture
 description: Creates or deduplicates one contract-validated ready GitHub work issue in the current checkout's repository.
 classification: non-technical
 opencode_permission:
-  bash:
+  shell:
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
     "gh label list --limit 1000 --json name": allow

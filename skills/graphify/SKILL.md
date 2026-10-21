@@ -4,7 +4,7 @@ description: Investigates a codebase efficiently with graphify. Use when answeri
 classification: technical
 opencode_permission:
   read: allow
-  bash:
+  shell:
     "graphify query *": allow
     "graphify explain *": allow
     "graphify path *": allow

@@ -15,7 +15,7 @@ permission:
     code-spec-engineer: allow
     github-sdlc: allow
   question: allow
-  bash:
+  shell:
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
     "gh label list --limit 1000 --json name": allow

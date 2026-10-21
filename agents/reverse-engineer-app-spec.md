@@ -24,7 +24,7 @@ permission:
   grep: allow
   list: allow
   lsp: allow
-  bash:
+  shell:
     "git status *": allow
     "git log *": allow
     "git show *": allow

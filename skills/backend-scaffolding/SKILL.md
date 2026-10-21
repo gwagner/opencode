@@ -7,7 +7,7 @@ opencode_permission:
   glob: allow
   grep: allow
   edit: allow
-  bash:
+  shell:
     "go test *": allow
   skill:
     okf-reader: allow
