@@ -195,37 +195,58 @@ grep -Fq 'explicit user merge approval naming the exact pull request and head co
 grep -q '^    "gh pr merge \* --squash --match-head-commit \*": allow$' "$approved_merge"
 grep -q '^    "git ls-remote --heads origin \*": allow$' "$approved_merge"
 grep -q '^    "git push origin --delete \*": allow$' "$approved_merge"
-for file in "$check_validation" "$approved_merge"; do
-  grep -q '^    "gh pr checks \* --required --json bucket,name,state,workflow,link": allow$' "$file"
-  grep -q '^    "gh api --include repos/\*/branches/\*/protection": allow$' "$file"
-  grep -Fq "'gh api \"repos/*/rulesets?includes_parents=true\"': allow" "$file"
-  grep -Fq "stderr is exactly \`no required checks reported on the '<head branch>' branch\`" "$file"
-  grep -Fq 'where `<head branch>` is the exact checked `headRefName`' "$file"
-  grep -Fq 'verify configuration instead of accepting the CLI outcome alone' "$file"
-  grep -Fq 'HTTP status `404` and a parseable JSON `message` exactly `Branch not protected`' "$file"
-  grep -Fq 'Only that combination verifies zero configured required checks' "$file"
-  grep -Fq 'failed, pending, cancelled, skipped-required, timed-out, unavailable, and ambiguous evidence' "$file"
-  if grep -Fq 'A successful empty array (`[]`) is a verified empty required-check set and passes.' "$file"; then
-    printf '%s\n' "$file still accepts empty required checks without configuration evidence" >&2
-    exit 1
-  fi
-done
+grep -q '^    "gh pr checks \* --required --json bucket,name,state,workflow,link": allow$' "$check_validation"
+grep -q '^    "gh api --include repos/\*/branches/\*/protection": allow$' "$check_validation"
+grep -Fq "'gh api \"repos/*/rulesets?includes_parents=true\"': allow" "$check_validation"
+grep -q '^    "sleep 30": allow$' "$check_validation"
+grep -Fq "stderr is exactly \`no required checks reported on the '<head branch>' branch\`" "$check_validation"
+grep -Fq 'where `<head branch>` is the exact checked `headRefName`' "$check_validation"
+grep -Fq 'verify configuration instead of accepting the CLI outcome alone' "$check_validation"
+grep -Fq 'HTTP status `404` and a parseable JSON `message` exactly `Branch not protected`' "$check_validation"
+grep -Fq 'Only that combination verifies zero configured required checks' "$check_validation"
+grep -Fq 'failed, pending, cancelled, skipped-required, timed-out, unavailable, and ambiguous evidence' "$check_validation"
+grep -Fq 'exit status is the documented `8` for pending checks' "$check_validation"
+grep -Fq 'It is `failed` only when exit status is `1`' "$check_validation"
+grep -Fq 'Make at most five such rechecks.' "$check_validation"
+grep -Fq 'Stop immediately on `passing`, `failed`, or `blocked`.' "$check_validation"
+grep -Fq 'pending deadline exhausted' "$check_validation"
+if grep -Fq 'A successful empty array (`[]`) is a verified empty required-check set and passes.' "$check_validation"; then
+  printf '%s\n' "$check_validation still accepts empty required checks without configuration evidence" >&2
+  exit 1
+fi
+grep -q '^    github-pr-check-validation: allow$' "$approved_merge"
+grep -q '^    skill: github-pr-check-validation$' "$approved_merge"
+grep -Fq 'Invoke `github-pr-check-validation` immediately before merging' "$approved_merge"
+grep -Fq 'Never parse, classify, or recheck required checks outside `github-pr-check-validation`' "$approved_merge"
+if [ "$(grep -c '^    skill: github-pr-check-validation$' "$approved_merge")" -ne 1 ]; then
+  printf '%s\n' 'github-pr-approved-merge must invoke the canonical validator exactly once' >&2
+  exit 1
+fi
+if grep -Eq 'gh pr checks|gh api |sleep 30|zero-required-check|`(SUCCESS|NEUTRAL|QUEUED|PENDING|IN_PROGRESS|WAITING|FAILURE|ERROR|TIMED_OUT|ACTION_REQUIRED|CANCELLED|SKIPPED|STALE)`' "$approved_merge"; then
+  printf '%s\n' 'github-pr-approved-merge duplicates required-check interpretation owned by the canonical validator' >&2
+  exit 1
+fi
+awk '
+  /^3\. Invoke `github-pr-check-validation` immediately before merging, supplying this exact current head\. Require its `passed` result\.$/ { if (state == 0) state = 1; next }
+  /^4\. Re-read the pull request with `gh pr view <pr> --json number,url,state,mergeable,baseRefName,headRefName,headRefOid`\./ { if (state == 1) state = 2; next }
+  /^5\. Run `gh pr merge <pr> --squash --match-head-commit <approved head>` once\./ { if (state == 2) state = 3; next }
+  END { exit state != 3 }
+' "$approved_merge"
 grep -q '^    "gh pr view \* --json number,url,state,baseRefName,headRefName,headRefOid": allow$' "$check_validation"
-grep -Fq 'require the head commit, head branch, and base branch to remain unchanged.' "$check_validation"
+grep -Fq 'Require its state, head commit, head branch, and base branch to remain unchanged from step 1' "$check_validation"
 grep -Fq 'gh pr merge <pr> --squash --match-head-commit <approved head>' "$approved_merge"
-grep -Fq 'Require open state, base `main`, mergeable status, an exact match between its head, the approved head, and the passed-check evidence, and unchanged head commit, head branch, and base branch.' "$approved_merge"
+grep -Fq 'Require open state, base `main`, mergeable status, and unchanged head commit, head branch, and base branch that exactly match the approved head.' "$approved_merge"
 grep -Fq 'require a second `git ls-remote --heads origin <head branch>` to return no ref' "$approved_merge"
 grep -Fq 'Never delete or switch the local branch or worktree.' "$approved_merge"
 grep -q '^    "gh pr merge \* --squash --match-head-commit \*": allow$' "$github_sdlc"
 grep -q '^    "git ls-remote --heads origin \*": allow$' "$github_sdlc"
 grep -q '^    "git push origin --delete \*": allow$' "$github_sdlc"
 grep -q '^    "gh pr checks \* --required --json bucket,name,state,workflow,link": allow$' "$github_sdlc"
+grep -q '^    "sleep 30": allow$' "$github_sdlc"
 grep -q '^    "gh api --include repos/\*/branches/\*/protection": allow$' "$github_sdlc"
 grep -Fq "'gh api \"repos/*/rulesets?includes_parents=true\"': allow" "$github_sdlc"
-grep -Fq 'known CLI 2.100.0 outcome of exit `1`, empty stdout' "$github_sdlc"
-grep -Fq "stderr \`no required checks reported on the '<head branch>' branch\`, where \`<head branch>\` is the exact checked pull-request head branch" "$github_sdlc"
-grep -Fq 'HTTP `404` with JSON `message` `Branch not protected`' "$github_sdlc"
-grep -Fq 'Failed, pending, cancelled, skipped-required, timed-out, unavailable, or other ambiguous evidence blocks.' "$github_sdlc"
+grep -Fq '`github-pr-check-validation` is the sole owner of required-check parsing, classification, zero-configuration verification, bounded pending-check rechecks, and required-check evidence.' "$github_sdlc"
+grep -Fq '`github-pr-approved-merge` invokes that canonical validator immediately before the merge gate for the approved unchanged head.' "$github_sdlc"
 grep -Fq 'Optional checks never become required.' "$github_sdlc"
 if grep -Fq 'verified empty required-check set' "$github_sdlc"; then
   printf '%s\n' 'github-sdlc still accepts empty required checks without configuration evidence' >&2
@@ -303,7 +324,7 @@ if grep -Fq 'gh label create openchamber:blocked' "$capture_skill" || \
 fi
 grep -Fq 'explicitly confirms permanent deletion of that exact issue in the current turn' "$root/skills/github-issue-deletion/SKILL.md"
 
-for delegate in agent-builder bug-fixer code-implementor api-integration-tester; do
+for delegate in bug-fixer code-implementor api-integration-tester; do
   file="$root/agents/$delegate.md"
   grep -q 'Never stage, commit, push' "$file"
   if grep -Eq '^    "git (add|commit)|^    (git-auto-commit|git-delegated-change-commit): allow$|^  - id: "?[^"[:space:]]*commit' "$file"; then
@@ -311,6 +332,12 @@ for delegate in agent-builder bug-fixer code-implementor api-integration-tester;
     exit 1
   fi
 done
+
+agent_builder="$root/agents/agent-builder.md"
+grep -Fq 'When delegated by another agent, never stage, commit, or push' "$agent_builder"
+grep -q '^    git-agent-skill-change-publication: allow$' "$agent_builder"
+grep -q '^  - id: direct-publication$' "$agent_builder"
+grep -Fq 'the user explicitly authorized commit and push' "$agent_builder"
 
 grep -q '^    git-delegated-change-commit: allow$' "$sdlc_orchestrator"
 grep -q '^  - id: "implementation-commit"$' "$sdlc_orchestrator"
