@@ -2,7 +2,7 @@
 name: code-implementor
 description: Implements one approved, bounded code change in an existing feature worktree.
 classification: technical
-mode: all
+mode: subagent
 model: "openai/gpt-5.6-sol"
 permission:
   question: allow

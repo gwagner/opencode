@@ -1,31 +1,17 @@
 ---
 name: github-pr-publication
-description: Pushes committed issue work and creates its single GitHub pull request after recovery excludes an existing match.
+description: Idempotently publishes one validated committed head to a unique draft pull request for a supported SDLC entry point.
 classification: technical
 opencode_permission:
   shell:
-    "gh auth status": allow
-    "gh repo view --json nameWithOwner,url": allow
-    "git branch --show-current": allow
-    "git status --porcelain=v1": allow
-    "git rev-parse HEAD": allow
-    "git push --set-upstream origin *": allow
-    "git push origin *": allow
-    "gh pr list --head * --state all --json number,state,url,title": allow
-    "gh pr list --search * --state all --json number,state,url,title,body,baseRefName,headRefName,headRefOid,mergedAt": allow
-    "gh pr create --base main --head * --title * --body-file /tmp/opencode/github-sdlc-pr.md": allow
-    "gh pr view * --json number,title,url,state,baseRefName,headRefName,headRefOid": allow
-    "rm -f /tmp/opencode/github-sdlc-pr.md": allow
+    "python3 /code/skills/github-pr-publication/scripts/publish-pr.py *": allow
   external_directory:
-    "/tmp/opencode/github-sdlc-pr.md": allow
-  edit:
-    "/tmp/opencode/github-sdlc-pr.md": allow
+    "/code/skills/github-pr-publication/scripts/publish-pr.py": allow
 inputs:
-  - originating GitHub issue identity
-  - lifecycle-recovery disposition reporting no matching pull request
-  - current non-main feature branch
-  - one or more reviewed task commits
-  - caller-provided pull-request title and summary
+  - provenance: cli, openchamber, or github-issue
+  - current non-main branch and expected committed head
+  - caller-provided pull-request title and body
+  - optional originating issue number required for github-issue provenance
   - authenticated GitHub CLI
 ---
 
@@ -33,24 +19,16 @@ inputs:
 
 ## Inputs
 
-Require the originating GitHub issue identity, a lifecycle-recovery disposition reporting no matching pull request, the current non-`main` feature branch, one or more reviewed task commits, a caller-provided pull-request title and summary, and an authenticated GitHub CLI.
+Require provenance `cli`, `openchamber`, or `github-issue`; the current non-`main` branch and expected committed head; a caller-provided pull-request title and body; an originating issue number exactly when provenance is `github-issue`; and an authenticated GitHub CLI.
 
 ## Procedure
 
-1. Require lifecycle recovery to report the unique no-pull-request fresh-start state. Otherwise stop: the matching GitHub pull request is authoritative and publication must not use local Git to override it.
-2. Run `gh auth status`, `gh repo view --json nameWithOwner,url`, `git branch --show-current`, `git status --porcelain=v1`, and `git rev-parse HEAD`. Require authentication, one repository, a clean non-`main` branch, and the expected committed head.
-3. Run `gh pr list --search "Refs #<originating issue> in:body" --state all --json number,state,url,title,body,baseRefName,headRefName,headRefOid,mergedAt`. Treat a matching pull request as one whose body contains the exact standalone line `Refs #<originating issue>`. Stop unless the result is empty; lifecycle recovery owns all existing-match routing.
-4. Run `gh pr list --head <branch> --state all --json number,state,url,title`. Stop on any result; a pull request not identified by the required issue reference is ambiguous and must not be reused.
-5. For no existing match, write the approved summary, validation evidence, and `Refs #<originating issue>` to `/tmp/opencode/github-sdlc-pr.md`. Do not use an automatic-closing keyword because issue closure occurs only after the approved merge and completion comment.
-6. Push with `git push --set-upstream origin <branch>` and create the pull request with `gh pr create --base main --head <branch> --title <title> --body-file /tmp/opencode/github-sdlc-pr.md`.
-7. Verify the pull request with `gh pr view <pr> --json number,title,url,state,baseRefName,headRefName,headRefOid`. Require open state, base `main`, the exact head branch, and expected head commit.
-8. Run `rm -f /tmp/opencode/github-sdlc-pr.md` after success or failure. Report cleanup failure as a blocker.
-
-## Boundaries
-
-- Never force-push, change branches, merge, close a pull request, or mutate the originating issue.
-- Never publish uncommitted or unvalidated work.
+1. Run `python3 /code/skills/github-pr-publication/scripts/publish-pr.py --provenance <provenance> --expected-head <head> --title <title> --body <body> [--issue <issue>]`.
+2. Require one versioned JSON result. The script treats text as subprocess data, never shell syntax.
+3. Accept `created`, `updated`, or `reused` only when exactly one open pull request has the current branch and expected head. The script may recover a remote branch for which PR creation was interrupted.
+4. Return `waiting-external` for authentication, network, push, or GitHub availability failures. Return `blocked-unsafe` for dirty state, changed head, a base branch checkout, multiple pull requests, a merged or closed branch match, or provenance mismatch.
+5. Never force-push, switch branches, merge, close a pull request, or mutate an issue.
 
 ## Completion
 
-Report repository, branch, pushed head, pull-request URL, whether it was created or reused, and cleanup status.
+Report repository, provenance, branch, published head, pull-request URL, `created`, `updated`, `reused`, `waiting-external`, or `blocked-unsafe`, and evidence.

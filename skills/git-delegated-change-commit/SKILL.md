@@ -5,8 +5,8 @@ classification: technical
 opencode_permission:
   read: allow
   shell:
-    "git status*": allow
-    "git diff*": allow
+    "git status --porcelain=v1 -z": allow
+    "git diff -- *": allow
     "git add -- *": allow
     "git commit --only *": allow
 inputs:

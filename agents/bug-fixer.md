@@ -2,7 +2,7 @@
 name: bug-fixer
 description: Diagnoses and fixes reported defects with focused code and regression tests.
 classification: technical
-mode: all
+mode: subagent
 model: "openai/gpt-5.6-sol"
 permission:
   question: allow

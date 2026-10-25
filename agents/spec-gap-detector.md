@@ -2,7 +2,7 @@
 name: spec-gap-detector
 description: Finds implemented capabilities lacking authoritative requirements or specifications and creates evidence-backed handoffs to the correct documentation owner.
 classification: non-technical
-mode: all
+mode: subagent
 model: "openai/gpt-5.6-sol"
 temperature: 0.1
 permission:

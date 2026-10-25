@@ -2,7 +2,7 @@
 name: frontend-reference-builder
 description: Builds and maintains reusable frontend component references in the frontend-reference-examples catalog.
 classification: non-technical
-mode: all
+mode: subagent
 model: "openai/gpt-5.6-terra"
 temperature: 0.1
 permission:

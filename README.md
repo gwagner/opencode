@@ -15,72 +15,109 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 
 | Agent | Purpose |
 | --- | --- |
-| agent-builder | Audits and creates deterministic agents and skills; directly invoked, explicitly authorized changes may be committed and pushed after validation. |
-| api-integration-tester | Builds API integration tests. |
-| app-spec-architect | Defines cross-feature architecture and shared workflows from requirements. |
-| bug-fixer | Reproduces, diagnoses, and fixes defects with regression coverage. |
-| code-implementor | Implements approved, focused code changes. |
-| code-spec-engineer | Produces bounded implementation-ready feature contracts. |
-| github-issue-manager | Researches and manages GitHub issues through creation, updates, comments, state changes, and explicitly confirmed permanent deletion. |
-| github-sdlc | Orchestrates issue-originated work through delegated implementation, commits, pull-request checks, approved squash merge, completion comment, and issue closure. |
-| prd-strategist | Creates and refines OKF requirements. |
-| reverse-engineer-app-spec | Recovers an evidence-backed specification from code. |
-| sdlc-orchestrator | Orchestrates manually initiated CLI work through local delegated-change commits without remote lifecycle operations. |
-| spec-gap-detector | Finds implemented capabilities missing authoritative documentation and queues evidence-backed owner handoffs. |
-| url-to-vault | Ingests URLs into an OKF or Obsidian vault. |
+| agent-builder | Audits and creates deterministic technical or non-technical OpenCode agents and skills. |
+| api-integration-tester | Builds API integration tests from specifications and application code, including authentication and authorization behavior. |
+| app-spec-architect | Designs implementation-ready application specifications from product requirements. Use for architecture, workflows, data, APIs, UI, and delivery design. |
+| bug-fixer | Diagnoses and fixes reported defects with focused code and regression tests. |
+| code-implementor | Implements one approved, bounded code change in an existing feature worktree. |
+| code-spec-engineer | Translates approved product requirements and application architecture into implementation-ready feature specifications. Use before production implementation when code-level contracts remain undefined. |
+| frontend-reference-builder | Builds and maintains reusable frontend component references in the frontend-reference-examples catalog. |
+| github-issue-manager | Researches and manages GitHub issues through creation, updates, comments, state changes, explicit deletion, and ready-execution routing to sdlc-orchestrator. |
+| prd-strategist | Creates, refines, and reconciles product requirements as focused OKF documents. |
+| reverse-engineer-app-spec | Reverse-engineers an existing codebase into an evidence-backed application specification. |
+| sdlc-orchestrator | Orchestrates one CLI-, OpenChamber-, or GitHub-issue-originated change through an exact-head user decision on a validated pull request. |
+| spec-gap-detector | Finds implemented capabilities lacking authoritative requirements or specifications and creates evidence-backed handoffs to the correct documentation owner. |
+| url-to-vault | Ingests a web page into an Obsidian or OKF vault as a structured, durable, searchable note. |
+
 
 ## Skills
 
 | Skill | Purpose |
 | --- | --- |
-| api-auth-testing | Tests API authentication and authorization. |
-| api-discovery | Discovers API contracts and implementation. |
-| api-integration-modeling | Models HTTP APIs and integrations. |
-| api-integration-testing | Implements API integration tests. |
-| api-test-reporting | Reports API test coverage and findings. |
-| application-specification | Defines specification conventions. |
-| backend-scaffolding | Scaffolds reachable backend layers. |
-| browser-visual-capture | Captures baseline/post-change Chromium screenshots for URL-based UI validation. |
-| code-comments | Adds code comments. |
-| codebase-reverse-engineering | Recovers behavior and architecture from code. |
-| data-persistence-modeling | Models data persistence and PostgreSQL schemas. |
-| evidence-traceability | Adds evidence and traceability to specifications. |
-| frontmatter-fixer | Repairs Markdown frontmatter. |
-| frontend-reference-examples | Progressively loads matching HTML, CSS, JavaScript, accessibility, and illustrative data references for frontend components. |
-| htmx | Implements server-fragment requests and safe swap ownership. |
-| gap-risk-analysis | Identifies gaps, risks, and assumptions. |
-| git-agent-skill-change-publication | Commits and pushes one validated directly owned agent or skill change batch without creating a pull request. |
+| accessibility-testing | Implements focused accessibility checks for changed rendered frontend behavior. |
+| agent-skill-authoring-contract | Applies shared preservation, authority, boundary, and self-review rules to one OpenCode agent or skill definition. |
+| api-auth-testing | Designs and implements API authentication, authorization, ownership, and tenant-boundary test matrices. |
+| api-contract-conformance-testing | Implements focused conformance tests for approved API request, response, error, and compatibility contracts. |
+| api-discovery | Discovers intended API contracts, implemented routes, access control, mismatches, and reusable test infrastructure before API integration testing. |
+| api-integration-modeling | Designs or recovers HTTP APIs, handlers, contracts, authentication, errors, external integrations, webhooks, retries, and idempotency. |
+| api-integration-testing | Builds maintainable API integration tests using existing project infrastructure for contracts, access control, validation, CRUD flows, and isolation. |
+| api-resilience-testing | Implements focused tests for approved API idempotency, retry, timeout, webhook, duplicate-delivery, and upstream-failure behavior. |
+| api-test-reporting | Reports API integration-test coverage, execution, contract and access-control findings, blockers, and prioritized remaining work. |
+| application-specification | Defines the common structure, rigor, terminology, and output rules for implementation-ready application specifications. |
+| backend-integration-testing | Implements focused tests for changed backend use cases, persistence, adapters, jobs, and error mapping. |
+| backend-scaffolding | Scaffolds reachable backend routes, services, data access, contracts, and useful placeholders from approved requirements and specifications. |
+| backend-workflow-implementation | Implements one approved state-changing backend workflow with explicit atomicity, concurrency, idempotency, snapshot, and recovery behavior. |
+| browser-visual-capture | Captures deterministic baseline and post-change Chromium screenshots for one URL or URL set as diagnostic artifacts. |
+| browser-visual-compare | Compares caller-supplied deterministic baseline/post-change screenshot pairs as diagnostic evidence against structured visual expectations. |
+| code-comments | Adds concise native-language documentation for public contracts and non-obvious invariants. |
+| codebase-reverse-engineering | Reverse-engineers product behavior and architecture from source code, migrations, tests, configuration, interfaces, frontend code, and runtime wiring. |
+| data-persistence-modeling | Designs or reconstructs application entities, PostgreSQL schemas, relationships, constraints, indexing, transactions, tenancy, and audit history. |
+| deterministic-skill-tree-authoring | Designs concise, recursive skill and agent workflows with explicit ordering, choices, and completion gates. |
+| end-user-experience | Keeps planning, design, implementation, and testing focused on successful, clear, recoverable end-user outcomes. |
+| evidence-traceability | Adds stable source citations, confidence, status classification, and traceability matrices to application specifications. |
+| feature-branch-setup | Creates one clean local feature branch from local main before a bounded SDLC change. |
+| frontend-behavior-testing | Implements focused tests for approved frontend interaction, state, validation, error, and recovery behavior. |
+| frontend-component-modeling | Designs or reconstructs frontend routes, screens, TypeScript components, Tailwind conventions, states, events, validation, accessibility, and backend dependencies. |
+| frontend-impact-validation | Evaluates complete production-shaped browser-impact evidence using existing project runtime and browser-testing infrastructure. |
+| frontend-reference-examples | Loads one selected frontend catalog entry as non-authoritative implementation guidance without adapting code. |
+| frontend-reference-lookup | Selects a matching frontend reference catalog entry for a bounded component or route without adapting code. |
+| frontend-scaffolding | Implements a bounded rendered frontend surface from an approved contract using the project's established templates, components, assets, and delivery path. |
+| frontmatter-fixer | Validates and repairs YAML frontmatter, including required OKF concept fields when applicable. |
+| gap-risk-analysis | Identifies contradictions, missing behavior, incomplete scaffolding, implementation divergence, assumptions, risks, and unresolved product questions. |
 | git-change-baseline | Records a safe ownership baseline before task-owned editing begins. |
-| git-delegated-change-commit | Reviews and commits one validated delegate-owned change batch. |
-| go-code-standards | Applies focused Go standards. |
-| graphify | Efficiently queries and updates an existing code knowledge graph. |
-| grillme | Clarifies open design questions. |
-| github-issue-close | Closes one GitHub issue and verifies its closed state. |
-| github-issue-comment | Posts and verifies one GitHub issue comment. |
-| github-issue-deletion | Permanently deletes one GitHub issue after issue-specific confirmation. |
-| github-issue-reopen | Reopens one GitHub issue and verifies its open state. |
-| github-issue-update | Updates and verifies one GitHub issue's title, body, or labels. |
-| github-pr-approved-merge | Head-matches and squash-merges an approved pull request, then verifies deletion of only its remote branch. |
-| github-pr-check-validation | Validates required checks for an unchanged pull-request head. |
-| github-pr-publication | Pushes committed issue work and creates or returns its pull request. |
-| implement-stubs | Safely implements unfinished functions. |
-| okf-formatter | Formats content as OKF. |
-| okf-reader | Reads OKF knowledge bundles. |
-| okf-reorganizer | Reorganizes an OKF bundle. |
-| postgres-migration | Creates forward-only PostgreSQL migrations. |
-| postgres-schema-designer | Designs PostgreSQL schema specification documents. |
-| project-validation | Discovers and runs focused project-native validation. |
-| product-modeling | Models product objectives and workflows. |
-| requirements-analysis | Analyzes product requirements. |
-| safe-code-change | Performs focused, collaborative-safe code changes. |
-| security-operations | Reviews security and operational behavior. |
-| tailwind | Configures standalone Tailwind CLI builds and static output. |
-| spec-driven-implementation | Implements authoritative specifications. |
-| specification-quality-gate | Reviews specification readiness. |
-| specification-gap-handoff | Classifies code-to-authority documentation gaps and defines durable owner handoffs. |
-| specification-reconciliation | Compares code-derived and authoritative specifications. |
-| vault-ingestion | Ingests web content into a vault. |
-| workflow-state-modeling | Models workflow states and transitions. |
+| git-delegated-change-commit | Reviews and commits one validated delegate-owned change batch from an established clean ownership baseline. |
+| github-blocked-issue-resolution | Reconciles one GitHub work issue's blocked state and safely promotes it when every execution blocker is resolved. |
+| github-issue-capture | Creates or deduplicates one contract-validated ready GitHub work issue in the current checkout's repository. |
+| github-issue-close | Closes one existing GitHub issue and verifies its closed state. |
+| github-issue-comment | Posts one verified progress or completion comment to an existing GitHub issue. |
+| github-issue-deletion | Permanently deletes one GitHub issue only after explicit issue-specific confirmation. |
+| github-issue-reopen | Reopens one closed GitHub issue and verifies its open state. |
+| github-issue-update | Applies one requested reversible title, body, or label update to an existing GitHub issue. |
+| github-pr-approved-merge | Squash-merges one user-approved GitHub pull request after canonical required-check validation of its unchanged head and deletes only its remote branch. |
+| github-pr-check-validation | Deterministically classifies and boundedly rechecks required checks for one unchanged open pull request. |
+| github-pr-lifecycle-recovery | Selects the resumable branch or pull-request state for one CLI- or OpenChamber-originated non-issue lifecycle without mutating it. |
+| github-pr-publication | Idempotently publishes one validated committed head to a unique draft pull request for a supported SDLC entry point. |
+| github-pr-ready | Marks one checked draft pull request ready, or verifies an already-ready pull request, for an exact-head user decision. |
+| github-pr-rejection | Verifies that one exact user-rejected pull request remains open and unchanged without mutating GitHub. |
+| github-pr-user-decision | Routes one exact checked pull-request head through explicit user approval or non-mutating rejection. |
+| github-sdlc-lifecycle-recovery | Selects the safe resumable state for an issue-originated pull-request lifecycle without mutating it. |
+| github-work-issue-contract | Validates lifecycle-aware canonical GitHub work-issue contracts without publishing or changing authority. |
+| go-code-standards | Use when adding or modifying Go to apply focused idiomatic Go code standards. |
+| graphify | Investigates a codebase efficiently with graphify. Use when answering codebase questions, tracing code relationships, or updating an existing knowledge graph after code changes. |
+| grillme | Asks concise, sequential clarifying questions only when ambiguity blocks a safe design or change. |
+| htmx | Implements HTMX server-fragment requests, form actions, errors, loading states, and safe swap ownership. |
+| implement-stubs | Find and safely implement unfinished functions in the current repository. |
+| interface-boundaries | Designs deep, focused module interfaces and adapter seams. Use when changing public contracts, external dependencies, persistence access, or cross-layer calls. |
+| issue-worktree-validation | Adds issue readiness and dependency gates to deterministic OpenChamber worktree validation. |
+| knowledge-document-slicing | Produces a bounded OKF concept and index plan before writing or revising knowledge documents. |
+| non-production-database-fixture | Verifies and executes one deterministic database-backed test through an existing project-native isolated fixture lifecycle. |
+| non-technical-agent-skill-builder | Creates or revises one deterministic non-technical OpenCode agent or skill. |
+| okf-formatter | Formats new or updated knowledge as focused, linked Open Knowledge Format Markdown concepts and indexes. |
+| okf-reader | Read and answer questions from OKF knowledge bundles using indexes, concept frontmatter, markdown links, and citations. |
+| okf-reorganizer | Reorganizes an OKF bundle while preserving concepts, links, metadata, and history. |
+| openchamber-worktree-validation | Classifies and safely prepares one existing OpenChamber-linked worktree for fresh or resumed SDLC execution. |
+| postgres-migration | Creates safe, forward-only PostgreSQL schema migrations in the caller-permitted project migration directory. Existing migration files are immutable; every later change or correction uses a new migration. |
+| postgres-migration-integration-testing | Validates changed PostgreSQL migrations and schema-dependent behavior against an isolated project-native test target. |
+| postgres-schema-designer | Designs PostgreSQL schema specification documents. Use with specification work involving entities, constraints, keys, indexes, relationships, or transaction rules. |
+| product-modeling | Recovers or defines product objectives, actors, business terminology, use cases, permissions, and end-to-end workflows from requirements or code evidence. |
+| project-validation | Discovers and runs the narrowest project-native formatting, build, lint, and test validation for a focused change. |
+| release-readiness-validation | Validates changed delivery artifacts, runtime configuration, migration ordering, health checks, and observability wiring. |
+| requirements-analysis | Analyzes raw product requirements into explicit requirements, implications, assumptions, constraints, ambiguities, and traceable specification inputs. |
+| root-cause-analysis | Establishes the evidenced causal mechanism of one reported software defect before a corrective change is selected. |
+| safe-code-change | Implements a focused code change safely in a collaborative repository. Use for bug fixes, stub completion, or small specification-driven implementation tasks. |
+| security-operations | Reviews or specifies authentication, authorization, tenancy, privacy, audit, secrets, observability, deployment, migration, and operational behavior. |
+| security-verification | Implements focused security verification for changed access control, sensitive-data, request-protection, and secret-handling behavior. |
+| server-driven-component-contract | Defines explicit backend contracts for independently server-driven frontend components using HTMX or Server-Sent Events. |
+| spec-driven-implementation | Implements code changes aligning a codebase with requirements and consistent approved specifications, including tests, migrations, validation, and regenerated documentation. |
+| specification-gap-handoff | Classifies code-to-authority documentation gaps and creates durable, evidence-backed handoffs for the correct requirements or specification owner. |
+| specification-quality-gate | Performs a final completeness, consistency, evidence, stack, workflow, API, data, frontend, security, and implementation-readiness review. |
+| specification-reconciliation | Compares requirements and consistent approved specifications with code-derived behavior to create a traceable reconciliation plan. |
+| tailwind | Configures Tailwind standalone CLI input, content scanning, generated CSS output, and backend static-file serving. |
+| technical-agent-skill-builder | Creates or revises one deterministic technical OpenCode agent or skill. |
+| technology-rule-alignment | Routes one sourced technology or stack rule to the smallest existing agent or skill surface and defines future audit criteria. |
+| vault-ingestion | Ingests a URL into an Obsidian or OKF vault as a durable, searchable note. Use when saving web pages, articles, documentation, or research references. |
+| workflow-state-modeling | Designs or recovers explicit business workflows, lifecycle states, transition rules, funnels, audit events, and edge cases. |
+
 
 ## Graphify
 
@@ -88,14 +125,14 @@ Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exi
 
 ## Workflow ownership
 
+- `sdlc-orchestrator` is the sole code-change lifecycle owner for explicit `cli`, `openchamber`, and `github-issue` entry points. Every successful run publishes one pull request and ends with an exact-head user approval or rejection.
+- CLI preparation creates a clean `feature/*` branch and can recover a current non-base CLI branch. Direct OpenChamber preparation validates or recovers its existing linked worktree and branch. Issue preparation additionally recovers GitHub state and verifies issue readiness, route, and dependencies.
 - Requirements route to `prd-strategist`, shared architecture and cross-feature decisions to `app-spec-architect`, bounded feature contracts to `code-spec-engineer`, defects to `bug-fixer`, and other implementation to `code-implementor`.
-- Every ready GitHub issue routes and hands off to `github-sdlc`. It selects `agent-builder` for any agent or skill edit, `bug-fixer` for defects, and otherwise `code-implementor`; dedicated API integration tests may be delegated separately.
-- Implementation delegates edit and validate only. `github-sdlc` owns issue-worktree validation, ownership baselines, delegated-change commits, pull-request publication, required checks, head-specific merge approval, squash merge, remote-branch deletion, completion comments, and issue closure.
-- `sdlc-orchestrator` serves manually initiated CLI work and owns only reviewed local delegated-change commits; it never publishes or merges remotely or mutates GitHub issues.
-- `github-issue-manager` uses shared issue skills for creation, blocked-state reconciliation, updates, comments, closure or reopening, and explicitly confirmed permanent deletion.
-- A directly invoked `agent-builder` may commit and push only its validated agent or skill change batch after an ownership baseline and explicit user authorization. When delegated, it returns changes to the orchestrator without staging, committing, or pushing.
-- `spec-gap-detector` compares implemented capabilities with requirements and approved specifications, writes only `/code/specification-gaps.md`, and queues one-owner documentation handoffs. Documentation owners report their changes; the detector alone verifies and closes gaps.
-- Code-writing agents load `safe-code-change` before edits and `project-validation` before validation. Unsupported project-native validation commands require confirmation instead of being silently unavailable.
+- Implementation delegates edit and validate only. The orchestrator owns baselines, reviewed commits, idempotent pull-request publication, required checks, correction loops, user decisions, approved merge, and remote-branch cleanup.
+- A rejected pull request and branch remain open without mutation. Pending or unavailable hosted checks return a resumable waiting state rather than a terminal failure.
+- `github-issue-manager` manages issue intake and routes ready execution to `sdlc-orchestrator` with entry point `github-issue`. Current-head lifecycle evidence is posted after required checks pass; the completion comment and issue closure occur only after an approved merge.
+- Direct `agent-builder` use is audit-only. Agent or skill edits require orchestrator delegation and return changed paths plus validation without staging, committing, or pushing.
+- Code-writing delegates end with `project-validation`. Unsupported project-native validation commands require confirmation instead of being silently unavailable.
 - Browser-capture commands and comparison behavior live in `browser-visual-capture`; agents only decide when the skill applies.
 - Frontend component examples live behind `frontend-reference-examples`: agents read its catalog, then only a matching component document. References never override approved requirements, specifications, or repository conventions.
 
