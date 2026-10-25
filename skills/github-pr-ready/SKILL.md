@@ -10,6 +10,7 @@ opencode_permission:
 inputs:
   - one open pull request with passed required checks
   - exact expected head and base branch
+  - expected GitHub repository from the current checkout
   - authenticated GitHub CLI
 ---
 
@@ -17,13 +18,13 @@ inputs:
 
 ## Inputs
 
-Require one open pull request with passed required checks, its exact expected head and base branch, and an authenticated GitHub CLI.
+Require one open pull request with passed required checks, its exact expected head and base branch, the expected GitHub repository from the current checkout, and an authenticated GitHub CLI.
 
 ## Procedure
 
 1. Require canonical passed required-check evidence for the expected head.
 2. Run `python3 /code/skills/github-pr-ready/scripts/ready-pr.py --pr <pr> --expected-head <head> --expected-base <base>`.
-3. Require one versioned JSON result. Accept `ready` or `already-ready` only for an open non-draft pull request with unchanged head, head branch, and base.
+3. Require one versioned JSON result. Accept `ready` or `already-ready` only for a pull request in the checkout repository with open non-draft state and unchanged head, head branch, and base.
 4. Return `waiting-external` for authentication, network, GitHub availability, or an unconfirmed transition. Return `blocked-unsafe` for malformed output, changed identity, changed head, or changed base.
 
 ## Boundaries

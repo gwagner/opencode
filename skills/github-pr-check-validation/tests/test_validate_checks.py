@@ -31,6 +31,13 @@ class ClassificationTests(unittest.TestCase):
     def test_empty_is_only_candidate(self):
         self.assertEqual(MODULE.classify(0, "[]", "")[0], "zero-candidate")
 
+    def test_repository_identity_requires_exact_pr_url(self):
+        repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
+        local = {"number": 1, "url": "https://github.com/o/r/pull/1"}
+        foreign = {"number": 1, "url": "https://github.com/other/r/pull/1"}
+        self.assertTrue(MODULE.repository_matches(repository, local))
+        self.assertFalse(MODULE.repository_matches(repository, foreign))
+
 
 if __name__ == "__main__":
     unittest.main()

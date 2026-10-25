@@ -10,6 +10,7 @@ opencode_permission:
 inputs:
   - one open GitHub pull request
   - expected pull-request head commit
+  - expected GitHub repository from the current checkout
   - authenticated GitHub CLI
   - bounded recheck count and interval
 ---
@@ -18,12 +19,12 @@ inputs:
 
 ## Inputs
 
-Require one open GitHub pull request, its expected head commit, an authenticated GitHub CLI, and a bounded recheck count and interval.
+Require one open GitHub pull request, its expected head commit, the expected GitHub repository from the current checkout, an authenticated GitHub CLI, and a bounded recheck count and interval.
 
 ## Procedure
 
 1. Run `python3 /code/skills/github-pr-check-validation/scripts/validate-checks.py --pr <pr> --expected-head <head> --max-rechecks <count> --wait-seconds <seconds>`.
-2. Require one versioned JSON result with all observed required-check records and the unchanged-head evidence.
+2. Require one versioned JSON result with checkout-repository identity, all observed required-check records, and unchanged-head evidence.
 3. Accept `passed` only for verified passing required checks or verified absence of configured required checks.
 4. Return `repair-needed` for terminal required-check failures, `waiting-external` for pending deadline or temporary GitHub unavailability, and `blocked-unsafe` for malformed output, changed identity, changed head, invalid recheck bounds, or ambiguous zero-check configuration. A passed result continues to `pull-request-ready`.
 

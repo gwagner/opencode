@@ -71,6 +71,18 @@ def emit(status: str, disposition: str, evidence: dict, blocker: str | None = No
     return 0 if status == "passed" else 3 if status == "waiting" else 4 if status == "repair" else 2
 
 
+def repository_matches(repository: dict, pull_request: dict) -> bool:
+    number = pull_request.get("number")
+    repository_url = (repository.get("url") or "").rstrip("/")
+    return (
+        bool(repository.get("nameWithOwner"))
+        and bool(repository_url)
+        and type(number) is int
+        and number > 0
+        and pull_request.get("url") == f"{repository_url}/pull/{number}"
+    )
+
+
 def verify_zero(owner_repo: str, base: str) -> tuple[bool, dict]:
     protection = run(["gh", "api", "--include", f"repos/{owner_repo}/branches/{base}/protection"])
     rulesets = run(["gh", "api", f"repos/{owner_repo}/rulesets?includes_parents=true"])
@@ -108,6 +120,8 @@ def main() -> int:
         repository = json.loads(repo.stdout)
     except json.JSONDecodeError:
         return emit("blocked", "blocked-unsafe", evidence, "invalid repository JSON")
+    if not isinstance(repository, dict) or not repository.get("nameWithOwner") or not repository.get("url"):
+        return emit("blocked", "blocked-unsafe", evidence, "repository identity is incomplete")
     evidence["repository"] = repository
 
     initial = run(["gh", "pr", "view", args.pr, "--json", "number,url,state,baseRefName,headRefName,headRefOid"])
@@ -118,15 +132,19 @@ def main() -> int:
     except json.JSONDecodeError:
         return emit("blocked", "blocked-unsafe", evidence, "invalid pull-request JSON")
     required_identity = ("number", "url", "baseRefName", "headRefName", "headRefOid")
-    if identity.get("state") != "OPEN" or identity.get("headRefOid") != args.expected_head or any(not identity.get(key) for key in required_identity):
+    if not isinstance(identity, dict) or identity.get("state") != "OPEN" or identity.get("headRefOid") != args.expected_head or any(not identity.get(key) for key in required_identity):
         return emit("blocked", "blocked-unsafe", evidence, "pull request is not open at the expected head")
+    if not repository_matches(repository, identity):
+        return emit("blocked", "blocked-unsafe", evidence, "pull request does not belong to the current repository")
     evidence["pull_request"] = identity
+    pr_number = str(identity["number"])
+    owner_repo = repository["nameWithOwner"]
 
     for attempt in range(args.max_rechecks + 1):
-        checked = run(["gh", "pr", "checks", args.pr, "--required", "--json", "bucket,name,state,workflow,link"])
+        checked = run(["gh", "pr", "checks", pr_number, "--repo", owner_repo, "--required", "--json", "bucket,name,state,workflow,link"])
         disposition, records = classify(checked.returncode, checked.stdout, checked.stderr)
         evidence["attempts"].append({"attempt": attempt + 1, "exit_code": checked.returncode, "stdout": checked.stdout, "stderr": checked.stderr, "classification": disposition, "records": records})
-        current = run(["gh", "pr", "view", args.pr, "--json", "number,url,state,baseRefName,headRefName,headRefOid"])
+        current = run(["gh", "pr", "view", pr_number, "--repo", owner_repo, "--json", "number,url,state,baseRefName,headRefName,headRefOid"])
         if current.returncode != 0:
             return emit("waiting", "waiting-external", evidence, current.stderr.strip())
         try:

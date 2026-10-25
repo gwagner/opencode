@@ -10,6 +10,7 @@ opencode_permission:
 inputs:
   - one verified merged pull request
   - exact merged head and base branch
+  - expected GitHub repository from the current checkout
   - provenance: cli, openchamber, or github-issue
   - authenticated GitHub CLI
 ---
@@ -18,12 +19,12 @@ inputs:
 
 ## Inputs
 
-Require one verified merged pull request, its exact merged head and base branch, provenance `cli`, `openchamber`, or `github-issue`, and an authenticated GitHub CLI.
+Require one verified merged pull request, its exact merged head and base branch, the expected GitHub repository from the current checkout, provenance `cli`, `openchamber`, or `github-issue`, and an authenticated GitHub CLI.
 
 ## Procedure
 
 1. Run `python3 /code/skills/github-pr-remote-branch-cleanup/scripts/cleanup-remote-branch.py --pr <pr> --expected-head <head> --expected-base <base> --provenance <provenance>`.
-2. Require one versioned JSON result. Accept `already-absent` or `deleted` only after verifying merged state, unchanged PR identity, exact provenance, and remote-branch absence.
+2. Require one versioned JSON result. Accept `already-absent` or `deleted` only after verifying checkout-repository identity, merged state, unchanged PR identity, exact provenance, and remote-branch absence.
 3. Return `waiting-external` for authentication, network, GitHub availability, deletion failure with an unchanged ref, or an unconfirmed deletion. Return `blocked-unsafe` for malformed output, changed identity, changed ref, base-branch deletion, or provenance mismatch.
 
 ## Boundaries

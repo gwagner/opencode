@@ -16,7 +16,31 @@ def run(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, text=True, capture_output=True, check=False)
 
 
-def classify(issue_state: str, prs: list[dict], branch_exists: bool, comments: list[dict]) -> tuple[str, str | None, str | None]:
+def completion_comment_matches(comment: dict, url: str, head: str) -> bool:
+    lines = set((comment.get("body") or "").splitlines())
+    required = {
+        "Lifecycle completion: merged-pr",
+        f"Pull request: {url}",
+        f"Head commit: {head}",
+        "Merge result: merged",
+        "Delegate project-validation: passed",
+        "Required checks: passed",
+    }
+    cleanup = {"Remote cleanup: deleted", "Remote cleanup: already-absent"}
+    return required.issubset(lines) and bool(cleanup.intersection(lines))
+
+
+def parse_remote_head(stdout: str, branch: str) -> tuple[str | None, bool]:
+    lines = [line.split() for line in stdout.splitlines() if line.strip()]
+    if not lines:
+        return None, True
+    expected_ref = f"refs/heads/{branch}"
+    if len(lines) != 1 or len(lines[0]) != 2 or lines[0][1] != expected_ref:
+        return None, False
+    return lines[0][0], True
+
+
+def classify(issue_state: str, prs: list[dict], remote_branch_state: str, comments: list[dict]) -> tuple[str, str | None, str | None]:
     if issue_state == "CLOSED":
         return "closed", None, None
     if issue_state != "OPEN":
@@ -24,16 +48,20 @@ def classify(issue_state: str, prs: list[dict], branch_exists: bool, comments: l
     if len(prs) > 1:
         return "blocked-unsafe", None, "multiple matching pull requests"
     if not prs:
-        return ("remote-branch-no-pr", "pr-publication", None) if branch_exists else ("fresh-start", "worktree-validation", None)
+        return ("remote-branch-no-pr", "pr-publication", None) if remote_branch_state == "present-exact" else ("fresh-start", "worktree-validation", None)
     pr = prs[0]
     if any(not pr.get(key) for key in ("url", "headRefName", "headRefOid")):
         return "blocked-unsafe", None, "matching pull-request identity is incomplete"
     if pr.get("state") == "OPEN":
+        if remote_branch_state != "present-exact":
+            return "blocked-unsafe", None, "open pull-request remote branch is absent or unverified"
         return "open-pull-request", "hosted-checks", None
     if pr.get("state") != "MERGED":
         return "blocked-unsafe", None, "matching pull request is neither open nor merged"
-    if branch_exists:
+    if remote_branch_state == "present-exact":
         return "merged-needs-cleanup", "remote-branch-cleanup", None
+    if remote_branch_state != "already-absent":
+        return "blocked-unsafe", None, "merged pull-request remote branch is unverified"
     head = pr.get("headRefOid")
     url = pr.get("url")
     current = [
@@ -45,7 +73,7 @@ def classify(issue_state: str, prs: list[dict], branch_exists: bool, comments: l
         and "Delegate project-validation: passed" in (comment.get("body") or "")
         and "Required checks: passed" in (comment.get("body") or "")
     ]
-    completion = [comment for comment in comments if "Lifecycle completion: merged-pr" in (comment.get("body") or "") and url in (comment.get("body") or "") and f"Head commit: {head}" in (comment.get("body") or "")]
+    completion = [comment for comment in comments if completion_comment_matches(comment, url, head)]
     if not current:
         return "blocked-unsafe", None, "merged lifecycle evidence is missing"
     if not completion:
@@ -103,24 +131,38 @@ def main() -> int:
         evidence["pull_requests"] = issue_matches
         return emit("blocked", "blocked-unsafe", None, evidence, "matching pull-request provenance is invalid")
     prs = issue_matches
-    branch_exists = False
-    if args.branch:
-        remote = run(["git", "ls-remote", "--heads", "origin", args.branch])
+    remote_branch_state = "not-applicable"
+    branch = args.branch
+    if len(prs) == 1 and prs[0].get("headRefName"):
+        pull_request_branch = prs[0]["headRefName"]
+        if args.branch and args.branch != pull_request_branch:
+            evidence["pull_requests"] = prs
+            evidence["supplied_branch"] = args.branch
+            evidence["pull_request_branch"] = pull_request_branch
+            return emit("blocked", "blocked-unsafe", None, evidence, "supplied branch conflicts with the matching pull request")
+        branch = pull_request_branch
+    if branch:
+        remote = run(["git", "ls-remote", "--heads", "origin", branch])
         if remote.returncode != 0:
             return emit("waiting", "waiting-external", None, evidence, remote.stderr.strip())
-        branch_exists = bool(remote.stdout.strip())
-        if branch_exists:
+        remote_head, remote_valid = parse_remote_head(remote.stdout, branch)
+        if not remote_valid:
+            return emit("blocked", "blocked-unsafe", None, evidence, "remote branch identity is ambiguous")
+        remote_branch_state = "present-exact" if remote_head else "already-absent"
+        evidence["branch"] = branch
+        evidence["remote_head"] = remote_head
+        if remote_head:
             local = run(["git", "rev-parse", "HEAD"])
-            remote_head = remote.stdout.split()[0]
             evidence["local_head"] = local.stdout.strip() if local.returncode == 0 else None
-            evidence["remote_head"] = remote_head
             if not prs and (local.returncode != 0 or local.stdout.strip() != remote_head):
                 return emit("blocked", "blocked-unsafe", None, evidence, "local and remote branch heads differ without a matching pull request")
-            if prs and prs[0].get("state") == "MERGED" and remote_head != prs[0].get("headRefOid"):
-                return emit("blocked", "blocked-unsafe", None, evidence, "remote branch no longer points to the merged pull-request head")
-    disposition, next_stage, blocker = classify(issue_record.get("state"), prs, branch_exists, issue_record.get("comments") or [])
+            if prs and remote_head != prs[0].get("headRefOid"):
+                return emit("blocked", "blocked-unsafe", None, evidence, "remote branch no longer points to the pull-request head")
+    disposition, next_stage, blocker = classify(issue_record.get("state"), prs, remote_branch_state, issue_record.get("comments") or [])
     evidence["pull_requests"] = prs
-    evidence["remote_branch_exists"] = branch_exists
+    evidence["remote_branch_state"] = remote_branch_state
+    if prs and prs[0].get("state") == "MERGED" and remote_branch_state == "already-absent":
+        evidence["cleanup_disposition"] = "already-absent"
     status = "passed" if disposition not in ("blocked-unsafe",) else "blocked"
     return emit(status, disposition, next_stage, evidence, blocker)
 

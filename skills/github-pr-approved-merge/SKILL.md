@@ -14,6 +14,7 @@ opencode_permission:
 inputs:
   - one open GitHub pull request targeting main
   - explicit user merge approval for the exact pull request and head commit
+  - expected GitHub repository from the current checkout
   - authenticated GitHub CLI
 ---
 
@@ -21,7 +22,7 @@ inputs:
 
 ## Inputs
 
-Require one open GitHub pull request targeting `main`, explicit user merge approval naming the exact pull request and head commit, and an authenticated GitHub CLI.
+Require one open GitHub pull request targeting `main`, explicit user merge approval naming the exact pull request and head commit, the expected GitHub repository from the current checkout, and an authenticated GitHub CLI.
 
 ## Workflow
 
@@ -38,7 +39,7 @@ workflow:
 1. Require open state, base `main`, mergeable status, ready state, and an exact match between the current head and current-turn user approval.
 2. Invoke `github-pr-check-validation` immediately before merging, supplying this exact current head. Require its `passed` result.
 3. Run `python3 /code/skills/github-pr-approved-merge/scripts/merge-approved-pr.py --pr <pr> --expected-head <approved head> --expected-base main`.
-4. Require one versioned JSON result. Accept `merged` only after the script verifies merged state and unchanged head, head branch, and base.
+4. Require one versioned JSON result. Accept `merged` only after the script verifies checkout-repository identity, merged state, and unchanged head, head branch, and base.
 
 ## Boundaries
 

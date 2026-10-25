@@ -51,6 +51,18 @@ def parse_record(completed: subprocess.CompletedProcess[str]) -> dict | None:
     return record if isinstance(record, dict) else None
 
 
+def repository_matches(repository: dict, pull_request: dict) -> bool:
+    number = pull_request.get("number")
+    repository_url = (repository.get("url") or "").rstrip("/")
+    return (
+        bool(repository.get("nameWithOwner"))
+        and bool(repository_url)
+        and type(number) is int
+        and number > 0
+        and pull_request.get("url") == f"{repository_url}/pull/{number}"
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--pr", required=True)
@@ -75,18 +87,23 @@ def main() -> int:
     if before is None:
         return emit("blocked", "blocked-unsafe", evidence, "pull-request JSON is malformed")
     evidence["before"] = before
+    if not repository_matches(repository, before):
+        return emit("blocked", "blocked-unsafe", evidence, "pull request does not belong to the current repository")
     if not identity_matches(before, args.expected_head, args.expected_base):
         return emit("blocked", "blocked-unsafe", evidence, "pull request is not open at the expected head and base")
+
+    pr_number = str(before["number"])
+    owner_repo = repository["nameWithOwner"]
 
     mutated = bool(before.get("isDraft"))
     ready_result = None
     if mutated:
-        ready_result = run(["gh", "pr", "ready", args.pr])
+        ready_result = run(["gh", "pr", "ready", pr_number, "--repo", owner_repo])
         evidence["ready_exit_code"] = ready_result.returncode
         evidence["ready_stdout"] = ready_result.stdout
         evidence["ready_stderr"] = ready_result.stderr
 
-    after_result = run(["gh", "pr", "view", args.pr, "--json", FIELDS])
+    after_result = run(["gh", "pr", "view", pr_number, "--repo", owner_repo, "--json", FIELDS])
     if after_result.returncode != 0:
         return emit("waiting", "waiting-external", evidence, after_result.stderr.strip())
     after = parse_record(after_result)
@@ -94,6 +111,8 @@ def main() -> int:
         return emit("blocked", "blocked-unsafe", evidence, "pull-request verification JSON is malformed")
     evidence["after"] = after
     evidence["mutated"] = mutated
+    if not repository_matches(repository, after):
+        return emit("blocked", "blocked-unsafe", evidence, "verified pull request does not belong to the current repository")
     if not identity_matches(after, args.expected_head, args.expected_base):
         return emit("blocked", "blocked-unsafe", evidence, "pull-request identity changed during ready transition")
     if after.get("headRefName") != before.get("headRefName"):

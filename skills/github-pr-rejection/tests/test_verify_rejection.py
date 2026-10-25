@@ -23,6 +23,13 @@ class RejectionTests(unittest.TestCase):
         record = {"state": "CLOSED", "headRefOid": "h", "headRefName": "feature/x", "baseRefName": "main"}
         self.assertFalse(MODULE.matches(record, "h", "main"))
 
+    def test_repository_identity_requires_exact_pr_url(self):
+        repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
+        local = {"number": 1, "url": "https://github.com/o/r/pull/1"}
+        foreign = {"number": 1, "url": "https://github.com/other/r/pull/1"}
+        self.assertTrue(MODULE.repository_matches(repository, local))
+        self.assertFalse(MODULE.repository_matches(repository, foreign))
+
 
 if __name__ == "__main__":
     unittest.main()

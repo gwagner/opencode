@@ -19,6 +19,7 @@ opencode_permission:
 inputs:
   - one open ready pull request with passed required-check evidence
   - exact pull-request head and base branch
+  - expected GitHub repository from the current checkout
   - user available to approve or reject that exact head
 ---
 
@@ -26,7 +27,7 @@ inputs:
 
 ## Inputs
 
-Require one open ready pull request with passed required-check evidence, its exact head and base branch, and a user available to approve or reject that exact head.
+Require one open ready pull request with passed required-check evidence, its exact head and base branch, the expected GitHub repository from the current checkout, and a user available to approve or reject that exact head.
 
 ## Workflow
 

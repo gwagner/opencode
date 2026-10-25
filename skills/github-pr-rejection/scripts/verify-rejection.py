@@ -17,6 +17,18 @@ def matches(record: dict, head: str, base: str) -> bool:
     return record.get("state") == "OPEN" and record.get("headRefOid") == head and record.get("baseRefName") == base and bool(record.get("headRefName"))
 
 
+def repository_matches(repository: dict, pull_request: dict) -> bool:
+    number = pull_request.get("number")
+    repository_url = (repository.get("url") or "").rstrip("/")
+    return (
+        bool(repository.get("nameWithOwner"))
+        and bool(repository_url)
+        and type(number) is int
+        and number > 0
+        and pull_request.get("url") == f"{repository_url}/pull/{number}"
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--pr", required=True)
@@ -36,7 +48,12 @@ def main() -> int:
     except json.JSONDecodeError:
         print(json.dumps({"version": 1, "status": "blocked", "disposition": "blocked-unsafe", "next_stage": None, "evidence": evidence, "blocker": "invalid GitHub JSON"}, sort_keys=True))
         return 2
-    if not matches(evidence["pull_request"], args.expected_head, args.expected_base):
+    repository = evidence["repository"]
+    pull_request = evidence["pull_request"]
+    if not isinstance(repository, dict) or not isinstance(pull_request, dict) or not repository_matches(repository, pull_request):
+        print(json.dumps({"version": 1, "status": "blocked", "disposition": "blocked-unsafe", "next_stage": "user-decision", "evidence": evidence, "blocker": "pull request does not belong to the current repository"}, sort_keys=True))
+        return 2
+    if not matches(pull_request, args.expected_head, args.expected_base):
         print(json.dumps({"version": 1, "status": "blocked", "disposition": "blocked-unsafe", "next_stage": "user-decision", "evidence": evidence, "blocker": "pull request changed after rejection"}, sort_keys=True))
         return 2
     print(json.dumps({"version": 1, "status": "passed", "disposition": "rejected-open-pr", "next_stage": None, "evidence": evidence, "blocker": None}, sort_keys=True))

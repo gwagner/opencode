@@ -14,13 +14,15 @@ import yaml
 PLACEHOLDER_REQUESTS = {
     "One deterministic technical agent or skill.",
 }
-CRITICAL_PERMISSION_SOURCES = {
+PERMISSION_VALIDATION_ROOTS = {
     "agent-builder",
+    "sdlc-orchestrator",
+}
+DIRECT_PERMISSION_SOURCES = {
     "github-issue-manager",
     "github-pr-approved-merge",
     "github-pr-user-decision",
     "issue-worktree-validation",
-    "sdlc-orchestrator",
 }
 FORBIDDEN_CONTRACT_KEYS = {
     "authoritative",
@@ -170,6 +172,7 @@ def main() -> int:
 
     graph = {name: [] for name in objects}
     incoming = {name: 0 for name in objects}
+    direct_edges: list[tuple[str, str, str]] = []
     for name, obj in objects.items():
         permissions = obj["data"].get("permission" if obj["kind"] == "agent" else "opencode_permission", {}) or {}
         for target_kind, target in workflow_edges(obj["text"]):
@@ -181,8 +184,7 @@ def main() -> int:
                 raise AssertionError(f"{obj['path']}: missing {permission_name} permission for {target}")
             graph[name].append(target)
             incoming[target] += 1
-            if target_kind == "skill" and name in CRITICAL_PERMISSION_SOURCES:
-                validate_contract_coverage(obj, objects[target], f"{name} -> {target}")
+            direct_edges.append((name, target_kind, target))
 
     active: list[str] = []
     visited: set[str] = set()
@@ -200,6 +202,42 @@ def main() -> int:
 
     for name in graph:
         visit(name)
+
+    permission_edge_count = 0
+    for source, kind, target in direct_edges:
+        if source in DIRECT_PERMISSION_SOURCES and kind == "skill":
+            validate_contract_coverage(objects[source], objects[target], f"{source} -> {target}")
+            permission_edge_count += 1
+
+    for root_name in sorted(PERMISSION_VALIDATION_ROOTS):
+        root_object = objects.get(root_name)
+        if not root_object or root_object["kind"] != "agent":
+            raise AssertionError(f"permission validation root is not an agent: {root_name}")
+        skill_closure: set[str] = set()
+        pending = [target for source, kind, target in direct_edges if source == root_name and kind == "skill"]
+        while pending:
+            skill_name = pending.pop()
+            if skill_name in skill_closure:
+                continue
+            skill_closure.add(skill_name)
+            pending.extend(
+                target
+                for source, kind, target in direct_edges
+                if source == skill_name and kind == "skill"
+            )
+
+        root_skill_grants = root_object["data"].get("permission", {}).get("skill")
+        for skill_name in sorted(skill_closure):
+            if not (root_skill_grants == "allow" or isinstance(root_skill_grants, dict) and root_skill_grants.get(skill_name) == "allow"):
+                raise AssertionError(f"{root_name}: missing transitive skill permission for {skill_name}")
+            validate_contract_coverage(root_object, objects[skill_name], f"{root_name} runtime -> {skill_name}")
+            permission_edge_count += 1
+
+        closure_sources = skill_closure | {root_name}
+        for source, kind, target in direct_edges:
+            if source in closure_sources and kind == "skill":
+                validate_contract_coverage(objects[source], objects[target], f"{source} -> {target}")
+                permission_edge_count += 1
     orphans = [name for name, obj in objects.items() if obj["kind"] == "skill" and incoming[name] == 0]
     if orphans:
         raise AssertionError("unreferenced skills: " + ", ".join(sorted(orphans)))
@@ -236,7 +274,7 @@ def main() -> int:
     agent_count = sum(obj["kind"] == "agent" for obj in objects.values())
     skill_count = sum(obj["kind"] == "skill" for obj in objects.values())
     edge_count = sum(len(targets) for targets in graph.values())
-    print(f"architecture graph passed: {agent_count} agents, {skill_count} skills, {edge_count} edges")
+    print(f"architecture graph passed: {agent_count} agents, {skill_count} skills, {edge_count} edges, {permission_edge_count} permission checks")
     return 0
 
 

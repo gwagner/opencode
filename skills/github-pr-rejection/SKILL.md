@@ -10,6 +10,7 @@ opencode_permission:
 inputs:
   - exact pull request rejected by the user
   - exact rejected head commit and base branch
+  - expected GitHub repository from the current checkout
   - current-turn explicit rejection
   - authenticated GitHub CLI
 ---
@@ -18,7 +19,7 @@ inputs:
 
 ## Inputs
 
-Require the exact pull request rejected by the user, its exact rejected head commit and base branch, current-turn explicit rejection, and an authenticated GitHub CLI.
+Require the exact pull request rejected by the user, its exact rejected head commit and base branch, the expected GitHub repository from the current checkout, current-turn explicit rejection, and an authenticated GitHub CLI.
 
 ## Procedure
 

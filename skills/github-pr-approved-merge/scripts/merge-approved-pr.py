@@ -39,6 +39,18 @@ def parse_record(completed: subprocess.CompletedProcess[str]) -> dict | None:
     return record if isinstance(record, dict) else None
 
 
+def repository_matches(repository: dict, pull_request: dict) -> bool:
+    number = pull_request.get("number")
+    repository_url = (repository.get("url") or "").rstrip("/")
+    return (
+        bool(repository.get("nameWithOwner"))
+        and bool(repository_url)
+        and type(number) is int
+        and number > 0
+        and pull_request.get("url") == f"{repository_url}/pull/{number}"
+    )
+
+
 def identity_matches(record: dict, expected_head: str, expected_base: str) -> bool:
     return (
         record.get("headRefOid") == expected_head
@@ -82,21 +94,28 @@ def main() -> int:
     if before is None:
         return emit("blocked", "blocked-unsafe", evidence, "pull-request JSON is malformed")
     evidence["before"] = before
+    if not repository_matches(repository, before):
+        return emit("blocked", "blocked-unsafe", evidence, "pull request does not belong to the current repository")
     if not open_merge_gate(before, args.expected_head, args.expected_base):
         return emit("blocked", "blocked-unsafe", evidence, "pull request failed the exact-head merge gate")
 
-    merged = run(["gh", "pr", "merge", args.pr, "--squash", "--match-head-commit", args.expected_head])
+    pr_number = str(before["number"])
+    owner_repo = repository["nameWithOwner"]
+
+    merged = run(["gh", "pr", "merge", pr_number, "--repo", owner_repo, "--squash", "--match-head-commit", args.expected_head])
     evidence["merge_exit_code"] = merged.returncode
     evidence["merge_stdout"] = merged.stdout
     evidence["merge_stderr"] = merged.stderr
 
-    after_result = run(["gh", "pr", "view", args.pr, "--json", FIELDS])
+    after_result = run(["gh", "pr", "view", pr_number, "--repo", owner_repo, "--json", FIELDS])
     if after_result.returncode != 0:
         return emit("waiting", "waiting-external", evidence, after_result.stderr.strip())
     after = parse_record(after_result)
     if after is None:
         return emit("blocked", "blocked-unsafe", evidence, "pull-request verification JSON is malformed")
     evidence["after"] = after
+    if not repository_matches(repository, after):
+        return emit("blocked", "blocked-unsafe", evidence, "verified pull request does not belong to the current repository")
     if not identity_matches(after, args.expected_head, args.expected_base) or after.get("headRefName") != before.get("headRefName"):
         return emit("blocked", "blocked-unsafe", evidence, "pull-request identity changed during merge")
     if after.get("state") != "MERGED":

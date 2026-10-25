@@ -39,11 +39,25 @@ def parse_record(completed: subprocess.CompletedProcess[str]) -> dict | None:
     return record if isinstance(record, dict) else None
 
 
-def parse_remote_head(stdout: str) -> tuple[str | None, bool]:
+def repository_matches(repository: dict, pull_request: dict) -> bool:
+    number = pull_request.get("number")
+    repository_url = (repository.get("url") or "").rstrip("/")
+    return (
+        bool(repository.get("nameWithOwner"))
+        and bool(repository_url)
+        and type(number) is int
+        and number > 0
+        and pull_request.get("url") == f"{repository_url}/pull/{number}"
+    )
+
+
+def parse_remote_head(stdout: str, branch: str | None = None) -> tuple[str | None, bool]:
     lines = [line.split() for line in stdout.splitlines() if line.strip()]
     if not lines:
         return None, True
     if len(lines) != 1 or len(lines[0]) != 2:
+        return None, False
+    if branch and lines[0][1] != f"refs/heads/{branch}":
         return None, False
     return lines[0][0], True
 
@@ -85,6 +99,8 @@ def main() -> int:
     if pull_request is None:
         return emit("blocked", "blocked-unsafe", evidence, "pull-request JSON is malformed")
     evidence["pull_request"] = pull_request
+    if not repository_matches(repository, pull_request):
+        return emit("blocked", "blocked-unsafe", evidence, "pull request does not belong to the current repository")
     if not merged_identity_matches(pull_request, args.expected_head, args.expected_base, args.provenance):
         return emit("blocked", "blocked-unsafe", evidence, "pull request failed the merged-branch cleanup gate")
     branch = pull_request["headRefName"]
@@ -94,7 +110,7 @@ def main() -> int:
     before = run(["git", "ls-remote", "--heads", "origin", branch])
     if before.returncode != 0:
         return emit("waiting", "waiting-external", evidence, before.stderr.strip())
-    remote_head, valid = parse_remote_head(before.stdout)
+    remote_head, valid = parse_remote_head(before.stdout, branch)
     evidence["remote_head_before"] = remote_head
     if not valid:
         return emit("blocked", "blocked-unsafe", evidence, "remote branch identity is ambiguous")
@@ -110,7 +126,7 @@ def main() -> int:
     after = run(["git", "ls-remote", "--heads", "origin", branch])
     if after.returncode != 0:
         return emit("waiting", "waiting-external", evidence, after.stderr.strip())
-    remaining_head, remaining_valid = parse_remote_head(after.stdout)
+    remaining_head, remaining_valid = parse_remote_head(after.stdout, branch)
     evidence["remote_head_after"] = remaining_head
     if not remaining_valid or remaining_head not in (None, args.expected_head):
         return emit("blocked", "blocked-unsafe", evidence, "remote branch changed during deletion")
