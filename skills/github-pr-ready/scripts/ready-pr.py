@@ -98,6 +98,15 @@ def main() -> int:
     mutated = bool(before.get("isDraft"))
     ready_result = None
     if mutated:
+        pre_mutation_result = run(["gh", "pr", "view", pr_number, "--repo", owner_repo, "--json", FIELDS])
+        if pre_mutation_result.returncode != 0:
+            return emit("waiting", "waiting-external", evidence, pre_mutation_result.stderr.strip())
+        pre_mutation = parse_record(pre_mutation_result)
+        if pre_mutation is None:
+            return emit("blocked", "blocked-unsafe", evidence, "pre-mutation pull-request JSON is malformed")
+        evidence["pre_mutation"] = pre_mutation
+        if pre_mutation != before or not repository_matches(repository, pre_mutation):
+            return emit("blocked", "blocked-unsafe", evidence, "pull-request identity changed before ready transition")
         ready_result = run(["gh", "pr", "ready", pr_number, "--repo", owner_repo])
         evidence["ready_exit_code"] = ready_result.returncode
         evidence["ready_stdout"] = ready_result.stdout

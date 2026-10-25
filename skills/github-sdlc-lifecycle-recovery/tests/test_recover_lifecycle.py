@@ -39,8 +39,8 @@ class RecoveryTests(unittest.TestCase):
         pr = {"state": "OPEN"}
         self.assertEqual(MODULE.classify("OPEN", [pr, pr], "not-applicable", [])[0], "blocked-unsafe")
 
-    def test_closed_issue_is_terminal(self):
-        self.assertEqual(MODULE.classify("CLOSED", [], "not-applicable", [])[0], "closed")
+    def test_closed_issue_without_merged_pr_blocks(self):
+        self.assertEqual(MODULE.classify("CLOSED", [], "not-applicable", [])[0], "blocked-unsafe")
 
     def test_merged_pr_requires_current_evidence(self):
         pr = {"state": "MERGED", "url": "u", "headRefName": "feature/x", "headRefOid": "h"}
@@ -75,6 +75,24 @@ class RecoveryTests(unittest.TestCase):
             ])
         }
         self.assertEqual(MODULE.classify("OPEN", [pr], "already-absent", [current, comment])[0], "merged-needs-close")
+
+    def test_closed_issue_is_terminal_only_with_complete_evidence(self):
+        pr = {"state": "MERGED", "url": "u", "headRefName": "feature/x", "headRefOid": "h"}
+        current = {
+            "body": "Lifecycle evidence: current\nu\nHead commit: h\nDelegate project-validation: passed\nRequired checks: passed"
+        }
+        completion = {
+            "body": "\n".join([
+                "Lifecycle completion: merged-pr",
+                "Pull request: u",
+                "Head commit: h",
+                "Merge result: merged",
+                "Delegate project-validation: passed",
+                "Required checks: passed",
+                "Remote cleanup: deleted",
+            ])
+        }
+        self.assertEqual(MODULE.classify("CLOSED", [pr], "already-absent", [current, completion])[0], "closed")
 
     def test_partial_completion_evidence_does_not_resume_close(self):
         pr = {"state": "MERGED", "url": "u", "headRefName": "feature/x", "headRefOid": "h"}
@@ -147,6 +165,34 @@ class RecoveryTests(unittest.TestCase):
         self.assertEqual(return_code, 0)
         self.assertEqual(result["disposition"], "merged-needs-completion")
         self.assertEqual(result["evidence"]["cleanup_disposition"], "already-absent")
+
+    def test_foreign_issue_blocks_before_pull_request_search(self):
+        calls = []
+        issue = {
+            "number": 7,
+            "title": "foreign",
+            "state": "OPEN",
+            "url": "https://github.com/other/r/issues/7",
+            "comments": [],
+        }
+
+        def fake_run(args):
+            calls.append(args)
+            if args[:3] == ["gh", "auth", "status"]:
+                return self.completed(args)
+            if args[:3] == ["gh", "repo", "view"]:
+                return self.completed(args, json.dumps({"nameWithOwner": "o/r", "url": "https://github.com/o/r"}))
+            if args[:3] == ["gh", "issue", "view"]:
+                return self.completed(args, json.dumps(issue))
+            raise AssertionError(args)
+
+        output = io.StringIO()
+        argv = ["recover-lifecycle.py", "--issue", "https://github.com/other/r/issues/7"]
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+            return_code = MODULE.main()
+        self.assertEqual(return_code, 2)
+        self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
+        self.assertFalse(any(call[:3] == ["gh", "pr", "list"] for call in calls))
 
 
 if __name__ == "__main__":

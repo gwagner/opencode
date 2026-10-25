@@ -119,7 +119,9 @@ def main() -> int:
     if remote_head != args.expected_head:
         return emit("blocked", "blocked-unsafe", evidence, "remote branch no longer points to the merged head")
 
-    deleted = run(["git", "push", "origin", "--delete", branch])
+    lease = f"--force-with-lease=refs/heads/{branch}:{args.expected_head}"
+    deleted = run(["git", "push", lease, "--delete", "origin", branch])
+    evidence["delete_lease"] = lease
     evidence["delete_exit_code"] = deleted.returncode
     evidence["delete_stdout"] = deleted.stdout
     evidence["delete_stderr"] = deleted.stderr

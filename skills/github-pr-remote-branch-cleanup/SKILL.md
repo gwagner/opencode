@@ -24,12 +24,12 @@ Require one verified merged pull request, its exact merged head and base branch,
 ## Procedure
 
 1. Run `python3 /code/skills/github-pr-remote-branch-cleanup/scripts/cleanup-remote-branch.py --pr <pr> --expected-head <head> --expected-base <base> --provenance <provenance>`.
-2. Require one versioned JSON result. Accept `already-absent` or `deleted` only after verifying checkout-repository identity, merged state, unchanged PR identity, exact provenance, and remote-branch absence.
+2. Require one versioned JSON result. Accept `already-absent` or `deleted` only after verifying checkout-repository identity, merged state, unchanged PR identity, exact provenance, expected-head conditional deletion, and remote-branch absence.
 3. Return `waiting-external` for authentication, network, GitHub availability, deletion failure with an unchanged ref, or an unconfirmed deletion. Return `blocked-unsafe` for malformed output, changed identity, changed ref, base-branch deletion, or provenance mismatch.
 
 ## Boundaries
 
-- Delete only the merged pull request's remote head branch when it still points to the exact merged head.
+- Delete only the merged pull request's remote head branch with an exact expected-head lease, so a concurrent ref change rejects the deletion.
 - Never delete or switch a local branch, mutate a worktree, merge, close a pull request, or mutate an issue.
 
 ## Completion

@@ -104,6 +104,39 @@ class ReadyTests(unittest.TestCase):
         self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
         self.assertFalse(any(call[:3] == ["gh", "pr", "ready"] for call in calls))
 
+    def test_changed_pre_mutation_head_blocks_ready(self):
+        calls = []
+        repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
+        before = {
+            "number": 1,
+            "url": "https://github.com/o/r/pull/1",
+            "state": "OPEN",
+            "isDraft": True,
+            "baseRefName": "main",
+            "headRefName": "feature/x",
+            "headRefOid": "h",
+        }
+        changed = dict(before, headRefOid="other")
+        views = iter([before, changed])
+
+        def fake_run(args):
+            calls.append(args)
+            if args[:3] == ["gh", "auth", "status"]:
+                return self.completed(args)
+            if args[:3] == ["gh", "repo", "view"]:
+                return self.completed(args, json.dumps(repository))
+            if args[:3] == ["gh", "pr", "view"]:
+                return self.completed(args, json.dumps(next(views)))
+            raise AssertionError(args)
+
+        output = io.StringIO()
+        argv = ["ready-pr.py", "--pr", "1", "--expected-head", "h"]
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+            return_code = MODULE.main()
+        self.assertEqual(return_code, 2)
+        self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
+        self.assertFalse(any(call[:3] == ["gh", "pr", "ready"] for call in calls))
+
 
 if __name__ == "__main__":
     unittest.main()

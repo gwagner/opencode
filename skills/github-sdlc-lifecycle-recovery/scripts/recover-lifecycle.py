@@ -30,6 +30,18 @@ def completion_comment_matches(comment: dict, url: str, head: str) -> bool:
     return required.issubset(lines) and bool(cleanup.intersection(lines))
 
 
+def issue_repository_matches(repository: dict, issue: dict) -> bool:
+    number = issue.get("number")
+    repository_url = (repository.get("url") or "").rstrip("/")
+    return (
+        bool(repository.get("nameWithOwner"))
+        and bool(repository_url)
+        and type(number) is int
+        and number > 0
+        and issue.get("url") == f"{repository_url}/issues/{number}"
+    )
+
+
 def parse_remote_head(stdout: str, branch: str) -> tuple[str | None, bool]:
     lines = [line.split() for line in stdout.splitlines() if line.strip()]
     if not lines:
@@ -41,24 +53,28 @@ def parse_remote_head(stdout: str, branch: str) -> tuple[str | None, bool]:
 
 
 def classify(issue_state: str, prs: list[dict], remote_branch_state: str, comments: list[dict]) -> tuple[str, str | None, str | None]:
-    if issue_state == "CLOSED":
-        return "closed", None, None
-    if issue_state != "OPEN":
+    if issue_state not in ("OPEN", "CLOSED"):
         return "blocked-unsafe", None, "unsupported issue state"
     if len(prs) > 1:
         return "blocked-unsafe", None, "multiple matching pull requests"
     if not prs:
+        if issue_state == "CLOSED":
+            return "blocked-unsafe", None, "closed issue has no matching merged pull request"
         return ("remote-branch-no-pr", "pr-publication", None) if remote_branch_state == "present-exact" else ("fresh-start", "worktree-validation", None)
     pr = prs[0]
     if any(not pr.get(key) for key in ("url", "headRefName", "headRefOid")):
         return "blocked-unsafe", None, "matching pull-request identity is incomplete"
     if pr.get("state") == "OPEN":
+        if issue_state == "CLOSED":
+            return "blocked-unsafe", None, "closed issue still has an open pull request"
         if remote_branch_state != "present-exact":
             return "blocked-unsafe", None, "open pull-request remote branch is absent or unverified"
         return "open-pull-request", "hosted-checks", None
     if pr.get("state") != "MERGED":
         return "blocked-unsafe", None, "matching pull request is neither open nor merged"
     if remote_branch_state == "present-exact":
+        if issue_state == "CLOSED":
+            return "blocked-unsafe", None, "closed issue still requires remote branch cleanup"
         return "merged-needs-cleanup", "remote-branch-cleanup", None
     if remote_branch_state != "already-absent":
         return "blocked-unsafe", None, "merged pull-request remote branch is unverified"
@@ -77,7 +93,11 @@ def classify(issue_state: str, prs: list[dict], remote_branch_state: str, commen
     if not current:
         return "blocked-unsafe", None, "merged lifecycle evidence is missing"
     if not completion:
+        if issue_state == "CLOSED":
+            return "blocked-unsafe", None, "closed issue lacks exact completion evidence"
         return "merged-needs-completion", "completion-comment", None
+    if issue_state == "CLOSED":
+        return "closed", None, None
     return "merged-needs-close", "issue-close", None
 
 
@@ -113,6 +133,8 @@ def main() -> int:
     if not isinstance(issue_record, dict) or not issue_record.get("number") or not issue_record.get("url") or not issue_record.get("state"):
         return emit("blocked", "blocked-unsafe", None, evidence, "issue identity is incomplete")
     evidence["issue"] = issue_record
+    if not issue_repository_matches(repository, issue_record):
+        return emit("blocked", "blocked-unsafe", None, evidence, "issue does not belong to the current repository")
     query = f"Refs #{issue_record['number']} in:body"
     listed = run(["gh", "pr", "list", "--search", query, "--state", "all", "--limit", "100", "--json", "number,state,url,title,body,baseRefName,headRefName,headRefOid,mergedAt"])
     if listed.returncode != 0:

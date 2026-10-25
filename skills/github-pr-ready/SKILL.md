@@ -23,7 +23,7 @@ Require one open pull request with passed required checks, its exact expected he
 ## Procedure
 
 1. Require canonical passed required-check evidence for the expected head.
-2. Run `python3 /code/skills/github-pr-ready/scripts/ready-pr.py --pr <pr> --expected-head <head> --expected-base <base>`.
+2. Run `python3 /code/skills/github-pr-ready/scripts/ready-pr.py --pr <pr> --expected-head <head> --expected-base <base>`. The script re-reads the canonical checkout-repository pull request immediately before any ready mutation and blocks if its identity or head changed.
 3. Require one versioned JSON result. Accept `ready` or `already-ready` only for a pull request in the checkout repository with open non-draft state and unchanged head, head branch, and base.
 4. Return `waiting-external` for authentication, network, GitHub availability, or an unconfirmed transition. Return `blocked-unsafe` for malformed output, changed identity, changed head, or changed base.
 
@@ -31,6 +31,7 @@ Require one open pull request with passed required checks, its exact expected he
 
 - Never edit, push, approve, merge, close, or change the pull-request head or base.
 - Never mark a pull request ready before required checks pass for its current head.
+- GitHub does not expose an expected-head condition for the ready transition; minimize that non-atomic window with immediate before-and-after identity checks and invalidate all prior evidence if either check changes.
 
 ## Completion
 

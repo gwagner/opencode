@@ -101,7 +101,46 @@ class CleanupTests(unittest.TestCase):
             return_code = MODULE.main()
         self.assertEqual(return_code, 2)
         self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
-        self.assertFalse(any(call[:3] == ["git", "push", "origin"] for call in calls))
+        self.assertFalse(any(call[:2] == ["git", "push"] for call in calls))
+
+    def test_deletion_uses_exact_expected_head_lease(self):
+        calls = []
+        repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
+        pull_request = {
+            "number": 1,
+            "url": "https://github.com/o/r/pull/1",
+            "state": "MERGED",
+            "body": "OpenCode-Origin: cli\n",
+            "baseRefName": "main",
+            "headRefName": "feature/x",
+            "headRefOid": "h",
+        }
+        remote_reads = iter(["h\trefs/heads/feature/x\n", ""])
+
+        def fake_run(args):
+            calls.append(args)
+            if args[:3] == ["gh", "auth", "status"]:
+                return self.completed(args)
+            if args[:3] == ["gh", "repo", "view"]:
+                return self.completed(args, json.dumps(repository))
+            if args[:3] == ["gh", "pr", "view"]:
+                return self.completed(args, json.dumps(pull_request))
+            if args[:4] == ["git", "ls-remote", "--heads", "origin"]:
+                return self.completed(args, next(remote_reads))
+            if args[:2] == ["git", "push"]:
+                return self.completed(args)
+            raise AssertionError(args)
+
+        output = io.StringIO()
+        argv = ["cleanup-remote-branch.py", "--pr", "1", "--expected-head", "h", "--provenance", "cli"]
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+            return_code = MODULE.main()
+        self.assertEqual(return_code, 0)
+        self.assertEqual(json.loads(output.getvalue())["disposition"], "deleted")
+        self.assertIn(
+            ["git", "push", "--force-with-lease=refs/heads/feature/x:h", "--delete", "origin", "feature/x"],
+            calls,
+        )
 
 
 if __name__ == "__main__":
