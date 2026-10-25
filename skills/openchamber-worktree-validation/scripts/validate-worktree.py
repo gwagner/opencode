@@ -30,11 +30,16 @@ def run(*args: str) -> subprocess.CompletedProcess[str]:
 def classify(mode: str, clean: bool, head: str, base: str, expected_head: str | None) -> tuple[str, str | None]:
     if not clean:
         return "waiting-user-cleanup", "worktree contains unowned or uncommitted changes"
-    if mode == "resume":
-        if expected_head and head != expected_head:
+    if mode in ("resume-publication", "resume-pull-request"):
+        if not expected_head:
+            return "blocked-unsafe", "resumed worktree requires an expected task head"
+        if head != expected_head:
             return "blocked-unsafe", "current head differs from the expected resumable head"
-        if head != base:
+        if head == base:
+            return "blocked-unsafe", "resumed worktree head does not differ from the base revision"
+        if mode == "resume-publication":
             return "resume-publication", None
+        return "resume-pull-request", None
     if mode == "fresh" and head != base:
         return "blocked-unsafe", "fresh worktree contains commits not established as owned resume state"
     return "passed", None
@@ -52,7 +57,7 @@ def current_worktree_blocks(listing: str, root: str) -> list[list[str]]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=("fresh", "resume"), required=True)
+    parser.add_argument("--mode", choices=("fresh", "resume-publication", "resume-pull-request"), required=True)
     parser.add_argument("--base", default="main")
     parser.add_argument("--expected-head")
     args = parser.parse_args()
@@ -123,8 +128,8 @@ def main() -> int:
         remote.stdout.strip(),
         args.expected_head,
     )
-    status = "passed" if disposition in ("passed", "resume-publication") else "waiting" if disposition == "waiting-user-cleanup" else "blocked"
-    next_stage = "ownership-baseline" if disposition == "passed" else "pr-publication" if disposition == "resume-publication" else None
+    status = "passed" if disposition in ("passed", "resume-publication", "resume-pull-request") else "waiting" if disposition == "waiting-user-cleanup" else "blocked"
+    next_stage = "pr-publication" if disposition == "resume-publication" else "ownership-baseline" if disposition in ("passed", "resume-pull-request") else None
     result = Result(status=status, disposition=disposition, next_stage=next_stage, evidence=evidence, blocker=blocker)
     print(json.dumps(asdict(result), sort_keys=True))
     return 0 if status == "passed" else 3 if status == "waiting" else 2

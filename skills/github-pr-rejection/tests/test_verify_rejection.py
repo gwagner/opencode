@@ -13,15 +13,19 @@ SPEC.loader.exec_module(MODULE)
 class RejectionTests(unittest.TestCase):
     def test_exact_open_pr_matches(self):
         record = {"state": "OPEN", "headRefOid": "h", "headRefName": "feature/x", "baseRefName": "main"}
-        self.assertTrue(MODULE.matches(record, "h", "main"))
+        self.assertTrue(MODULE.matches(record, "h", "main", "feature/x"))
 
     def test_changed_head_does_not_match(self):
         record = {"state": "OPEN", "headRefOid": "other", "headRefName": "feature/x", "baseRefName": "main"}
-        self.assertFalse(MODULE.matches(record, "h", "main"))
+        self.assertFalse(MODULE.matches(record, "h", "main", "feature/x"))
 
     def test_closed_pr_does_not_match(self):
         record = {"state": "CLOSED", "headRefOid": "h", "headRefName": "feature/x", "baseRefName": "main"}
-        self.assertFalse(MODULE.matches(record, "h", "main"))
+        self.assertFalse(MODULE.matches(record, "h", "main", "feature/x"))
+
+    def test_changed_branch_does_not_match(self):
+        record = {"state": "OPEN", "headRefOid": "h", "headRefName": "feature/other", "baseRefName": "main"}
+        self.assertFalse(MODULE.matches(record, "h", "main", "feature/x"))
 
     def test_repository_identity_requires_exact_pr_url(self):
         repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}

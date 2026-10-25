@@ -1,6 +1,12 @@
 import importlib.util
+import io
+import json
 import pathlib
+import subprocess
+import sys
 import unittest
+from contextlib import redirect_stdout
+from unittest import mock
 
 
 SCRIPT = pathlib.Path(__file__).parents[1] / "scripts" / "recover-pr.py"
@@ -11,6 +17,10 @@ SPEC.loader.exec_module(MODULE)
 
 
 class RecoveryTests(unittest.TestCase):
+    @staticmethod
+    def completed(args, stdout="", stderr="", returncode=0):
+        return subprocess.CompletedProcess(args, returncode, stdout, stderr)
+
     @staticmethod
     def pr(state="OPEN", head="h", provenance="openchamber"):
         return {
@@ -46,10 +56,10 @@ class RecoveryTests(unittest.TestCase):
         self.assertEqual(MODULE.classify([], "other", "h", "base", "openchamber")[0], "blocked-unsafe")
 
     def test_open_pr(self):
-        self.assertEqual(MODULE.classify([self.pr()], "h", "h", "base", "openchamber")[0], "open-pull-request")
+        self.assertEqual(MODULE.classify([self.pr()], "h", "h", "base", "openchamber")[:2], ("open-pull-request", "worktree-validation"))
 
     def test_cli_open_pr(self):
-        self.assertEqual(MODULE.classify([self.pr(provenance="cli")], "h", "h", "base", "cli")[0], "open-pull-request")
+        self.assertEqual(MODULE.classify([self.pr(provenance="cli")], "h", "h", "base", "cli")[:2], ("open-pull-request", "ownership-baseline"))
 
     def test_changed_head_blocks(self):
         self.assertEqual(MODULE.classify([self.pr(head="other")], "other", "h", "base", "openchamber")[0], "blocked-unsafe")
@@ -65,6 +75,74 @@ class RecoveryTests(unittest.TestCase):
     def test_merged_with_remote_branch_resumes_cleanup(self):
         result = MODULE.classify([self.pr(state="MERGED")], "h", "h", "base", "openchamber")
         self.assertEqual(result[:2], ("merged-needs-cleanup", "remote-branch-cleanup"))
+
+    def test_origin_identity_requires_same_repository(self):
+        repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
+        self.assertTrue(MODULE.remote_repository_matches(repository, "https://github.com/o/r.git"))
+        self.assertFalse(MODULE.remote_repository_matches(repository, "https://github.com/other/r.git"))
+        self.assertTrue(MODULE.remote_urls_match(repository, "https://github.com/o/r.git\ngit@github.com:o/r.git\n"))
+        self.assertFalse(MODULE.remote_urls_match(repository, "https://github.com/o/r.git\ngit@github.com:other/r.git\n"))
+
+    def test_pull_request_head_repository_requires_checkout_repository(self):
+        repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
+        pull_request = {
+            "number": 1,
+            "url": "https://github.com/o/r/pull/1",
+            "isCrossRepository": False,
+            "headRepository": {"nameWithOwner": "o/r"},
+        }
+        self.assertTrue(MODULE.pull_request_repositories_match(repository, pull_request))
+        pull_request["isCrossRepository"] = True
+        pull_request["headRepository"] = {"nameWithOwner": "fork/r"}
+        self.assertFalse(MODULE.pull_request_repositories_match(repository, pull_request))
+
+    def test_fork_pull_request_blocks_before_remote_branch_lookup(self):
+        calls = []
+        repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
+        pull_request = {
+            "number": 1,
+            "state": "OPEN",
+            "url": "https://github.com/o/r/pull/1",
+            "title": "x",
+            "body": "OpenCode-Origin: openchamber\n",
+            "baseRefName": "main",
+            "headRefName": "feature/x",
+            "headRefOid": "h",
+            "mergedAt": None,
+            "mergeCommit": None,
+            "isCrossRepository": True,
+            "headRepository": {"nameWithOwner": "fork/r"},
+        }
+
+        def fake_run(args):
+            calls.append(args)
+            if args == ["git", "branch", "--show-current"]:
+                return self.completed(args, "feature/x\n")
+            if args == ["git", "rev-parse", "HEAD"]:
+                return self.completed(args, "h\n")
+            if args == ["git", "rev-parse", "main"]:
+                return self.completed(args, "base\n")
+            if args == ["git", "status", "--porcelain=v1"]:
+                return self.completed(args)
+            if args[:3] == ["gh", "auth", "status"]:
+                return self.completed(args)
+            if args[:3] == ["gh", "repo", "view"]:
+                return self.completed(args, json.dumps(repository))
+            if args == ["git", "remote", "get-url", "--all", "origin"]:
+                return self.completed(args, "git@github.com:o/r.git\n")
+            if args == ["git", "remote", "get-url", "--push", "--all", "origin"]:
+                return self.completed(args, "git@github.com:o/r.git\n")
+            if args[:3] == ["gh", "pr", "list"]:
+                return self.completed(args, json.dumps([pull_request]))
+            raise AssertionError(args)
+
+        output = io.StringIO()
+        argv = ["recover-pr.py", "--provenance", "openchamber"]
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+            return_code = MODULE.main()
+        self.assertEqual(return_code, 2)
+        self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
+        self.assertFalse(any(call[:2] == ["git", "ls-remote"] for call in calls))
 
 
 if __name__ == "__main__":

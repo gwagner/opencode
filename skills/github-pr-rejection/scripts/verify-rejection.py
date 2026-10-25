@@ -13,8 +13,8 @@ def run(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, text=True, capture_output=True, check=False)
 
 
-def matches(record: dict, head: str, base: str) -> bool:
-    return record.get("state") == "OPEN" and record.get("headRefOid") == head and record.get("baseRefName") == base and bool(record.get("headRefName"))
+def matches(record: dict, head: str, base: str, branch: str) -> bool:
+    return record.get("state") == "OPEN" and record.get("headRefOid") == head and record.get("baseRefName") == base and record.get("headRefName") == branch
 
 
 def repository_matches(repository: dict, pull_request: dict) -> bool:
@@ -33,6 +33,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--pr", required=True)
     parser.add_argument("--expected-head", required=True)
+    parser.add_argument("--expected-branch", required=True)
     parser.add_argument("--expected-base", default="main")
     args = parser.parse_args()
     evidence: dict[str, object] = {}
@@ -53,7 +54,7 @@ def main() -> int:
     if not isinstance(repository, dict) or not isinstance(pull_request, dict) or not repository_matches(repository, pull_request):
         print(json.dumps({"version": 1, "status": "blocked", "disposition": "blocked-unsafe", "next_stage": "user-decision", "evidence": evidence, "blocker": "pull request does not belong to the current repository"}, sort_keys=True))
         return 2
-    if not matches(pull_request, args.expected_head, args.expected_base):
+    if not matches(pull_request, args.expected_head, args.expected_base, args.expected_branch):
         print(json.dumps({"version": 1, "status": "blocked", "disposition": "blocked-unsafe", "next_stage": "user-decision", "evidence": evidence, "blocker": "pull request changed after rejection"}, sort_keys=True))
         return 2
     print(json.dumps({"version": 1, "status": "passed", "disposition": "rejected-open-pr", "next_stage": None, "evidence": evidence, "blocker": None}, sort_keys=True))

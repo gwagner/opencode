@@ -35,16 +35,19 @@ class MergeTests(unittest.TestCase):
         }
 
     def test_exact_ready_pr_passes_merge_gate(self):
-        self.assertTrue(MODULE.open_merge_gate(self.record(), "h", "main"))
+        self.assertTrue(MODULE.open_merge_gate(self.record(), "h", "main", "feature/x"))
 
     def test_draft_fails_merge_gate(self):
-        self.assertFalse(MODULE.open_merge_gate(self.record(draft=True), "h", "main"))
+        self.assertFalse(MODULE.open_merge_gate(self.record(draft=True), "h", "main", "feature/x"))
 
     def test_changed_head_fails_merge_gate(self):
-        self.assertFalse(MODULE.open_merge_gate(self.record(head="other"), "h", "main"))
+        self.assertFalse(MODULE.open_merge_gate(self.record(head="other"), "h", "main", "feature/x"))
 
     def test_unmergeable_fails_merge_gate(self):
-        self.assertFalse(MODULE.open_merge_gate(self.record(mergeable="CONFLICTING"), "h", "main"))
+        self.assertFalse(MODULE.open_merge_gate(self.record(mergeable="CONFLICTING"), "h", "main", "feature/x"))
+
+    def test_changed_branch_fails_merge_gate(self):
+        self.assertFalse(MODULE.open_merge_gate(self.record(), "h", "main", "feature/other"))
 
     def test_repository_identity_requires_exact_pr_url(self):
         repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
@@ -70,12 +73,37 @@ class MergeTests(unittest.TestCase):
             raise AssertionError(args)
 
         output = io.StringIO()
-        argv = ["merge-approved-pr.py", "--pr", "https://github.com/other/r/pull/1", "--expected-head", "h"]
+        argv = ["merge-approved-pr.py", "--pr", "https://github.com/other/r/pull/1", "--expected-head", "h", "--expected-branch", "feature/x"]
         with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 2)
         self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
         self.assertFalse(any(call[:3] == ["gh", "pr", "merge"] for call in calls))
+
+    def test_failed_squash_with_external_merge_blocks(self):
+        repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
+        before = self.record()
+        before["url"] = "https://github.com/o/r/pull/1"
+        after = dict(before, state="MERGED")
+        views = iter([before, after])
+
+        def fake_run(args):
+            if args[:3] == ["gh", "auth", "status"]:
+                return self.completed(args)
+            if args[:3] == ["gh", "repo", "view"]:
+                return self.completed(args, json.dumps(repository))
+            if args[:3] == ["gh", "pr", "view"]:
+                return self.completed(args, json.dumps(next(views)))
+            if args[:3] == ["gh", "pr", "merge"]:
+                return self.completed(args, stderr="merge failed", returncode=1)
+            raise AssertionError(args)
+
+        output = io.StringIO()
+        argv = ["merge-approved-pr.py", "--pr", "1", "--expected-head", "h", "--expected-branch", "feature/x"]
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+            return_code = MODULE.main()
+        self.assertEqual(return_code, 2)
+        self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
 
 
 if __name__ == "__main__":

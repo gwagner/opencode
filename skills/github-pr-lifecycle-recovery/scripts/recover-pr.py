@@ -7,10 +7,49 @@ import argparse
 import json
 import subprocess
 import sys
+from urllib.parse import urlparse
 
 
 def run(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, text=True, capture_output=True, check=False)
+
+
+def remote_repository_matches(repository: dict, remote_url: str) -> bool:
+    expected_url = urlparse(repository.get("url") or "")
+    expected_name = (repository.get("nameWithOwner") or "").strip("/")
+    remote_url = remote_url.strip()
+    if "://" in remote_url:
+        parsed = urlparse(remote_url)
+        host = parsed.hostname or ""
+        path = parsed.path
+    elif ":" in remote_url:
+        host_part, path = remote_url.split(":", 1)
+        host = host_part.rsplit("@", 1)[-1]
+    else:
+        return False
+    remote_name = path.strip("/")
+    if remote_name.endswith(".git"):
+        remote_name = remote_name[:-4]
+    return bool(expected_url.hostname and expected_name) and host.casefold() == expected_url.hostname.casefold() and remote_name.casefold() == expected_name.casefold()
+
+
+def remote_urls_match(repository: dict, remote_urls: str) -> bool:
+    urls = [url for url in remote_urls.splitlines() if url.strip()]
+    return bool(urls) and all(remote_repository_matches(repository, url) for url in urls)
+
+
+def pull_request_repositories_match(repository: dict, pull_request: dict) -> bool:
+    number = pull_request.get("number")
+    repository_url = (repository.get("url") or "").rstrip("/")
+    head_repository = pull_request.get("headRepository")
+    return (
+        type(number) is int
+        and number > 0
+        and pull_request.get("url") == f"{repository_url}/pull/{number}"
+        and pull_request.get("isCrossRepository") is False
+        and isinstance(head_repository, dict)
+        and (head_repository.get("nameWithOwner") or "").casefold() == (repository.get("nameWithOwner") or "").casefold()
+    )
 
 
 def classify(
@@ -55,7 +94,8 @@ def classify(
         return "blocked-unsafe", None, "current branch has a non-open pull request"
     if pr.get("headRefOid") != local_head or remote_head != local_head:
         return "blocked-unsafe", None, "local, remote, and pull-request heads differ"
-    return "open-pull-request", "hosted-checks", None
+    next_stage = "ownership-baseline" if provenance == "cli" else "worktree-validation"
+    return "open-pull-request", next_stage, None
 
 
 def emit(status: str, disposition: str, next_stage: str | None, evidence: dict, blocker: str | None = None) -> int:
@@ -94,17 +134,30 @@ def main() -> int:
     if not isinstance(repository, dict) or not repository.get("nameWithOwner") or not repository.get("url"):
         return emit("blocked", "blocked-unsafe", None, evidence, "repository identity is incomplete")
     evidence["repository"] = repository
-    remote = run(["git", "ls-remote", "--heads", "origin", branch_name])
-    listed = run(["gh", "pr", "list", "--head", branch_name, "--state", "all", "--json", "number,state,url,title,body,baseRefName,headRefName,headRefOid,mergedAt"])
-    if remote.returncode != 0 or listed.returncode != 0:
-        return emit("waiting", "waiting-external", None, evidence, (remote.stderr or listed.stderr).strip())
-    remote_head = remote.stdout.split()[0] if remote.stdout.strip() else None
+    origin = run(["git", "remote", "get-url", "--all", "origin"])
+    push_origin = run(["git", "remote", "get-url", "--push", "--all", "origin"])
+    if origin.returncode != 0 or push_origin.returncode != 0:
+        return emit("blocked", "blocked-unsafe", None, evidence, "origin remote identity is unavailable")
+    evidence["origin_url"] = origin.stdout.strip()
+    evidence["origin_push_url"] = push_origin.stdout.strip()
+    if not remote_urls_match(repository, origin.stdout) or not remote_urls_match(repository, push_origin.stdout):
+        return emit("blocked", "blocked-unsafe", None, evidence, "origin does not match the verified GitHub repository")
+    listed = run(["gh", "pr", "list", "--head", branch_name, "--state", "all", "--json", "number,state,url,title,body,baseRefName,headRefName,headRefOid,mergedAt,mergeCommit,isCrossRepository,headRepository"])
+    if listed.returncode != 0:
+        return emit("waiting", "waiting-external", None, evidence, listed.stderr.strip())
     try:
         prs = json.loads(listed.stdout)
     except json.JSONDecodeError:
         return emit("blocked", "blocked-unsafe", None, evidence, "invalid pull-request list JSON")
     if not isinstance(prs, list) or any(not isinstance(record, dict) for record in prs):
         return emit("blocked", "blocked-unsafe", None, evidence, "pull-request list shape is invalid")
+    if any(not pull_request_repositories_match(repository, record) for record in prs):
+        evidence["pull_requests"] = prs
+        return emit("blocked", "blocked-unsafe", None, evidence, "pull-request repository identity is invalid")
+    remote = run(["git", "ls-remote", "--heads", "origin", branch_name])
+    if remote.returncode != 0:
+        return emit("waiting", "waiting-external", None, evidence, remote.stderr.strip())
+    remote_head = remote.stdout.split()[0] if remote.stdout.strip() else None
     disposition, next_stage, blocker = classify(prs, remote_head, local_head, base_head, args.provenance, args.base, clean, args.expected_head)
     evidence.update({"remote_head": remote_head, "pull_requests": prs})
     status = "waiting" if disposition == "waiting-user-cleanup" else "blocked" if disposition == "blocked-unsafe" else "passed"

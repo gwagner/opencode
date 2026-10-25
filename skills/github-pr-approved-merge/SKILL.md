@@ -13,7 +13,7 @@ opencode_permission:
     github-pr-check-validation: allow
 inputs:
   - one open GitHub pull request targeting main
-  - explicit user merge approval for the exact pull request and head commit
+  - explicit user merge approval for the exact pull request, head branch, and head commit
   - expected GitHub repository from the current checkout
   - authenticated GitHub CLI
 ---
@@ -22,7 +22,7 @@ inputs:
 
 ## Inputs
 
-Require one open GitHub pull request targeting `main`, explicit user merge approval naming the exact pull request and head commit, the expected GitHub repository from the current checkout, and an authenticated GitHub CLI.
+Require one open GitHub pull request targeting `main`, explicit user merge approval naming the exact pull request, head branch, and head commit, the expected GitHub repository from the current checkout, and an authenticated GitHub CLI.
 
 ## Workflow
 
@@ -30,16 +30,16 @@ Require one open GitHub pull request targeting `main`, explicit user merge appro
 request: "One squash-merged, user-approved pull request."
 workflow:
   - id: required-check-recheck
-    when: "The open pull request, approved head, and base branch have passed the initial merge gate."
+    when: "The open pull request, approved head branch, head commit, and base branch have passed the initial merge gate."
     skill: github-pr-check-validation
 ```
 
 ## Procedure
 
-1. Require open state, base `main`, mergeable status, ready state, and an exact match between the current head and current-turn user approval.
+1. Require open state, base `main`, mergeable status, ready state, and an exact match between the current head branch, head commit, and current-turn user approval.
 2. Invoke `github-pr-check-validation` immediately before merging, supplying this exact current head. Require its `passed` result.
-3. Run `python3 /code/skills/github-pr-approved-merge/scripts/merge-approved-pr.py --pr <pr> --expected-head <approved head> --expected-base main`.
-4. Require one versioned JSON result. Accept `merged` only after the script verifies checkout-repository identity, merged state, and unchanged head, head branch, and base.
+3. Run `python3 /code/skills/github-pr-approved-merge/scripts/merge-approved-pr.py --pr <pr> --expected-head <approved head> --expected-branch <approved branch> --expected-base main`.
+4. Require one versioned JSON result. Accept `merged` only after the squash command succeeds and the script verifies checkout-repository identity, merged state, and unchanged head, head branch, and base. Treat a merged state after a failed squash command as an unowned external merge and return `blocked-unsafe`.
 
 ## Boundaries
 

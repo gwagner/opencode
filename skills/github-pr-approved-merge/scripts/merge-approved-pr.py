@@ -51,19 +51,20 @@ def repository_matches(repository: dict, pull_request: dict) -> bool:
     )
 
 
-def identity_matches(record: dict, expected_head: str, expected_base: str) -> bool:
+def identity_matches(record: dict, expected_head: str, expected_base: str, expected_branch: str) -> bool:
     return (
         record.get("headRefOid") == expected_head
         and record.get("baseRefName") == expected_base
+        and record.get("headRefName") == expected_branch
         and bool(record.get("number"))
         and bool(record.get("url"))
         and bool(record.get("headRefName"))
     )
 
 
-def open_merge_gate(record: dict, expected_head: str, expected_base: str) -> bool:
+def open_merge_gate(record: dict, expected_head: str, expected_base: str, expected_branch: str) -> bool:
     return (
-        identity_matches(record, expected_head, expected_base)
+        identity_matches(record, expected_head, expected_base, expected_branch)
         and record.get("state") == "OPEN"
         and record.get("isDraft") is False
         and record.get("mergeable") == "MERGEABLE"
@@ -74,6 +75,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--pr", required=True)
     parser.add_argument("--expected-head", required=True)
+    parser.add_argument("--expected-branch", required=True)
     parser.add_argument("--expected-base", default="main")
     args = parser.parse_args()
     evidence: dict[str, object] = {}
@@ -96,7 +98,7 @@ def main() -> int:
     evidence["before"] = before
     if not repository_matches(repository, before):
         return emit("blocked", "blocked-unsafe", evidence, "pull request does not belong to the current repository")
-    if not open_merge_gate(before, args.expected_head, args.expected_base):
+    if not open_merge_gate(before, args.expected_head, args.expected_base, args.expected_branch):
         return emit("blocked", "blocked-unsafe", evidence, "pull request failed the exact-head merge gate")
 
     pr_number = str(before["number"])
@@ -116,8 +118,12 @@ def main() -> int:
     evidence["after"] = after
     if not repository_matches(repository, after):
         return emit("blocked", "blocked-unsafe", evidence, "verified pull request does not belong to the current repository")
-    if not identity_matches(after, args.expected_head, args.expected_base) or after.get("headRefName") != before.get("headRefName"):
+    if not identity_matches(after, args.expected_head, args.expected_base, args.expected_branch):
         return emit("blocked", "blocked-unsafe", evidence, "pull-request identity changed during merge")
+    if merged.returncode != 0:
+        if after.get("state") == "MERGED":
+            return emit("blocked", "blocked-unsafe", evidence, "pull request was merged externally after the squash command failed")
+        return emit("waiting", "waiting-external", evidence, merged.stderr.strip() or "squash merge command failed")
     if after.get("state") != "MERGED":
         blocker = merged.stderr.strip() or "GitHub did not confirm the merge"
         return emit("waiting", "waiting-external", evidence, blocker)

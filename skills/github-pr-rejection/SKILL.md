@@ -9,7 +9,7 @@ opencode_permission:
     "/code/skills/github-pr-rejection/scripts/verify-rejection.py": allow
 inputs:
   - exact pull request rejected by the user
-  - exact rejected head commit and base branch
+  - exact rejected head branch, head commit, and base branch
   - expected GitHub repository from the current checkout
   - current-turn explicit rejection
   - authenticated GitHub CLI
@@ -19,11 +19,11 @@ inputs:
 
 ## Inputs
 
-Require the exact pull request rejected by the user, its exact rejected head commit and base branch, the expected GitHub repository from the current checkout, current-turn explicit rejection, and an authenticated GitHub CLI.
+Require the exact pull request rejected by the user, its exact rejected head branch, head commit, and base branch, the expected GitHub repository from the current checkout, current-turn explicit rejection, and an authenticated GitHub CLI.
 
 ## Procedure
 
-1. Run `python3 /code/skills/github-pr-rejection/scripts/verify-rejection.py --pr <pr> --expected-head <head> --expected-base <base>`.
+1. Run `python3 /code/skills/github-pr-rejection/scripts/verify-rejection.py --pr <pr> --expected-head <head> --expected-branch <branch> --expected-base <base>`.
 2. Require `rejected-open-pr` with open state and unchanged head, head branch, and base branch.
 3. Perform no GitHub or Git mutation. Leave the pull request, remote branch, and any originating issue open.
 

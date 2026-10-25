@@ -7,10 +7,11 @@ import argparse
 import json
 import subprocess
 import sys
+from urllib.parse import urlparse
 
 
 VERSION = 1
-FIELDS = "number,url,state,body,baseRefName,headRefName,headRefOid"
+FIELDS = "number,url,state,body,baseRefName,headRefName,headRefOid,isCrossRepository,headRepository"
 
 
 def run(args: list[str]) -> subprocess.CompletedProcess[str]:
@@ -48,6 +49,39 @@ def repository_matches(repository: dict, pull_request: dict) -> bool:
         and type(number) is int
         and number > 0
         and pull_request.get("url") == f"{repository_url}/pull/{number}"
+    )
+
+
+def remote_repository_matches(repository: dict, remote_url: str) -> bool:
+    expected_url = urlparse(repository.get("url") or "")
+    expected_name = (repository.get("nameWithOwner") or "").strip("/")
+    remote_url = remote_url.strip()
+    if "://" in remote_url:
+        parsed = urlparse(remote_url)
+        host = parsed.hostname or ""
+        path = parsed.path
+    elif ":" in remote_url:
+        host_part, path = remote_url.split(":", 1)
+        host = host_part.rsplit("@", 1)[-1]
+    else:
+        return False
+    remote_name = path.strip("/")
+    if remote_name.endswith(".git"):
+        remote_name = remote_name[:-4]
+    return bool(expected_url.hostname and expected_name) and host.casefold() == expected_url.hostname.casefold() and remote_name.casefold() == expected_name.casefold()
+
+
+def remote_urls_match(repository: dict, remote_urls: str) -> bool:
+    urls = [url for url in remote_urls.splitlines() if url.strip()]
+    return bool(urls) and all(remote_repository_matches(repository, url) for url in urls)
+
+
+def head_repository_matches(repository: dict, pull_request: dict) -> bool:
+    head_repository = pull_request.get("headRepository")
+    return (
+        pull_request.get("isCrossRepository") is False
+        and isinstance(head_repository, dict)
+        and (head_repository.get("nameWithOwner") or "").casefold() == (repository.get("nameWithOwner") or "").casefold()
     )
 
 
@@ -92,6 +126,15 @@ def main() -> int:
         return emit("blocked", "blocked-unsafe", evidence, "repository identity is malformed or incomplete")
     evidence["repository"] = repository
 
+    origin = run(["git", "remote", "get-url", "--all", "origin"])
+    push_origin = run(["git", "remote", "get-url", "--push", "--all", "origin"])
+    if origin.returncode != 0 or push_origin.returncode != 0:
+        return emit("blocked", "blocked-unsafe", evidence, "origin remote identity is unavailable")
+    evidence["origin_url"] = origin.stdout.strip()
+    evidence["origin_push_url"] = push_origin.stdout.strip()
+    if not remote_urls_match(repository, origin.stdout) or not remote_urls_match(repository, push_origin.stdout):
+        return emit("blocked", "blocked-unsafe", evidence, "origin does not match the verified GitHub repository")
+
     viewed = run(["gh", "pr", "view", args.pr, "--json", FIELDS])
     if viewed.returncode != 0:
         return emit("waiting", "waiting-external", evidence, viewed.stderr.strip())
@@ -101,6 +144,8 @@ def main() -> int:
     evidence["pull_request"] = pull_request
     if not repository_matches(repository, pull_request):
         return emit("blocked", "blocked-unsafe", evidence, "pull request does not belong to the current repository")
+    if not head_repository_matches(repository, pull_request):
+        return emit("blocked", "blocked-unsafe", evidence, "pull request head repository does not match origin")
     if not merged_identity_matches(pull_request, args.expected_head, args.expected_base, args.provenance):
         return emit("blocked", "blocked-unsafe", evidence, "pull request failed the merged-branch cleanup gate")
     branch = pull_request["headRefName"]

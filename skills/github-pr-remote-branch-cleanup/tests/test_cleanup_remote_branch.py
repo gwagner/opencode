@@ -64,6 +64,81 @@ class CleanupTests(unittest.TestCase):
         self.assertTrue(MODULE.repository_matches(repository, local))
         self.assertFalse(MODULE.repository_matches(repository, foreign))
 
+    def test_origin_identity_requires_same_repository(self):
+        repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
+        self.assertTrue(MODULE.remote_repository_matches(repository, "git@github.com:o/r.git\n"))
+        self.assertFalse(MODULE.remote_repository_matches(repository, "git@github.com:other/r.git\n"))
+        self.assertTrue(MODULE.remote_urls_match(repository, "git@github.com:o/r.git\nhttps://github.com/o/r.git\n"))
+        self.assertFalse(MODULE.remote_urls_match(repository, "git@github.com:o/r.git\ngit@github.com:other/r.git\n"))
+
+    def test_fork_head_repository_is_rejected(self):
+        repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
+        same = {"isCrossRepository": False, "headRepository": {"nameWithOwner": "o/r"}}
+        fork = {"isCrossRepository": True, "headRepository": {"nameWithOwner": "fork/r"}}
+        self.assertTrue(MODULE.head_repository_matches(repository, same))
+        self.assertFalse(MODULE.head_repository_matches(repository, fork))
+
+    def test_mismatched_push_url_blocks_before_pull_request_lookup(self):
+        calls = []
+        repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
+
+        def fake_run(args):
+            calls.append(args)
+            if args[:3] == ["gh", "auth", "status"]:
+                return self.completed(args)
+            if args[:3] == ["gh", "repo", "view"]:
+                return self.completed(args, json.dumps(repository))
+            if args == ["git", "remote", "get-url", "--all", "origin"]:
+                return self.completed(args, "git@github.com:o/r.git\n")
+            if args == ["git", "remote", "get-url", "--push", "--all", "origin"]:
+                return self.completed(args, "git@github.com:other/r.git\n")
+            raise AssertionError(args)
+
+        output = io.StringIO()
+        argv = ["cleanup-remote-branch.py", "--pr", "1", "--expected-head", "h", "--provenance", "cli"]
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+            return_code = MODULE.main()
+        self.assertEqual(return_code, 2)
+        self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
+        self.assertFalse(any(call[:3] == ["gh", "pr", "view"] for call in calls))
+
+    def test_fork_pull_request_blocks_before_remote_branch_lookup(self):
+        calls = []
+        repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
+        pull_request = {
+            "number": 1,
+            "url": "https://github.com/o/r/pull/1",
+            "state": "MERGED",
+            "body": "OpenCode-Origin: cli\n",
+            "baseRefName": "main",
+            "headRefName": "feature/x",
+            "headRefOid": "h",
+            "isCrossRepository": True,
+            "headRepository": {"nameWithOwner": "fork/r"},
+        }
+
+        def fake_run(args):
+            calls.append(args)
+            if args[:3] == ["gh", "auth", "status"]:
+                return self.completed(args)
+            if args[:3] == ["gh", "repo", "view"]:
+                return self.completed(args, json.dumps(repository))
+            if args == ["git", "remote", "get-url", "--all", "origin"]:
+                return self.completed(args, "git@github.com:o/r.git\n")
+            if args == ["git", "remote", "get-url", "--push", "--all", "origin"]:
+                return self.completed(args, "git@github.com:o/r.git\n")
+            if args[:3] == ["gh", "pr", "view"]:
+                return self.completed(args, json.dumps(pull_request))
+            raise AssertionError(args)
+
+        output = io.StringIO()
+        argv = ["cleanup-remote-branch.py", "--pr", "1", "--expected-head", "h", "--provenance", "cli"]
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+            return_code = MODULE.main()
+        self.assertEqual(return_code, 2)
+        self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
+        self.assertFalse(any(call[:2] == ["git", "ls-remote"] for call in calls))
+
     def test_foreign_repository_blocks_before_branch_deletion(self):
         calls = []
         repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
@@ -83,6 +158,10 @@ class CleanupTests(unittest.TestCase):
                 return self.completed(args)
             if args[:3] == ["gh", "repo", "view"]:
                 return self.completed(args, json.dumps(repository))
+            if args == ["git", "remote", "get-url", "--all", "origin"]:
+                return self.completed(args, "git@github.com:o/r.git\n")
+            if args == ["git", "remote", "get-url", "--push", "--all", "origin"]:
+                return self.completed(args, "git@github.com:o/r.git\n")
             if args[:3] == ["gh", "pr", "view"]:
                 return self.completed(args, json.dumps(pull_request))
             raise AssertionError(args)
@@ -114,6 +193,8 @@ class CleanupTests(unittest.TestCase):
             "baseRefName": "main",
             "headRefName": "feature/x",
             "headRefOid": "h",
+            "isCrossRepository": False,
+            "headRepository": {"nameWithOwner": "o/r"},
         }
         remote_reads = iter(["h\trefs/heads/feature/x\n", ""])
 
@@ -123,6 +204,10 @@ class CleanupTests(unittest.TestCase):
                 return self.completed(args)
             if args[:3] == ["gh", "repo", "view"]:
                 return self.completed(args, json.dumps(repository))
+            if args == ["git", "remote", "get-url", "--all", "origin"]:
+                return self.completed(args, "git@github.com:o/r.git\n")
+            if args == ["git", "remote", "get-url", "--push", "--all", "origin"]:
+                return self.completed(args, "git@github.com:o/r.git\n")
             if args[:3] == ["gh", "pr", "view"]:
                 return self.completed(args, json.dumps(pull_request))
             if args[:4] == ["git", "ls-remote", "--heads", "origin"]:

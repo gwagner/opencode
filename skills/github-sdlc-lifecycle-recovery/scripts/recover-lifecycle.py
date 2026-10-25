@@ -7,6 +7,7 @@ import argparse
 import json
 import subprocess
 import sys
+from urllib.parse import urlparse
 
 
 VERSION = 1
@@ -16,8 +17,26 @@ def run(args: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, text=True, capture_output=True, check=False)
 
 
-def completion_comment_matches(comment: dict, url: str, head: str) -> bool:
-    lines = set((comment.get("body") or "").splitlines())
+def comment_author_matches(comment: dict, actor: str) -> bool:
+    author = comment.get("author")
+    return isinstance(author, dict) and (author.get("login") or "").casefold() == actor.casefold()
+
+
+def current_comment_matches(comment: dict, url: str, head: str, actor: str) -> bool:
+    lines = (comment.get("body") or "").splitlines()
+    required = {
+        "Lifecycle evidence: current",
+        f"Pull request: {url}",
+        f"Head commit: {head}",
+        "Delegate project-validation: passed",
+        "Required checks: passed",
+    }
+    delivered = [line for line in lines if line.startswith("Delivered outcome:")]
+    return comment_author_matches(comment, actor) and required.issubset(set(lines)) and len(delivered) == 1 and bool(delivered[0].removeprefix("Delivered outcome:").strip())
+
+
+def completion_comment_matches(comment: dict, url: str, head: str, actor: str) -> bool:
+    lines = (comment.get("body") or "").splitlines()
     required = {
         "Lifecycle completion: merged-pr",
         f"Pull request: {url}",
@@ -27,7 +46,7 @@ def completion_comment_matches(comment: dict, url: str, head: str) -> bool:
         "Required checks: passed",
     }
     cleanup = {"Remote cleanup: deleted", "Remote cleanup: already-absent"}
-    return required.issubset(lines) and bool(cleanup.intersection(lines))
+    return comment_author_matches(comment, actor) and required.issubset(set(lines)) and sum(line in cleanup for line in lines) == 1
 
 
 def issue_repository_matches(repository: dict, issue: dict) -> bool:
@@ -42,6 +61,44 @@ def issue_repository_matches(repository: dict, issue: dict) -> bool:
     )
 
 
+def remote_repository_matches(repository: dict, remote_url: str) -> bool:
+    expected_url = urlparse(repository.get("url") or "")
+    expected_name = (repository.get("nameWithOwner") or "").strip("/")
+    remote_url = remote_url.strip()
+    if "://" in remote_url:
+        parsed = urlparse(remote_url)
+        host = parsed.hostname or ""
+        path = parsed.path
+    elif ":" in remote_url:
+        host_part, path = remote_url.split(":", 1)
+        host = host_part.rsplit("@", 1)[-1]
+    else:
+        return False
+    remote_name = path.strip("/")
+    if remote_name.endswith(".git"):
+        remote_name = remote_name[:-4]
+    return bool(expected_url.hostname and expected_name) and host.casefold() == expected_url.hostname.casefold() and remote_name.casefold() == expected_name.casefold()
+
+
+def remote_urls_match(repository: dict, remote_urls: str) -> bool:
+    urls = [url for url in remote_urls.splitlines() if url.strip()]
+    return bool(urls) and all(remote_repository_matches(repository, url) for url in urls)
+
+
+def pull_request_repositories_match(repository: dict, pull_request: dict) -> bool:
+    number = pull_request.get("number")
+    repository_url = (repository.get("url") or "").rstrip("/")
+    head_repository = pull_request.get("headRepository")
+    return (
+        type(number) is int
+        and number > 0
+        and pull_request.get("url") == f"{repository_url}/pull/{number}"
+        and pull_request.get("isCrossRepository") is False
+        and isinstance(head_repository, dict)
+        and (head_repository.get("nameWithOwner") or "").casefold() == (repository.get("nameWithOwner") or "").casefold()
+    )
+
+
 def parse_remote_head(stdout: str, branch: str) -> tuple[str | None, bool]:
     lines = [line.split() for line in stdout.splitlines() if line.strip()]
     if not lines:
@@ -52,7 +109,7 @@ def parse_remote_head(stdout: str, branch: str) -> tuple[str | None, bool]:
     return lines[0][0], True
 
 
-def classify(issue_state: str, prs: list[dict], remote_branch_state: str, comments: list[dict]) -> tuple[str, str | None, str | None]:
+def classify(issue_state: str, prs: list[dict], remote_branch_state: str, comments: list[dict], actor: str) -> tuple[str, str | None, str | None]:
     if issue_state not in ("OPEN", "CLOSED"):
         return "blocked-unsafe", None, "unsupported issue state"
     if len(prs) > 1:
@@ -69,9 +126,12 @@ def classify(issue_state: str, prs: list[dict], remote_branch_state: str, commen
             return "blocked-unsafe", None, "closed issue still has an open pull request"
         if remote_branch_state != "present-exact":
             return "blocked-unsafe", None, "open pull-request remote branch is absent or unverified"
-        return "open-pull-request", "hosted-checks", None
+        return "open-pull-request", "worktree-validation", None
     if pr.get("state") != "MERGED":
         return "blocked-unsafe", None, "matching pull request is neither open nor merged"
+    merge_commit = pr.get("mergeCommit")
+    if not isinstance(merge_commit, dict) or not merge_commit.get("oid"):
+        return "blocked-unsafe", None, "merged pull-request merge commit is missing"
     if remote_branch_state == "present-exact":
         if issue_state == "CLOSED":
             return "blocked-unsafe", None, "closed issue still requires remote branch cleanup"
@@ -80,16 +140,12 @@ def classify(issue_state: str, prs: list[dict], remote_branch_state: str, commen
         return "blocked-unsafe", None, "merged pull-request remote branch is unverified"
     head = pr.get("headRefOid")
     url = pr.get("url")
-    current = [
-        comment
-        for comment in comments
-        if "Lifecycle evidence: current" in (comment.get("body") or "")
-        and url in (comment.get("body") or "")
-        and f"Head commit: {head}" in (comment.get("body") or "")
-        and "Delegate project-validation: passed" in (comment.get("body") or "")
-        and "Required checks: passed" in (comment.get("body") or "")
-    ]
-    completion = [comment for comment in comments if completion_comment_matches(comment, url, head)]
+    current = [comment for comment in comments if current_comment_matches(comment, url, head, actor)]
+    completion = [comment for comment in comments if completion_comment_matches(comment, url, head, actor)]
+    if len({comment.get("body") or "" for comment in current}) > 1:
+        return "blocked-unsafe", None, "current lifecycle evidence conflicts"
+    if len({comment.get("body") or "" for comment in completion}) > 1:
+        return "blocked-unsafe", None, "completion lifecycle evidence conflicts"
     if not current:
         return "blocked-unsafe", None, "merged lifecycle evidence is missing"
     if not completion:
@@ -123,6 +179,24 @@ def main() -> int:
     if not isinstance(repository, dict) or not repository.get("nameWithOwner") or not repository.get("url"):
         return emit("blocked", "blocked-unsafe", None, evidence, "repository identity is incomplete")
     evidence["repository"] = repository
+    origin = run(["git", "remote", "get-url", "--all", "origin"])
+    push_origin = run(["git", "remote", "get-url", "--push", "--all", "origin"])
+    if origin.returncode != 0 or push_origin.returncode != 0:
+        return emit("blocked", "blocked-unsafe", None, evidence, "origin remote identity is unavailable")
+    evidence["origin_url"] = origin.stdout.strip()
+    evidence["origin_push_url"] = push_origin.stdout.strip()
+    if not remote_urls_match(repository, origin.stdout) or not remote_urls_match(repository, push_origin.stdout):
+        return emit("blocked", "blocked-unsafe", None, evidence, "origin does not match the verified GitHub repository")
+    repository_host = urlparse(repository["url"]).hostname
+    if not repository_host:
+        return emit("blocked", "blocked-unsafe", None, evidence, "repository host is missing")
+    actor_result = run(["gh", "api", "--hostname", repository_host, "user", "--jq", ".login"])
+    if actor_result.returncode != 0:
+        return emit("waiting", "waiting-external", None, evidence, actor_result.stderr.strip())
+    actor = actor_result.stdout.strip()
+    if not actor:
+        return emit("blocked", "blocked-unsafe", None, evidence, "authenticated GitHub actor is missing")
+    evidence["actor"] = actor
     issue = run(["gh", "issue", "view", args.issue, "--json", "number,title,state,url,comments"])
     if issue.returncode != 0:
         return emit("waiting", "waiting-external", None, evidence, issue.stderr.strip())
@@ -136,7 +210,7 @@ def main() -> int:
     if not issue_repository_matches(repository, issue_record):
         return emit("blocked", "blocked-unsafe", None, evidence, "issue does not belong to the current repository")
     query = f"Refs #{issue_record['number']} in:body"
-    listed = run(["gh", "pr", "list", "--search", query, "--state", "all", "--limit", "100", "--json", "number,state,url,title,body,baseRefName,headRefName,headRefOid,mergedAt"])
+    listed = run(["gh", "pr", "list", "--search", query, "--state", "all", "--limit", "100", "--json", "number,state,url,title,body,baseRefName,headRefName,headRefOid,mergedAt,mergeCommit,isCrossRepository,headRepository"])
     if listed.returncode != 0:
         return emit("waiting", "waiting-external", None, evidence, listed.stderr.strip())
     try:
@@ -153,6 +227,9 @@ def main() -> int:
         evidence["pull_requests"] = issue_matches
         return emit("blocked", "blocked-unsafe", None, evidence, "matching pull-request provenance is invalid")
     prs = issue_matches
+    if any(not pull_request_repositories_match(repository, record) for record in prs):
+        evidence["pull_requests"] = prs
+        return emit("blocked", "blocked-unsafe", None, evidence, "matching pull-request repository identity is invalid")
     remote_branch_state = "not-applicable"
     branch = args.branch
     if len(prs) == 1 and prs[0].get("headRefName"):
@@ -176,11 +253,16 @@ def main() -> int:
         if remote_head:
             local = run(["git", "rev-parse", "HEAD"])
             evidence["local_head"] = local.stdout.strip() if local.returncode == 0 else None
-            if not prs and (local.returncode != 0 or local.stdout.strip() != remote_head):
-                return emit("blocked", "blocked-unsafe", None, evidence, "local and remote branch heads differ without a matching pull request")
+            if not prs:
+                current_branch = run(["git", "branch", "--show-current"])
+                evidence["current_branch"] = current_branch.stdout.strip() if current_branch.returncode == 0 else None
+                if current_branch.returncode != 0 or current_branch.stdout.strip() != branch:
+                    return emit("blocked", "blocked-unsafe", None, evidence, "supplied branch is not the current local branch")
+                if local.returncode != 0 or local.stdout.strip() != remote_head:
+                    return emit("blocked", "blocked-unsafe", None, evidence, "local and remote branch heads differ without a matching pull request")
             if prs and remote_head != prs[0].get("headRefOid"):
                 return emit("blocked", "blocked-unsafe", None, evidence, "remote branch no longer points to the pull-request head")
-    disposition, next_stage, blocker = classify(issue_record.get("state"), prs, remote_branch_state, issue_record.get("comments") or [])
+    disposition, next_stage, blocker = classify(issue_record.get("state"), prs, remote_branch_state, issue_record.get("comments") or [], actor)
     evidence["pull_requests"] = prs
     evidence["remote_branch_state"] = remote_branch_state
     if prs and prs[0].get("state") == "MERGED" and remote_branch_state == "already-absent":

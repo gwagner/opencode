@@ -37,8 +37,8 @@ workflow:
 
 1. Require the issue to be open with `openchamber:ready`, without `openchamber:blocked`, and with `Execution route` equal to `sdlc-orchestrator`.
 2. Require verified closure evidence for every declared dependency. Return `waiting-external` when dependency state cannot currently be verified; do not infer closure.
-3. Invoke `openchamber-worktree-validation` in `fresh` mode for a fresh start or `resume` mode with the expected head for resumable local publication.
-4. Continue only on `passed` or `resume-publication`. Preserve and return every other disposition unchanged.
+3. Invoke `openchamber-worktree-validation` in `fresh` mode for a fresh start, `resume-publication` mode with the expected head for resumable local publication, or `resume-pull-request` mode with the expected head for a recovered open pull request.
+4. Continue to ownership baseline only on `passed` or `resume-pull-request`, and continue only to publication on `resume-publication`. Preserve and return every other disposition unchanged.
 
 ## Boundaries
 

@@ -22,7 +22,10 @@ class ClassifyTests(unittest.TestCase):
         self.assertTrue(blocker)
 
     def test_resume_ahead_recovers_publication(self):
-        self.assertEqual(MODULE.classify("resume", True, "a", "b", "a"), ("resume-publication", None))
+        self.assertEqual(MODULE.classify("resume-publication", True, "a", "b", "a"), ("resume-publication", None))
+
+    def test_recovered_pull_request_resumes_baseline(self):
+        self.assertEqual(MODULE.classify("resume-pull-request", True, "a", "b", "a"), ("resume-pull-request", None))
 
     def test_dirty_waits_without_destroying_work(self):
         disposition, blocker = MODULE.classify("fresh", False, "a", "a", None)
@@ -30,7 +33,12 @@ class ClassifyTests(unittest.TestCase):
         self.assertTrue(blocker)
 
     def test_unexpected_resume_head_blocks(self):
-        disposition, blocker = MODULE.classify("resume", True, "a", "b", "c")
+        disposition, blocker = MODULE.classify("resume-publication", True, "a", "b", "c")
+        self.assertEqual(disposition, "blocked-unsafe")
+        self.assertTrue(blocker)
+
+    def test_resume_requires_expected_head(self):
+        disposition, blocker = MODULE.classify("resume-pull-request", True, "a", "b", None)
         self.assertEqual(disposition, "blocked-unsafe")
         self.assertTrue(blocker)
 
