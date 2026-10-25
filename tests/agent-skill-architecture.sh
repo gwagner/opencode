@@ -36,17 +36,15 @@ orchestrator="$root/agents/sdlc-orchestrator.md"
 for identity in feature-branch-setup openchamber-worktree-validation \
   github-sdlc-lifecycle-recovery github-pr-lifecycle-recovery issue-worktree-validation git-change-baseline \
   git-delegated-change-commit github-pr-publication github-pr-check-validation \
-  github-pr-ready github-pr-user-decision github-pr-remote-branch-cleanup \
+  github-pr-ready github-pr-remote-branch-cleanup \
   github-issue-comment github-issue-close; do
   grep -q "^    $identity: allow$" "$orchestrator"
   grep -q "skill: $identity" "$orchestrator"
 done
 for identity in github-pr-approved-merge github-pr-rejection; do
   grep -q "^    $identity: allow$" "$orchestrator"
-  grep -q "skill: $identity" "$root/skills/github-pr-user-decision/SKILL.md"
 done
-grep -q '^    grillme: allow$' "$root/skills/github-pr-user-decision/SKILL.md"
-grep -Fq 'never infer approval or rejection' "$root/skills/github-pr-user-decision/SKILL.md"
+grep -Fq 'Ambiguous or absent answers remain `waiting-user-decision`' "$root/agents/sdlc-orchestrator.md"
 
 for entrypoint in cli openchamber github-issue; do
   grep -q "$entrypoint" "$orchestrator"
@@ -87,6 +85,7 @@ PY
 done
 
 python3 -m unittest discover -s "$root/skills/openchamber-worktree-validation/tests" -p 'test_*.py'
+python3 -m unittest discover -s "$root/skills/tests" -p 'test_*.py'
 python3 -m unittest discover -s "$root/skills/github-pr-publication/tests" -p 'test_*.py'
 python3 -m unittest discover -s "$root/skills/github-pr-check-validation/tests" -p 'test_*.py'
 python3 -m unittest discover -s "$root/skills/github-pr-ready/tests" -p 'test_*.py'

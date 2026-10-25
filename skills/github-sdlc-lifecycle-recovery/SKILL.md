@@ -6,6 +6,7 @@ opencode_permission:
   shell:
     "python3 /code/skills/github-sdlc-lifecycle-recovery/scripts/recover-lifecycle.py *": allow
   external_directory:
+    "/code/skills/github_pr_lifecycle_common.py": allow
     "/code/skills/github-sdlc-lifecycle-recovery/scripts/recover-lifecycle.py": allow
 inputs:
   - originating GitHub issue URL or number
@@ -22,6 +23,8 @@ inputs:
 Require the originating GitHub issue URL or number, the expected GitHub repository from the current checkout, an optional current branch when an OpenChamber worktree exists and no matching pull request supplies the canonical branch, retained passed validation and commit evidence naming the exact head when that branch exists remotely without a pull request, and an authenticated GitHub CLI.
 
 ## Procedure
+
+All lifecycle scripts import `/code/skills/github_pr_lifecycle_common.py` for fail-closed checkout identity, marker, remote-ref, JSON, and version-1 result-envelope primitives; this skill retains its operation-specific predicates and mutations.
 
 1. Run `python3 /code/skills/github-sdlc-lifecycle-recovery/scripts/recover-lifecycle.py --issue <issue> [--branch <branch>] [--validated-head <head>]`.
 2. Require one versioned JSON result. Require every configured Git remote `origin` fetch and effective push URL and the issue URL to belong to the checkout repository. Require every issue-referenced pull request to target `main`; never discard a wrong-base match. Require every matching pull request to be non-cross-repository with its head repository equal to the checkout repository and exactly one matching `OpenCode-Origin:` line and `Refs #` line. GitHub state is authoritative over local state whenever a matching pull request exists. The matching pull request's `headRefName` is the canonical branch; reject a conflicting caller-supplied branch. Without a matching pull request, require the caller-supplied branch to be the current clean local branch and require its local and remote head to equal retained validated-head evidence before resuming publication.

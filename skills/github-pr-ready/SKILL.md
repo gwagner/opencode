@@ -6,6 +6,7 @@ opencode_permission:
   shell:
     "python3 /code/skills/github-pr-ready/scripts/ready-pr.py *": allow
   external_directory:
+    "/code/skills/github_pr_lifecycle_common.py": allow
     "/code/skills/github-pr-ready/scripts/ready-pr.py": allow
 inputs:
   - one open pull request with passed required checks
@@ -21,6 +22,8 @@ inputs:
 Require one open pull request with passed required checks, its exact expected head branch, head commit, and base branch, the expected GitHub repository from the current checkout, and an authenticated GitHub CLI.
 
 ## Procedure
+
+All lifecycle scripts import `/code/skills/github_pr_lifecycle_common.py` for fail-closed checkout identity, marker, remote-ref, JSON, and version-1 result-envelope primitives; this skill retains its operation-specific predicates and mutations.
 
 1. Require canonical passed required-check evidence for the expected head branch and head commit.
 2. Run `python3 /code/skills/github-pr-ready/scripts/ready-pr.py --pr <pr> --expected-head <head> --expected-branch <branch> --expected-base <base>`. The script re-reads the canonical checkout-repository pull request immediately before any ready mutation and blocks if its identity changed.

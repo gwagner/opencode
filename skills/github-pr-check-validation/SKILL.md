@@ -6,6 +6,7 @@ opencode_permission:
   shell:
     "python3 /code/skills/github-pr-check-validation/scripts/validate-checks.py *": allow
   external_directory:
+    "/code/skills/github_pr_lifecycle_common.py": allow
     "/code/skills/github-pr-check-validation/scripts/validate-checks.py": allow
 inputs:
   - one open GitHub pull request
@@ -22,6 +23,8 @@ inputs:
 Require one open GitHub pull request, its expected head commit, the expected GitHub repository from the current checkout, an authenticated GitHub CLI, and a bounded recheck count and interval.
 
 ## Procedure
+
+All lifecycle scripts import `/code/skills/github_pr_lifecycle_common.py` for fail-closed checkout identity, marker, remote-ref, JSON, and version-1 result-envelope primitives; this skill retains its operation-specific predicates and mutations.
 
 1. Run `python3 /code/skills/github-pr-check-validation/scripts/validate-checks.py --pr <pr> --expected-head <head> --max-rechecks <count> --wait-seconds <seconds>`.
 2. Require one versioned JSON result with checkout-repository identity, all observed required-check records, and unchanged-head evidence. Require every configured `origin` fetch and effective push URL and the non-cross-repository pull-request head to match that repository before accepting check evidence.

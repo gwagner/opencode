@@ -51,8 +51,8 @@ class PublicationTests(unittest.TestCase):
 
     def test_conflicting_reserved_markers_do_not_match(self):
         record = self.pull_request(body="OpenCode-Origin: cli\nOpenCode-Origin: github-issue\nRefs #7\n")
-        self.assertFalse(MODULE.provenance_matches(record, "cli", None))
-        self.assertFalse(MODULE.provenance_matches(record, "github-issue", "7"))
+        self.assertFalse(MODULE.marker_matches(record, "cli", None))
+        self.assertFalse(MODULE.marker_matches(record, "github-issue", "7"))
         self.assertTrue(MODULE.has_reserved_markers("summary\nRefs #7\n"))
 
     def test_no_match_creates(self):

@@ -89,13 +89,6 @@ class CleanupTests(unittest.TestCase):
         self.assertTrue(MODULE.repository_matches(repository, local))
         self.assertFalse(MODULE.repository_matches(repository, foreign))
 
-    def test_origin_identity_requires_same_repository(self):
-        repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
-        self.assertTrue(MODULE.remote_repository_matches(repository, "git@github.com:o/r.git\n"))
-        self.assertFalse(MODULE.remote_repository_matches(repository, "git@github.com:other/r.git\n"))
-        self.assertTrue(MODULE.remote_urls_match(repository, "git@github.com:o/r.git\nhttps://github.com/o/r.git\n"))
-        self.assertFalse(MODULE.remote_urls_match(repository, "git@github.com:o/r.git\ngit@github.com:other/r.git\n"))
-
     def test_fork_head_repository_is_rejected(self):
         repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
         same = {"isCrossRepository": False, "headRepository": {"nameWithOwner": "o/r"}}

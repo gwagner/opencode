@@ -6,6 +6,7 @@ opencode_permission:
   shell:
     "python3 /code/skills/github-pr-remote-branch-cleanup/scripts/cleanup-remote-branch.py *": allow
   external_directory:
+    "/code/skills/github_pr_lifecycle_common.py": allow
     "/code/skills/github-pr-remote-branch-cleanup/scripts/cleanup-remote-branch.py": allow
 inputs:
   - one verified merged pull request
@@ -23,6 +24,8 @@ inputs:
 Require one verified merged pull request, its exact merged head and base branch, the expected GitHub repository from the current checkout, provenance `cli`, `openchamber`, or `github-issue`, the originating issue number exactly for `github-issue`, and an authenticated GitHub CLI.
 
 ## Procedure
+
+All lifecycle scripts import `/code/skills/github_pr_lifecycle_common.py` for fail-closed checkout identity, marker, remote-ref, JSON, and version-1 result-envelope primitives; this skill retains its operation-specific predicates and mutations.
 
 1. Run `python3 /code/skills/github-pr-remote-branch-cleanup/scripts/cleanup-remote-branch.py --pr <pr> --expected-head <head> --expected-base <base> --provenance <provenance> [--issue <issue>]`.
 2. Require one versioned JSON result. Accept `already-absent` or `deleted` only after verifying that every configured Git remote `origin` fetch and effective push URL matches the checkout GitHub repository, the pull request is not cross-repository, its head repository matches `origin`, and merged state, unchanged PR identity, exactly one matching provenance marker, expected-head conditional deletion, and remote-branch absence are verified. Non-issue provenance permits no `Refs #` marker; issue provenance requires exactly one marker for the supplied issue.

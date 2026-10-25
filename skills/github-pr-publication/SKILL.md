@@ -6,6 +6,7 @@ opencode_permission:
   shell:
     "python3 /code/skills/github-pr-publication/scripts/publish-pr.py *": allow
   external_directory:
+    "/code/skills/github_pr_lifecycle_common.py": allow
     "/code/skills/github-pr-publication/scripts/publish-pr.py": allow
 inputs:
   - provenance: cli, openchamber, or github-issue
@@ -23,6 +24,8 @@ inputs:
 Require provenance `cli`, `openchamber`, or `github-issue`; the current non-`main` branch and expected committed head; retained passed `project-validation` and commit evidence naming that exact head; a caller-provided pull-request title and body; an originating issue number exactly when provenance is `github-issue`; and an authenticated GitHub CLI.
 
 ## Procedure
+
+All lifecycle scripts import `/code/skills/github_pr_lifecycle_common.py` for fail-closed checkout identity, marker, remote-ref, JSON, and version-1 result-envelope primitives; this skill retains its operation-specific predicates and mutations.
 
 1. Run `python3 /code/skills/github-pr-publication/scripts/publish-pr.py --provenance <provenance> --expected-head <head> --validated-head <validated head> --title <title> --body <body> [--issue <issue>]`.
 2. Require one versioned JSON result. The script treats text as subprocess data, never shell syntax.

@@ -22,6 +22,7 @@ permission:
   edit:
     "/tmp/opencode/github-issue-manager-comment.md": allow
   external_directory:
+    "/code/skills/github_pr_lifecycle_common.py": allow
     "/code/**": allow
     "/tmp/opencode/**": allow
   shell:
@@ -63,7 +64,6 @@ permission:
     github-pr-publication: allow
     github-pr-check-validation: allow
     github-pr-ready: allow
-    github-pr-user-decision: allow
     github-pr-approved-merge: allow
     github-pr-remote-branch-cleanup: allow
     github-pr-rejection: allow
@@ -170,7 +170,20 @@ workflow:
     skill: github-pr-ready
   - id: user-decision
     when: "Required checks passed for the unchanged open ready pull-request head branch and head commit, and issue evidence is complete when applicable."
-    skill: github-pr-user-decision
+    ask: "Approve a user-performed manual squash merge or reject this exact pull request, head branch, and head commit?"
+  - id: decision-outcome
+    when: "The user answered for the exact pull request, unchanged head branch, and unchanged head commit in the current turn."
+    repeat_until: "The user explicitly approves or rejects the exact pull request, head branch, and head commit."
+    select:
+      question: "Which exact-branch-and-head decision did the user make?"
+      precedence: "Evaluate branches in listed order; the final branch is fallback."
+      branches:
+        - when: "The user explicitly approved a manual squash merge of the exact head branch and head commit."
+          skill: github-pr-approved-merge
+        - when: "The user explicitly rejected the exact head branch and head commit."
+          skill: github-pr-rejection
+        - when: "otherwise"
+          skill: grillme
   - id: remote-branch-cleanup
     when: "The current run's approved pull request returned user-merged after github-pr-approved-merge verified the user's manual squash merge."
     skill: github-pr-remote-branch-cleanup
@@ -184,7 +197,7 @@ workflow:
 
 Before every stage verify identity, permission, linked Markdown, recursive edge, immediate use, and exclusive worktree ownership. Entry-point identity is caller-supplied and must never be inferred. GitHub state is authoritative for a matching pull request. Supply an expected or validated head to either recovery skill and publication only from retained passed validation and commit evidence for that exact head, and always supply expected base `main`. Invoke OpenChamber worktree validation in `fresh` mode for fresh work, `resume-publication` for every validated unpublished OpenChamber or issue branch, and `resume-pull-request` for a recovered open pull request. Issue-originated resume-publication must also pass issue readiness, route, and dependency gates. Capture a clean ownership baseline before any fresh implementation or recovered-pull-request correction delegation. Favor forward recovery: a validated expected local commit or remote branch without a PR skips implementation only after its required resume-publication validation; a recovered open pull request resumes hosted checks only after worktree validation and ownership baseline; a recovered merged pull request blocks unless exact lifecycle completion evidence already proves merge and cleanup completion; failed checks request one evidenced correction batch; pending or unavailable checks return `waiting-external`; a changed head or head branch invalidates prior check and decision evidence. Repeat a repair only after a material change, and stop when an unchanged failure fingerprint repeats.
 
-Every editing delegate must end with `project-validation` and return complete owned paths. Review and commit each batch sequentially. The pull request is the durable recovery spine. Approval is valid only for the exact current head branch and head commit; rejection performs no mutation and leaves the PR, remote branch, and originating issue open. Only an approved, rechecked branch and head may be manually squash-merged by the user; no agent may run an automatic merge. Remote branch cleanup must return `deleted` or `already-absent` before issue completion. Issue evidence and closure apply only to the `github-issue` entry point and only after merge and cleanup. Never create, remove, prune, move, or switch an OpenChamber worktree.
+Every editing delegate must end with `project-validation` and return complete owned paths. Review and commit each batch sequentially. The pull request is the durable recovery spine. Ambiguous or absent answers remain `waiting-user-decision`; never infer approval or rejection. Approval is valid only for the exact current head branch and head commit; rejection performs no mutation and leaves the PR, remote branch, and originating issue open. Only an approved, rechecked branch and head may be manually squash-merged by the user; no agent may run an automatic merge. Remote branch cleanup must return `deleted` or `already-absent` before issue completion. Issue evidence and closure apply only to the `github-issue` entry point and only after merge and cleanup. Never create, remove, prune, move, or switch an OpenChamber worktree.
 
 For `github-issue`, the pre-decision comment must be posted by the authenticated lifecycle actor and contain exact lines `Lifecycle evidence: current`, one nonempty `Delivered outcome: <outcome>`, `Pull request: <url>`, `Head commit: <head>`, `Delegate project-validation: passed`, and `Required checks: passed`. When browser impact applies, require it to pass, include exact `Visual evidence: passed` and body references `![Before: <description>](<before local path>)` and `![After: <description>](<after local path>)`, then attach those same-scenario screenshots with native `gh issue comment --attach` so GitHub CLI rewrites the paths to uploaded HTTPS URLs while preserving alt text. Only when browser impact does not apply, include exact `Visual evidence: not required`; never use that marker for failed, skipped, or blocked required browser evidence. After a verified user-performed manual squash merge, the completion comment must be posted by the same authenticated lifecycle actor and contain exact lines `Lifecycle completion: merged-pr`, `Pull request: <url>`, `Head commit: <head>`, `Merge result: merged`, `Delegate project-validation: passed`, `Required checks: passed`, and either `Remote cleanup: deleted` or `Remote cleanup: already-absent`. Close only after that exact comment evidence is verified. A rejected decision posts no comment and leaves the issue open.
 

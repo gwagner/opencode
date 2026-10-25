@@ -21,7 +21,6 @@ PERMISSION_VALIDATION_ROOTS = {
 DIRECT_PERMISSION_SOURCES = {
     "github-issue-manager",
     "github-pr-approved-merge",
-    "github-pr-user-decision",
     "issue-worktree-validation",
 }
 FORBIDDEN_CONTRACT_KEYS = {

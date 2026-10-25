@@ -184,9 +184,9 @@ class RecoveryTests(unittest.TestCase):
         partial = {"author": {"login": self.ACTOR}, "body": "Lifecycle completion: merged-pr\nPull request: u\nHead commit: h"}
         self.assertEqual(MODULE.classify("OPEN", [pr], "already-absent", [current, partial], self.ACTOR)[0], "blocked-unsafe")
 
-    def test_issue_marker_identity_rejects_conflicts(self):
+    def test_shared_issue_marker_identity_rejects_conflicts(self):
         record = {"body": "Refs #7\nRefs #8\nOpenCode-Origin: github-issue\nOpenCode-Origin: cli\n"}
-        self.assertFalse(MODULE.issue_marker_identity_matches(record, 7))
+        self.assertFalse(MODULE.marker_matches(record, "github-issue", "7"))
 
     def test_foreign_comment_author_does_not_supply_current_evidence(self):
         pr = {"state": "MERGED", "url": "u", "headRefName": "feature/x", "headRefOid": "h", "mergeCommit": {"oid": "m"}}
@@ -199,21 +199,6 @@ class RecoveryTests(unittest.TestCase):
     def test_merged_pr_requires_merge_commit_evidence(self):
         pr = {"state": "MERGED", "url": "u", "headRefName": "feature/x", "headRefOid": "h"}
         self.assertEqual(MODULE.classify("OPEN", [pr], "already-absent", [], self.ACTOR)[0], "blocked-unsafe")
-
-    def test_origin_and_pull_request_repositories_require_checkout_repository(self):
-        repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
-        self.assertTrue(MODULE.remote_urls_match(repository, "git@github.com:o/r.git\nhttps://github.com/o/r.git\n"))
-        self.assertFalse(MODULE.remote_urls_match(repository, "git@github.com:o/r.git\ngit@github.com:other/r.git\n"))
-        pull_request = {
-            "number": 1,
-            "url": "https://github.com/o/r/pull/1",
-            "isCrossRepository": False,
-            "headRepository": {"nameWithOwner": "o/r"},
-        }
-        self.assertTrue(MODULE.pull_request_repositories_match(repository, pull_request))
-        pull_request["isCrossRepository"] = True
-        pull_request["headRepository"] = {"nameWithOwner": "fork/r"}
-        self.assertFalse(MODULE.pull_request_repositories_match(repository, pull_request))
 
     @staticmethod
     def completed(args, stdout="", stderr="", returncode=0):

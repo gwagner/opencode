@@ -6,16 +6,24 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from github_pr_lifecycle_common import (
+    emit as result_emit,
+    head_repository_matches,
+    marker_matches,
+    parse_remote_head,
+    remote_urls_match,
+    repository_matches,
+    run,
+)
 from urllib.parse import urlparse
 
 
 VERSION = 1
 
-
-def run(args: list[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(args, text=True, capture_output=True, check=False)
 
 
 def comment_author_matches(comment: dict, actor: str) -> bool:
@@ -89,60 +97,6 @@ def issue_repository_matches(repository: dict, issue: dict) -> bool:
     )
 
 
-def remote_repository_matches(repository: dict, remote_url: str) -> bool:
-    expected_url = urlparse(repository.get("url") or "")
-    expected_name = (repository.get("nameWithOwner") or "").strip("/")
-    remote_url = remote_url.strip()
-    if "://" in remote_url:
-        parsed = urlparse(remote_url)
-        host = parsed.hostname or ""
-        path = parsed.path
-    elif ":" in remote_url:
-        host_part, path = remote_url.split(":", 1)
-        host = host_part.rsplit("@", 1)[-1]
-    else:
-        return False
-    remote_name = path.strip("/")
-    if remote_name.endswith(".git"):
-        remote_name = remote_name[:-4]
-    return bool(expected_url.hostname and expected_name) and host.casefold() == expected_url.hostname.casefold() and remote_name.casefold() == expected_name.casefold()
-
-
-def remote_urls_match(repository: dict, remote_urls: str) -> bool:
-    urls = [url for url in remote_urls.splitlines() if url.strip()]
-    return bool(urls) and all(remote_repository_matches(repository, url) for url in urls)
-
-
-def pull_request_repositories_match(repository: dict, pull_request: dict) -> bool:
-    number = pull_request.get("number")
-    repository_url = (repository.get("url") or "").rstrip("/")
-    head_repository = pull_request.get("headRepository")
-    return (
-        type(number) is int
-        and number > 0
-        and pull_request.get("url") == f"{repository_url}/pull/{number}"
-        and pull_request.get("isCrossRepository") is False
-        and isinstance(head_repository, dict)
-        and (head_repository.get("nameWithOwner") or "").casefold() == (repository.get("nameWithOwner") or "").casefold()
-    )
-
-
-def parse_remote_head(stdout: str, branch: str) -> tuple[str | None, bool]:
-    lines = [line.split() for line in stdout.splitlines() if line.strip()]
-    if not lines:
-        return None, True
-    expected_ref = f"refs/heads/{branch}"
-    if len(lines) != 1 or len(lines[0]) != 2 or lines[0][1] != expected_ref:
-        return None, False
-    return lines[0][0], True
-
-
-def issue_marker_identity_matches(record: dict, issue_number: int) -> bool:
-    lines = (record.get("body") or "").splitlines()
-    references = [line for line in lines if line.startswith("Refs #")]
-    origins = [line for line in lines if line.startswith("OpenCode-Origin:")]
-    return references == [f"Refs #{issue_number}"] and origins == ["OpenCode-Origin: github-issue"]
-
 
 def classify(issue_state: str, prs: list[dict], remote_branch_state: str, comments: list[dict], actor: str) -> tuple[str, str | None, str | None]:
     if issue_state not in ("OPEN", "CLOSED"):
@@ -188,10 +142,6 @@ def classify(issue_state: str, prs: list[dict], remote_branch_state: str, commen
     return "merged-needs-close", "issue-close", None
 
 
-def emit(status: str, disposition: str, next_stage: str | None, evidence: dict, blocker: str | None = None) -> int:
-    print(json.dumps({"version": VERSION, "status": status, "disposition": disposition, "next_stage": next_stage, "evidence": evidence, "blocker": blocker}, sort_keys=True))
-    return 0 if status == "passed" else 3 if status == "waiting" else 2
-
 
 def main() -> int:
     parser = argparse.ArgumentParser()
@@ -203,71 +153,71 @@ def main() -> int:
     auth = run(["gh", "auth", "status"])
     repo = run(["gh", "repo", "view", "--json", "nameWithOwner,url"])
     if auth.returncode != 0 or repo.returncode != 0:
-        return emit("waiting", "waiting-external", None, evidence, (auth.stderr or repo.stderr).strip())
+        return result_emit("waiting", "waiting-external", evidence, (auth.stderr or repo.stderr).strip())
     try:
         repository = json.loads(repo.stdout)
     except json.JSONDecodeError:
-        return emit("blocked", "blocked-unsafe", None, evidence, "invalid repository JSON")
+        return result_emit("blocked", "blocked-unsafe", evidence, "invalid repository JSON", None)
     if not isinstance(repository, dict) or not repository.get("nameWithOwner") or not repository.get("url"):
-        return emit("blocked", "blocked-unsafe", None, evidence, "repository identity is incomplete")
+        return result_emit("blocked", "blocked-unsafe", evidence, "repository identity is incomplete", None)
     evidence["repository"] = repository
     origin = run(["git", "remote", "get-url", "--all", "origin"])
     push_origin = run(["git", "remote", "get-url", "--push", "--all", "origin"])
     if origin.returncode != 0 or push_origin.returncode != 0:
-        return emit("blocked", "blocked-unsafe", None, evidence, "origin remote identity is unavailable")
+        return result_emit("blocked", "blocked-unsafe", evidence, "origin remote identity is unavailable", None)
     evidence["origin_url"] = origin.stdout.strip()
     evidence["origin_push_url"] = push_origin.stdout.strip()
     if not remote_urls_match(repository, origin.stdout) or not remote_urls_match(repository, push_origin.stdout):
-        return emit("blocked", "blocked-unsafe", None, evidence, "origin does not match the verified GitHub repository")
+        return result_emit("blocked", "blocked-unsafe", evidence, "origin does not match the verified GitHub repository", None)
     repository_host = urlparse(repository["url"]).hostname
     if not repository_host:
-        return emit("blocked", "blocked-unsafe", None, evidence, "repository host is missing")
+        return result_emit("blocked", "blocked-unsafe", evidence, "repository host is missing", None)
     actor_result = run(["gh", "api", "--hostname", repository_host, "user", "--jq", ".login"])
     if actor_result.returncode != 0:
-        return emit("waiting", "waiting-external", None, evidence, actor_result.stderr.strip())
+        return result_emit("waiting", "waiting-external", evidence, actor_result.stderr.strip())
     actor = actor_result.stdout.strip()
     if not actor:
-        return emit("blocked", "blocked-unsafe", None, evidence, "authenticated GitHub actor is missing")
+        return result_emit("blocked", "blocked-unsafe", evidence, "authenticated GitHub actor is missing", None)
     evidence["actor"] = actor
-    issue = run(["gh", "issue", "view", args.issue, "--json", "number,title,state,url,comments"])
+    issue = run(["gh", "issue", "view", args.issue, "--repo", repository["nameWithOwner"], "--json", "number,title,state,url,comments"])
     if issue.returncode != 0:
-        return emit("waiting", "waiting-external", None, evidence, issue.stderr.strip())
+        return result_emit("waiting", "waiting-external", evidence, issue.stderr.strip())
     try:
         issue_record = json.loads(issue.stdout)
     except json.JSONDecodeError:
-        return emit("blocked", "blocked-unsafe", None, evidence, "invalid issue JSON")
+        return result_emit("blocked", "blocked-unsafe", evidence, "invalid issue JSON", None)
     if not isinstance(issue_record, dict) or not issue_record.get("number") or not issue_record.get("url") or not issue_record.get("state"):
-        return emit("blocked", "blocked-unsafe", None, evidence, "issue identity is incomplete")
+        return result_emit("blocked", "blocked-unsafe", evidence, "issue identity is incomplete", None)
     comments = issue_record.get("comments")
     if not isinstance(comments, list) or any(not isinstance(comment, dict) or not isinstance(comment.get("body"), str) for comment in comments):
-        return emit("blocked", "blocked-unsafe", None, evidence, "issue comment shape is invalid")
+        return result_emit("blocked", "blocked-unsafe", evidence, "issue comment shape is invalid", None)
     evidence["issue"] = issue_record
     if not issue_repository_matches(repository, issue_record):
-        return emit("blocked", "blocked-unsafe", None, evidence, "issue does not belong to the current repository")
+        return result_emit("blocked", "blocked-unsafe", evidence, "issue does not belong to the current repository", None)
     query = f"Refs #{issue_record['number']} in:body"
-    listed = run(["gh", "pr", "list", "--search", query, "--state", "all", "--limit", "100", "--json", "number,state,url,title,body,baseRefName,headRefName,headRefOid,mergedAt,mergeCommit,isCrossRepository,headRepository"])
+    listed = run(["gh", "pr", "list", "--repo", repository["nameWithOwner"], "--search", query, "--state", "all", "--limit", "100", "--json", "number,state,url,title,body,baseRefName,headRefName,headRefOid,mergedAt,mergeCommit,isCrossRepository,headRepository"])
     if listed.returncode != 0:
-        return emit("waiting", "waiting-external", None, evidence, listed.stderr.strip())
+        return result_emit("waiting", "waiting-external", evidence, listed.stderr.strip())
     try:
         candidates = json.loads(listed.stdout)
     except json.JSONDecodeError:
-        return emit("blocked", "blocked-unsafe", None, evidence, "invalid pull-request list JSON")
+        return result_emit("blocked", "blocked-unsafe", evidence, "invalid pull-request list JSON", None)
     if not isinstance(candidates, list) or any(not isinstance(record, dict) for record in candidates):
-        return emit("blocked", "blocked-unsafe", None, evidence, "pull-request list shape is invalid")
+        return result_emit("blocked", "blocked-unsafe", evidence, "pull-request list shape is invalid", None)
     marker = f"Refs #{issue_record['number']}"
     issue_matches = [record for record in candidates if marker in (record.get("body") or "").splitlines()]
     wrong_base = [record for record in issue_matches if record.get("baseRefName") != "main"]
     if wrong_base:
         evidence["pull_requests"] = issue_matches
-        return emit("blocked", "blocked-unsafe", None, evidence, "matching pull-request base is invalid")
-    invalid_markers = [record for record in issue_matches if not issue_marker_identity_matches(record, issue_record["number"])]
+        return result_emit("blocked", "blocked-unsafe", evidence, "matching pull-request base is invalid", None)
+    invalid_markers = [record for record in issue_matches if not marker_matches(record, "github-issue", str(issue_record["number"]))]
     if invalid_markers:
         evidence["pull_requests"] = issue_matches
-        return emit("blocked", "blocked-unsafe", None, evidence, "matching pull-request lifecycle markers are conflicting or invalid")
+        return result_emit("blocked", "blocked-unsafe", evidence, "matching pull-request lifecycle markers are conflicting or invalid", None)
     prs = issue_matches
-    if any(not pull_request_repositories_match(repository, record) for record in prs):
+    if any(not (repository_matches(repository, record) and head_repository_matches(repository, record)) for record in prs):
         evidence["pull_requests"] = prs
-        return emit("blocked", "blocked-unsafe", None, evidence, "matching pull-request repository identity is invalid")
+        return result_emit("blocked", "blocked-unsafe", evidence, "matching pull-request repository identity is invalid", None)
     remote_branch_state = "not-applicable"
     branch = args.branch
     if len(prs) == 1 and prs[0].get("headRefName"):
@@ -276,15 +226,15 @@ def main() -> int:
             evidence["pull_requests"] = prs
             evidence["supplied_branch"] = args.branch
             evidence["pull_request_branch"] = pull_request_branch
-            return emit("blocked", "blocked-unsafe", None, evidence, "supplied branch conflicts with the matching pull request")
+            return result_emit("blocked", "blocked-unsafe", evidence, "supplied branch conflicts with the matching pull request", None)
         branch = pull_request_branch
     if branch:
         remote = run(["git", "ls-remote", "--heads", "origin", branch])
         if remote.returncode != 0:
-            return emit("waiting", "waiting-external", None, evidence, remote.stderr.strip())
+            return result_emit("waiting", "waiting-external", evidence, remote.stderr.strip())
         remote_head, remote_valid = parse_remote_head(remote.stdout, branch)
         if not remote_valid:
-            return emit("blocked", "blocked-unsafe", None, evidence, "remote branch identity is ambiguous")
+            return result_emit("blocked", "blocked-unsafe", evidence, "remote branch identity is ambiguous", None)
         remote_branch_state = "present-exact" if remote_head else "already-absent"
         evidence["branch"] = branch
         evidence["remote_head"] = remote_head
@@ -296,25 +246,25 @@ def main() -> int:
                 evidence["current_branch"] = current_branch.stdout.strip() if current_branch.returncode == 0 else None
                 evidence["validated_head"] = args.validated_head
                 if current_branch.returncode != 0 or current_branch.stdout.strip() != branch:
-                    return emit("blocked", "blocked-unsafe", None, evidence, "supplied branch is not the current local branch")
+                    return result_emit("blocked", "blocked-unsafe", evidence, "supplied branch is not the current local branch", None)
                 status_result = run(["git", "status", "--porcelain=v1"])
                 if status_result.returncode != 0:
-                    return emit("blocked", "blocked-unsafe", None, evidence, "local worktree state is unavailable")
+                    return result_emit("blocked", "blocked-unsafe", evidence, "local worktree state is unavailable", None)
                 if status_result.stdout:
-                    return emit("waiting", "waiting-user-cleanup", None, evidence, "local worktree contains uncommitted changes")
+                    return result_emit("waiting", "waiting-user-cleanup", evidence, "local worktree contains uncommitted changes", None)
                 if local.returncode != 0 or local.stdout.strip() != remote_head:
-                    return emit("blocked", "blocked-unsafe", None, evidence, "local and remote branch heads differ without a matching pull request")
+                    return result_emit("blocked", "blocked-unsafe", evidence, "local and remote branch heads differ without a matching pull request", None)
                 if args.validated_head != remote_head:
-                    return emit("blocked", "blocked-unsafe", None, evidence, "remote branch without a pull request lacks retained validated-head evidence")
+                    return result_emit("blocked", "blocked-unsafe", evidence, "remote branch without a pull request lacks retained validated-head evidence", None)
             if prs and remote_head != prs[0].get("headRefOid"):
-                return emit("blocked", "blocked-unsafe", None, evidence, "remote branch no longer points to the pull-request head")
+                return result_emit("blocked", "blocked-unsafe", evidence, "remote branch no longer points to the pull-request head", None)
     disposition, next_stage, blocker = classify(issue_record.get("state"), prs, remote_branch_state, comments, actor)
     evidence["pull_requests"] = prs
     evidence["remote_branch_state"] = remote_branch_state
     if prs and prs[0].get("state") == "MERGED" and remote_branch_state == "already-absent":
         evidence["cleanup_disposition"] = "already-absent"
     status = "passed" if disposition not in ("blocked-unsafe",) else "blocked"
-    return emit(status, disposition, next_stage, evidence, blocker)
+    return result_emit(status, disposition, evidence, blocker, next_stage)
 
 
 if __name__ == "__main__":

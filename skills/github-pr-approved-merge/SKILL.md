@@ -8,6 +8,7 @@ opencode_permission:
     "python3 /code/skills/github-pr-check-validation/scripts/validate-checks.py *": allow
     "python3 /code/skills/github-pr-approved-merge/scripts/merge-approved-pr.py *": allow
   external_directory:
+    "/code/skills/github_pr_lifecycle_common.py": allow
     "/code/skills/github-pr-check-validation/scripts/validate-checks.py": allow
     "/code/skills/github-pr-approved-merge/scripts/merge-approved-pr.py": allow
   skill:
@@ -40,6 +41,8 @@ workflow:
 ```
 
 ## Procedure
+
+All lifecycle scripts import `/code/skills/github_pr_lifecycle_common.py` for fail-closed checkout identity, marker, remote-ref, JSON, and version-1 result-envelope primitives; this skill retains its operation-specific predicates and mutations.
 
 1. Before asking the user to merge, require open state, base `main`, mergeable status, ready state, and an exact match between the current head branch, head commit, and current-turn user decision context.
 2. Invoke `github-pr-check-validation` immediately before requesting the manual squash merge, supplying this exact current head. Require its `passed` result.

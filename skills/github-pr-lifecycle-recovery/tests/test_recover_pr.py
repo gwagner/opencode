@@ -102,26 +102,6 @@ class RecoveryTests(unittest.TestCase):
     def test_non_main_base_blocks(self):
         self.assertEqual(MODULE.classify([], None, "h", "base", "cli", "release")[0], "blocked-unsafe")
 
-    def test_origin_identity_requires_same_repository(self):
-        repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
-        self.assertTrue(MODULE.remote_repository_matches(repository, "https://github.com/o/r.git"))
-        self.assertFalse(MODULE.remote_repository_matches(repository, "https://github.com/other/r.git"))
-        self.assertTrue(MODULE.remote_urls_match(repository, "https://github.com/o/r.git\ngit@github.com:o/r.git\n"))
-        self.assertFalse(MODULE.remote_urls_match(repository, "https://github.com/o/r.git\ngit@github.com:other/r.git\n"))
-
-    def test_pull_request_head_repository_requires_checkout_repository(self):
-        repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
-        pull_request = {
-            "number": 1,
-            "url": "https://github.com/o/r/pull/1",
-            "isCrossRepository": False,
-            "headRepository": {"nameWithOwner": "o/r"},
-        }
-        self.assertTrue(MODULE.pull_request_repositories_match(repository, pull_request))
-        pull_request["isCrossRepository"] = True
-        pull_request["headRepository"] = {"nameWithOwner": "fork/r"}
-        self.assertFalse(MODULE.pull_request_repositories_match(repository, pull_request))
-
     def test_remote_head_requires_one_exact_ref(self):
         self.assertEqual(MODULE.parse_remote_head("", "feature/x"), (None, True))
         self.assertEqual(MODULE.parse_remote_head("h\trefs/heads/feature/x\n", "feature/x"), ("h", True))

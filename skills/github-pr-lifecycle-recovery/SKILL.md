@@ -6,6 +6,7 @@ opencode_permission:
   shell:
     "python3 /code/skills/github-pr-lifecycle-recovery/scripts/recover-pr.py *": allow
   external_directory:
+    "/code/skills/github_pr_lifecycle_common.py": allow
     "/code/skills/github-pr-lifecycle-recovery/scripts/recover-pr.py": allow
 inputs:
   - provenance: cli or openchamber
@@ -23,6 +24,8 @@ inputs:
 Require explicit provenance `cli` or `openchamber`, the current non-`main` branch, expected base branch `main`, and an authenticated GitHub CLI. When resuming any local or remote commit without a pull request, additionally require its expected validated head. OpenChamber provenance additionally requires the current OpenChamber-linked worktree supplied by the caller.
 
 ## Procedure
+
+All lifecycle scripts import `/code/skills/github_pr_lifecycle_common.py` for fail-closed checkout identity, marker, remote-ref, JSON, and version-1 result-envelope primitives; this skill retains its operation-specific predicates and mutations.
 
 1. Run `python3 /code/skills/github-pr-lifecycle-recovery/scripts/recover-pr.py --provenance <provenance> --base main [--expected-head <head>]`.
 2. On `fresh-local`, continue to worktree validation for `openchamber` or ownership baseline for `cli`. For OpenChamber, route `local-commit-no-remote` or `remote-branch-no-pr` through `openchamber-worktree-validation` in `resume-publication` mode before publication; for CLI, continue directly to publication only when caller-supplied retained passed validation and commit evidence names the exact local and remote head. On `open-pull-request`, continue to ownership baseline for `cli` or worktree validation before ownership baseline for `openchamber`, then continue to hosted checks. Block a recovered merged pull request because recovery lacks durable exact-head user-approval and lifecycle-owned merge evidence.
