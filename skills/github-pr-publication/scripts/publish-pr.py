@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from github_lifecycle_policy import add_authorization_argument, add_policy_argument, authorized, load_policy, policy_evidence
 from github_pr_lifecycle_common import (
     emit as result_emit,
     marker_matches,
@@ -66,16 +67,28 @@ def classify_push_failure(stderr: str) -> tuple[str, str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--provenance", choices=("cli", "openchamber", "github-issue"), required=True)
+    parser.add_argument("--provenance", required=True)
     parser.add_argument("--expected-head", required=True)
     parser.add_argument("--validated-head", required=True)
     parser.add_argument("--title", required=True)
     parser.add_argument("--body", required=True)
     parser.add_argument("--issue")
-    parser.add_argument("--base", default="main")
+    parser.add_argument("--base", default=None)
+    add_policy_argument(parser)
+    add_authorization_argument(parser, "publication")
     args = parser.parse_args()
+    try:
+        policy = load_policy(args.policy)
+    except ValueError as exc:
+        return result_emit("blocked", "blocked-unsafe", {}, str(exc))
 
-    evidence: dict[str, object] = {"provenance": args.provenance}
+    if args.base is None:
+        args.base = policy["base_branch"]
+    evidence: dict[str, object] = {**policy_evidence(policy), "provenance": args.provenance}
+    if not authorized(policy, "publication", args.authorize_publication):
+        return result_emit("blocked", "blocked-unsafe", evidence, "explicit publication authorization is required")
+    if args.provenance not in policy["provenance"]:
+        return result_emit("blocked", "blocked-unsafe", evidence, "provenance is not permitted by policy")
     if (args.provenance == "github-issue") != bool(args.issue):
         return result_emit("blocked", "blocked-unsafe", evidence, "issue identity must be supplied only for github-issue provenance")
     if args.issue and not args.issue.lstrip("#").isdigit():
@@ -98,8 +111,8 @@ def main() -> int:
                 return result_emit("blocked", "blocked-unsafe", evidence, "repository identity is incomplete")
             evidence["repository"] = repository
 
-    origin = run(["git", "remote", "get-url", "--all", "origin"])
-    push_origin = run(["git", "remote", "get-url", "--push", "--all", "origin"])
+    origin = run(["git", "remote", "get-url", "--all", policy["remote"]])
+    push_origin = run(["git", "remote", "get-url", "--push", "--all", policy["remote"]])
     if origin.returncode != 0 or push_origin.returncode != 0:
         return result_emit("blocked", "blocked-unsafe", evidence, "origin remote identity is unavailable")
     evidence["origin_url"] = origin.stdout.strip()
@@ -135,7 +148,7 @@ def main() -> int:
         return result_emit("blocked", action, evidence, "branch has multiple or non-open pull requests")
 
     refspec = f"{args.expected_head}:refs/heads/{branch}"
-    pushed = run(["git", "push", "--set-upstream", "origin", refspec])
+    pushed = run(["git", "push", "--set-upstream", policy["remote"], refspec])
     push_failure_disposition = None
     if pushed.returncode != 0:
         _, push_failure_disposition = classify_push_failure(pushed.stderr)
@@ -146,7 +159,7 @@ def main() -> int:
     post_status = run(["git", "status", "--porcelain=v1"])
     if any(command.returncode != 0 for command in (post_branch, post_head, post_status)) or post_branch.stdout.strip() != branch or post_head.stdout.strip() != args.expected_head or post_status.stdout:
         return result_emit("blocked", "blocked-unsafe", evidence, "local branch, head, or clean state changed during publication")
-    remote = run(["git", "ls-remote", "--heads", "origin", branch])
+    remote = run(["git", "ls-remote", "--heads", policy["remote"], branch])
     if remote.returncode != 0:
         return result_emit("waiting", "waiting-external", evidence, remote.stderr.strip())
     remote_head, remote_valid = parse_remote_head(remote.stdout, branch)

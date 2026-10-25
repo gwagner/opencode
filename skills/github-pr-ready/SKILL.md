@@ -6,9 +6,12 @@ opencode_permission:
   shell:
     "python3 /code/skills/github-pr-ready/scripts/ready-pr.py *": allow
   external_directory:
+    "/code/skills/github_lifecycle_policy.py": allow
+    "/tmp/opencode/lifecycle-policy.json": allow
     "/code/skills/github_pr_lifecycle_common.py": allow
     "/code/skills/github-pr-ready/scripts/ready-pr.py": allow
 inputs:
+  - optional `/tmp/opencode/lifecycle-policy.json`
   - one open pull request with passed required checks
   - exact expected head branch, head commit, and base branch
   - expected GitHub repository from the current checkout
@@ -20,6 +23,8 @@ inputs:
 ## Inputs
 
 Require one open pull request with passed required checks, its exact expected head branch, head commit, and base branch, the expected GitHub repository from the current checkout, and an authenticated GitHub CLI.
+
+A caller MAY provide `/tmp/opencode/lifecycle-policy.json`; every invocation passes it as `--policy /tmp/opencode/lifecycle-policy.json`. It may change only validated repository-local names, sources, evidence IDs, check/visual allowlists, and delegate hints; exact-head, authenticated-actor, validation, no-auto-merge, manual-method, and fail-closed disambiguation invariants remain mandatory.
 
 ## Procedure
 

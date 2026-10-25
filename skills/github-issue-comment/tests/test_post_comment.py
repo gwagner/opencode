@@ -58,7 +58,7 @@ class PostCommentTests(unittest.TestCase):
             body_file = pathlib.Path(directory) / "comment.md"
             body_file.write_text(self.BODY if body is None else body)
             output = io.StringIO()
-            arguments = argv or ["post-comment.py", "--issue", "7", "--identity", "update-7"]
+            arguments = argv or ["post-comment.py", "--issue", "7", "--identity", "update-7", "--authorize-comment"]
             with (
                 mock.patch.object(MODULE, "BODY_FILE", body_file),
                 mock.patch.object(MODULE, "run", side_effect=fake_run),
@@ -117,6 +117,7 @@ class PostCommentTests(unittest.TestCase):
         argv = [
             "post-comment.py", "--issue", "7", "--identity", "completion:https://github.com/o/r/pull/3:abc",
             "--kind", "completion", "--pr", "https://github.com/o/r/pull/3", "--head", "abc",
+            "--authorize-comment",
         ]
         return_code, result, calls = self.run_main([], body=body, argv=argv)
         self.assertEqual(return_code, 2)

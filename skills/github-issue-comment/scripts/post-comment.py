@@ -11,6 +11,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from github_lifecycle_policy import add_authorization_argument, add_policy_argument, authorized, load_policy, policy_evidence
 from github_issue_comment_common import completion_comment_matches, current_comment_matches
 from github_pr_lifecycle_common import emit as result_emit, parse_object, run
 
@@ -62,8 +63,9 @@ def local_visual_body_matches(body: str, attachments: list[str]) -> bool:
     )
 
 
-def lifecycle_candidate(comment: dict, kind: str) -> bool:
-    prefix = "Lifecycle evidence:" if kind == "current" else "Lifecycle completion:"
+def lifecycle_candidate(comment: dict, kind: str, policy: dict | None = None) -> bool:
+    policy = policy or {"evidence": {"current_id": "current", "completion_id": "merged-pr"}}
+    prefix = f"Lifecycle evidence: {policy['evidence']['current_id']}" if kind == "current" else f"Lifecycle completion: {policy['evidence']['completion_id']}"
     return any(line.startswith(prefix) for line in (comment.get("body") or "").splitlines())
 
 
@@ -101,27 +103,27 @@ def local_attachment_body_matches(body: str, attachments: list[str]) -> bool:
     )
 
 
-def lifecycle_body_matches(body: str, kind: str, pr: str, head: str, attachments: list[str]) -> bool:
+def lifecycle_body_matches(body: str, kind: str, pr: str, head: str, attachments: list[str], policy: dict | None = None) -> bool:
     actor = "preflight"
     comment = {"author": {"login": actor}, "body": body}
     if kind == "completion":
-        return not attachments and completion_comment_matches(comment, pr, head, actor)
+        return not attachments and completion_comment_matches(comment, pr, head, actor, policy)
     if "Visual evidence: not required" in body.splitlines():
-        return not attachments and current_comment_matches(comment, pr, head, actor)
+        return not attachments and current_comment_matches(comment, pr, head, actor, policy)
     if not local_visual_body_matches(body, attachments):
         return False
     uploaded_body = re.sub(r"\]\([^)]+\)", "](https://github.com/user-attachments/assets/preflight)", body)
-    return current_comment_matches({"author": {"login": actor}, "body": uploaded_body}, pr, head, actor)
+    return current_comment_matches({"author": {"login": actor}, "body": uploaded_body}, pr, head, actor, policy)
 
 
-def exact_existing_match(comment: dict, kind: str, body: str, actor: str, pr: str | None, head: str | None, attachments: list[str]) -> bool:
+def exact_existing_match(comment: dict, kind: str, body: str, actor: str, pr: str | None, head: str | None, attachments: list[str], policy: dict | None = None) -> bool:
     if (comment.get("author", {}).get("login") or "").casefold() != actor.casefold():
         return False
     if kind == "generic":
         return attached_body_matches(body, comment.get("body") or "", attachments) if attachments else comment.get("body") == body
     assert pr is not None and head is not None
     validator = current_comment_matches if kind == "current" else completion_comment_matches
-    if not validator(comment, pr, head, actor):
+    if not validator(comment, pr, head, actor, policy):
         return False
     if kind == "completion" or "Visual evidence: not required" in body.splitlines():
         return comment.get("body") == body
@@ -139,8 +141,27 @@ def main() -> int:
     parser.add_argument("--pr")
     parser.add_argument("--head")
     parser.add_argument("--attach", action="append", default=[])
+    parser.add_argument("--visual-manifest")
+    add_policy_argument(parser)
+    add_authorization_argument(parser, "comment")
     args = parser.parse_args()
-    evidence: dict[str, object] = {"identity": args.identity, "kind": args.kind}
+    try:
+        policy = load_policy(args.policy)
+    except ValueError as exc:
+        return result_emit("blocked", "blocked-unsafe", {}, str(exc))
+    evidence: dict[str, object] = {**policy_evidence(policy), "identity": args.identity, "kind": args.kind}
+    if not authorized(policy, "comment", args.authorize_comment):
+        return result_emit("blocked", "blocked-unsafe", evidence, "explicit comment authorization is required")
+    if args.visual_manifest:
+        try:
+            manifest = json.loads(Path(args.visual_manifest).read_text())
+        except (OSError, json.JSONDecodeError) as exc:
+            return result_emit("blocked", "blocked-unsafe", evidence, f"invalid visual manifest: {exc}")
+        if not isinstance(manifest, dict) or set(manifest) != set(policy["validation"]["visual_scenarios"]):
+            return result_emit("blocked", "blocked-unsafe", evidence, "visual manifest scenarios do not exactly match policy")
+        if any(not isinstance(pair, dict) or set(pair) != {"before", "after"} or any(not isinstance(path, str) or not Path(path).is_absolute() for path in pair.values()) for pair in manifest.values()):
+            return result_emit("blocked", "blocked-unsafe", evidence, "visual manifest must contain scenario-keyed before/after paths")
+        evidence["visual_manifest"] = manifest
     try:
         body = BODY_FILE.read_text()
         if not body:
@@ -153,7 +174,7 @@ def main() -> int:
                 return result_emit("blocked", "blocked-unsafe", evidence, "lifecycle-controlled markers require lifecycle comment validation")
             if args.attach and not local_attachment_body_matches(body, args.attach):
                 return result_emit("blocked", "blocked-unsafe", evidence, "generic attachment identity is invalid")
-        elif not args.pr or not args.head or args.identity != f"{args.kind}:{args.pr}:{args.head}" or not lifecycle_body_matches(body, args.kind, args.pr, args.head, args.attach):
+        elif not args.pr or not args.head or args.identity != f"{args.kind}:{args.pr}:{args.head}" or not lifecycle_body_matches(body, args.kind, args.pr, args.head, args.attach, policy):
             return result_emit("blocked", "blocked-unsafe", evidence, "lifecycle comment body, identity, or attachments are invalid")
 
         auth = run(["gh", "auth", "status"])
@@ -200,11 +221,11 @@ def main() -> int:
             candidates = [comment for comment in comments if f"OpenCode-Comment-ID: {args.identity}" in comment["body"].splitlines()]
         else:
             assert args.pr is not None and args.head is not None
-            current_comments = [comment for comment in comments if lifecycle_candidate(comment, "current")]
-            completion_comments = [comment for comment in comments if lifecycle_candidate(comment, "completion")]
-            if any(not current_comment_matches(comment, args.pr, args.head, actor) for comment in current_comments):
+            current_comments = [comment for comment in comments if lifecycle_candidate(comment, "current", policy)]
+            completion_comments = [comment for comment in comments if lifecycle_candidate(comment, "completion", policy)]
+            if any(not current_comment_matches(comment, args.pr, args.head, actor, policy) for comment in current_comments):
                 return result_emit("blocked", "blocked-unsafe", evidence, "current lifecycle evidence is malformed or has the wrong actor")
-            if any(not completion_comment_matches(comment, args.pr, args.head, actor) for comment in completion_comments):
+            if any(not completion_comment_matches(comment, args.pr, args.head, actor, policy) for comment in completion_comments):
                 return result_emit("blocked", "blocked-unsafe", evidence, "completion lifecycle evidence is malformed or has the wrong actor")
             if len({comment["body"] for comment in current_comments}) > 1 or len({comment["body"] for comment in completion_comments}) > 1:
                 return result_emit("blocked", "blocked-unsafe", evidence, "lifecycle evidence conflicts")
@@ -212,8 +233,8 @@ def main() -> int:
                 return result_emit("blocked", "blocked-unsafe", evidence, "completion evidence exists before current evidence is established")
             if args.kind == "completion" and not current_comments:
                 return result_emit("blocked", "blocked-unsafe", evidence, "completion comment requires exact current lifecycle evidence")
-            candidates = [comment for comment in comments if lifecycle_candidate(comment, args.kind)]
-        matches = [comment for comment in candidates if exact_existing_match(comment, args.kind, body, actor, args.pr, args.head, args.attach)]
+            candidates = [comment for comment in comments if lifecycle_candidate(comment, args.kind, policy)]
+        matches = [comment for comment in candidates if exact_existing_match(comment, args.kind, body, actor, args.pr, args.head, args.attach, policy)]
         if candidates and len(matches) != len(candidates):
             return result_emit("blocked", "blocked-unsafe", evidence, "comment idempotency identity conflicts with existing evidence")
         if len(matches) == 1:
@@ -237,7 +258,7 @@ def main() -> int:
         if any(after_by_id.get(identifier) != comment for identifier, comment in before_by_id.items()):
             return result_emit("blocked", "blocked-unsafe", evidence, "preexisting issue comments changed during mutation")
         new_comments = [comment for comment in after_comments if comment["id"] not in set(ids)]
-        new_matches = [comment for comment in new_comments if exact_existing_match(comment, args.kind, body, actor, args.pr, args.head, args.attach)]
+        new_matches = [comment for comment in new_comments if exact_existing_match(comment, args.kind, body, actor, args.pr, args.head, args.attach, policy)]
         if len(new_matches) != 1 or len(new_comments) != 1:
             disposition = "waiting-external" if not new_comments else "blocked-unsafe"
             status = "waiting" if disposition == "waiting-external" else "blocked"

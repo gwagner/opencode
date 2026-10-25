@@ -15,7 +15,7 @@ def exact_controlled_line(lines: list[str], prefix: str, expected: str) -> bool:
     return [line for line in lines if line.startswith(prefix)] == [expected]
 
 
-def visual_evidence_matches(lines: list[str]) -> bool:
+def visual_evidence_matches(lines: list[str], scenarios: list[str] | None = None) -> bool:
     visual = [line for line in lines if line.startswith("Visual evidence:")]
     if visual == ["Visual evidence: not required"]:
         return not any(line.startswith("![Before:") or line.startswith("![After:") for line in lines)
@@ -30,31 +30,36 @@ def visual_evidence_matches(lines: list[str]) -> bool:
     if before_match is None or after_match is None or before_match.group(1) != after_match.group(1):
         return False
     urls = (urlparse(before_match.group(2)), urlparse(after_match.group(2)))
-    return all(url.hostname == "github.com" and url.path.startswith("/user-attachments/") for url in urls)
+    return (
+        all(url.hostname == "github.com" and url.path.startswith("/user-attachments/") for url in urls)
+        and (not scenarios or before_match.group(1) in scenarios)
+    )
 
 
-def current_comment_matches(comment: dict, url: str, head: str, actor: str) -> bool:
+def current_comment_matches(comment: dict, url: str, head: str, actor: str, policy: dict | None = None) -> bool:
+    policy = policy or {"evidence": {"current_id": "current"}, "validation": {"visual_scenarios": []}}
     lines = (comment.get("body") or "").splitlines()
     delivered = [line for line in lines if line.startswith("Delivered outcome:")]
     return (
         comment_author_matches(comment, actor)
-        and exact_controlled_line(lines, "Lifecycle evidence:", "Lifecycle evidence: current")
+        and exact_controlled_line(lines, "Lifecycle evidence:", f"Lifecycle evidence: {policy['evidence']['current_id']}")
         and len(delivered) == 1
         and bool(delivered[0].removeprefix("Delivered outcome:").strip())
         and exact_controlled_line(lines, "Pull request:", f"Pull request: {url}")
         and exact_controlled_line(lines, "Head commit:", f"Head commit: {head}")
         and exact_controlled_line(lines, "Delegate project-validation:", "Delegate project-validation: passed")
         and exact_controlled_line(lines, "Required checks:", "Required checks: passed")
-        and visual_evidence_matches(lines)
+        and visual_evidence_matches(lines, policy["validation"]["visual_scenarios"])
     )
 
 
-def completion_comment_matches(comment: dict, url: str, head: str, actor: str) -> bool:
+def completion_comment_matches(comment: dict, url: str, head: str, actor: str, policy: dict | None = None) -> bool:
+    policy = policy or {"evidence": {"completion_id": "merged-pr"}}
     lines = (comment.get("body") or "").splitlines()
     cleanup = {"Remote cleanup: deleted", "Remote cleanup: already-absent"}
     return (
         comment_author_matches(comment, actor)
-        and exact_controlled_line(lines, "Lifecycle completion:", "Lifecycle completion: merged-pr")
+        and exact_controlled_line(lines, "Lifecycle completion:", f"Lifecycle completion: {policy['evidence']['completion_id']}")
         and exact_controlled_line(lines, "Pull request:", f"Pull request: {url}")
         and exact_controlled_line(lines, "Head commit:", f"Head commit: {head}")
         and exact_controlled_line(lines, "Merge result:", "Merge result: merged")

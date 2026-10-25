@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from github_lifecycle_policy import add_policy_argument, load_policy, policy_evidence
 from github_pr_lifecycle_common import (
     emit as result_emit,
     head_repository_matches,
@@ -39,7 +40,7 @@ def issue_repository_matches(repository: dict, issue: dict) -> bool:
 
 
 
-def classify(issue_state: str, prs: list[dict], remote_branch_state: str, comments: list[dict], actor: str) -> tuple[str, str | None, str | None]:
+def classify(issue_state: str, prs: list[dict], remote_branch_state: str, comments: list[dict], actor: str, policy: dict | None = None) -> tuple[str, str | None, str | None]:
     if issue_state not in ("OPEN", "CLOSED"):
         return "blocked-unsafe", None, "unsupported issue state"
     if len(prs) > 1:
@@ -68,12 +69,12 @@ def classify(issue_state: str, prs: list[dict], remote_branch_state: str, commen
     url = pr.get("url")
     controlled_current = [comment for comment in comments if any(line.startswith("Lifecycle evidence:") for line in (comment.get("body") or "").splitlines())]
     controlled_completion = [comment for comment in comments if any(line.startswith("Lifecycle completion:") for line in (comment.get("body") or "").splitlines())]
-    if any(not current_comment_matches(comment, url, head, actor) for comment in controlled_current):
+    if any(not current_comment_matches(comment, url, head, actor, policy) for comment in controlled_current):
         return "blocked-unsafe", None, "current lifecycle evidence is malformed or has the wrong actor"
-    if any(not completion_comment_matches(comment, url, head, actor) for comment in controlled_completion):
+    if any(not completion_comment_matches(comment, url, head, actor, policy) for comment in controlled_completion):
         return "blocked-unsafe", None, "completion lifecycle evidence is malformed or has the wrong actor"
-    current = [comment for comment in comments if current_comment_matches(comment, url, head, actor)]
-    completion = [comment for comment in comments if completion_comment_matches(comment, url, head, actor)]
+    current = [comment for comment in comments if current_comment_matches(comment, url, head, actor, policy)]
+    completion = [comment for comment in comments if completion_comment_matches(comment, url, head, actor, policy)]
     if len({comment.get("body") or "" for comment in current}) > 1:
         return "blocked-unsafe", None, "current lifecycle evidence conflicts"
     if len({comment.get("body") or "" for comment in completion}) > 1:
@@ -92,13 +93,19 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--issue", required=True)
     parser.add_argument("--branch")
+    parser.add_argument("--pr", help="exact pull-request URL or number to recover")
     parser.add_argument("--validated-head")
     parser.add_argument("--completion-pr")
     parser.add_argument("--completion-head")
     parser.add_argument("--completion-branch")
     parser.add_argument("--completion-merge-commit")
+    add_policy_argument(parser)
     args = parser.parse_args()
-    evidence: dict[str, object] = {}
+    try:
+        policy = load_policy(args.policy)
+    except ValueError as exc:
+        return result_emit("blocked", "blocked-unsafe", {}, str(exc))
+    evidence: dict[str, object] = policy_evidence(policy)
     completion_identity = (args.completion_pr, args.completion_head, args.completion_branch, args.completion_merge_commit)
     if any(completion_identity) and not all(completion_identity):
         return result_emit("blocked", "blocked-unsafe", evidence, "completion revalidation identity is incomplete", None)
@@ -113,8 +120,8 @@ def main() -> int:
     if not isinstance(repository, dict) or not repository.get("nameWithOwner") or not repository.get("url"):
         return result_emit("blocked", "blocked-unsafe", evidence, "repository identity is incomplete", None)
     evidence["repository"] = repository
-    origin = run(["git", "remote", "get-url", "--all", "origin"])
-    push_origin = run(["git", "remote", "get-url", "--push", "--all", "origin"])
+    origin = run(["git", "remote", "get-url", "--all", policy["remote"]])
+    push_origin = run(["git", "remote", "get-url", "--push", "--all", policy["remote"]])
     if origin.returncode != 0 or push_origin.returncode != 0:
         return result_emit("blocked", "blocked-unsafe", evidence, "origin remote identity is unavailable", None)
     evidence["origin_url"] = origin.stdout.strip()
@@ -158,7 +165,7 @@ def main() -> int:
         return result_emit("blocked", "blocked-unsafe", evidence, "pull-request list shape is invalid", None)
     marker = f"Refs #{issue_record['number']}"
     issue_matches = [record for record in candidates if marker in (record.get("body") or "").splitlines()]
-    wrong_base = [record for record in issue_matches if record.get("baseRefName") != "main"]
+    wrong_base = [record for record in issue_matches if record.get("baseRefName") != policy["base_branch"]]
     if wrong_base:
         evidence["pull_requests"] = issue_matches
         return result_emit("blocked", "blocked-unsafe", evidence, "matching pull-request base is invalid", None)
@@ -167,6 +174,11 @@ def main() -> int:
         evidence["pull_requests"] = issue_matches
         return result_emit("blocked", "blocked-unsafe", evidence, "matching pull-request lifecycle markers are conflicting or invalid", None)
     prs = issue_matches
+    if args.pr:
+        exact = [record for record in prs if str(record.get("number")) == args.pr or record.get("url") == args.pr]
+        if len(exact) != 1:
+            return result_emit("blocked", "blocked-unsafe", evidence, "exact pull-request selector does not resolve one issue pull request", None)
+        prs = exact
     if any(not (repository_matches(repository, record) and head_repository_matches(repository, record)) for record in prs):
         evidence["pull_requests"] = prs
         return result_emit("blocked", "blocked-unsafe", evidence, "matching pull-request repository identity is invalid", None)
@@ -198,11 +210,11 @@ def main() -> int:
         if current_branch.returncode != 0:
             return result_emit("blocked", "blocked-unsafe", evidence, "cannot derive the linked worktree branch", None)
         derived_branch = current_branch.stdout.strip()
-        if derived_branch and derived_branch != "main":
+        if derived_branch and derived_branch != policy["base_branch"]:
             branch = derived_branch
             evidence["branch_source"] = "current-linked-worktree"
     if branch:
-        remote = run(["git", "ls-remote", "--heads", "origin", branch])
+        remote = run(["git", "ls-remote", "--heads", policy["remote"], branch])
         if remote.returncode != 0:
             return result_emit("waiting", "waiting-external", evidence, remote.stderr.strip())
         remote_head, remote_valid = parse_remote_head(remote.stdout, branch)
@@ -231,7 +243,7 @@ def main() -> int:
                     return result_emit("blocked", "blocked-unsafe", evidence, "remote branch without a pull request lacks retained validated-head evidence", None)
             if prs and remote_head != prs[0].get("headRefOid"):
                 return result_emit("blocked", "blocked-unsafe", evidence, "remote branch no longer points to the pull-request head", None)
-    disposition, next_stage, blocker = classify(issue_record.get("state"), prs, remote_branch_state, comments, actor)
+    disposition, next_stage, blocker = classify(issue_record.get("state"), prs, remote_branch_state, comments, actor, policy)
     evidence["pull_requests"] = prs
     evidence["remote_branch_state"] = remote_branch_state
     if prs and prs[0].get("state") == "MERGED" and remote_branch_state == "already-absent":

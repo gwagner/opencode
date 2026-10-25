@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from github_lifecycle_policy import add_authorization_argument, add_policy_argument, authorized, load_policy, policy_evidence
 from github_pr_lifecycle_common import (
     emit as result_emit,
     head_repository_matches,
@@ -40,11 +41,25 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--pr", required=True)
     parser.add_argument("--expected-head", required=True)
-    parser.add_argument("--expected-base", default="main")
-    parser.add_argument("--provenance", choices=("cli", "openchamber", "github-issue"), required=True)
+    parser.add_argument("--expected-base", default=None)
+    parser.add_argument("--provenance", required=True)
     parser.add_argument("--issue")
+    add_policy_argument(parser)
+    add_authorization_argument(parser, "cleanup")
     args = parser.parse_args()
-    evidence: dict[str, object] = {}
+    try:
+        policy = load_policy(args.policy)
+    except ValueError as exc:
+        return result_emit("blocked", "blocked-unsafe", {}, str(exc))
+    if args.expected_base is None:
+        args.expected_base = policy["base_branch"]
+    evidence: dict[str, object] = policy_evidence(policy)
+    if policy["remote_cleanup"] == "retain":
+        return result_emit("passed", "retained", evidence, next_stage="completion")
+    if not authorized(policy, "cleanup", args.authorize_cleanup):
+        return result_emit("blocked", "blocked-unsafe", evidence, "explicit cleanup authorization is required")
+    if args.provenance not in policy["provenance"]:
+        return result_emit("blocked", "blocked-unsafe", evidence, "provenance is not permitted by policy")
     if (args.provenance == "github-issue") != bool(args.issue) or (args.issue and not args.issue.lstrip("#").isdigit()):
         return result_emit("blocked", "blocked-unsafe", evidence, "numeric issue identity is required only for github-issue provenance")
 
@@ -57,8 +72,8 @@ def main() -> int:
         return result_emit("blocked", "blocked-unsafe", evidence, "repository identity is malformed or incomplete")
     evidence["repository"] = repository
 
-    origin = run(["git", "remote", "get-url", "--all", "origin"])
-    push_origin = run(["git", "remote", "get-url", "--push", "--all", "origin"])
+    origin = run(["git", "remote", "get-url", "--all", policy["remote"]])
+    push_origin = run(["git", "remote", "get-url", "--push", "--all", policy["remote"]])
     if origin.returncode != 0 or push_origin.returncode != 0:
         return result_emit("blocked", "blocked-unsafe", evidence, "origin remote identity is unavailable")
     evidence["origin_url"] = origin.stdout.strip()
@@ -83,7 +98,7 @@ def main() -> int:
     if branch == args.expected_base:
         return result_emit("blocked", "blocked-unsafe", evidence, "refusing to delete the base branch")
 
-    before = run(["git", "ls-remote", "--heads", "origin", branch])
+    before = run(["git", "ls-remote", "--heads", policy["remote"], branch])
     if before.returncode != 0:
         return result_emit("waiting", "waiting-external", evidence, before.stderr.strip())
     remote_head, valid = parse_remote_head(before.stdout, branch)
@@ -96,12 +111,12 @@ def main() -> int:
         return result_emit("blocked", "blocked-unsafe", evidence, "remote branch no longer points to the merged head")
 
     lease = f"--force-with-lease=refs/heads/{branch}:{args.expected_head}"
-    deleted = run(["git", "push", lease, "--delete", "origin", branch])
+    deleted = run(["git", "push", lease, "--delete", policy["remote"], branch])
     evidence["delete_lease"] = lease
     evidence["delete_exit_code"] = deleted.returncode
     evidence["delete_stdout"] = deleted.stdout
     evidence["delete_stderr"] = deleted.stderr
-    after = run(["git", "ls-remote", "--heads", "origin", branch])
+    after = run(["git", "ls-remote", "--heads", policy["remote"], branch])
     if after.returncode != 0:
         return result_emit("waiting", "waiting-external", evidence, after.stderr.strip())
     remaining_head, remaining_valid = parse_remote_head(after.stdout, branch)

@@ -55,7 +55,7 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | deterministic-skill-tree-authoring | Designs concise, recursive skill and agent workflows with explicit ordering, choices, and completion gates. |
 | end-user-experience | Keeps planning, design, implementation, and testing focused on successful, clear, recoverable end-user outcomes. |
 | evidence-traceability | Adds stable source citations, confidence, status classification, and traceability matrices to application specifications. |
-| feature-branch-setup | Creates one clean local feature branch from local main before a bounded SDLC change. |
+| feature-branch-setup | Creates one clean local policy-selected feature branch before a bounded SDLC change. |
 | frontend-behavior-testing | Implements focused tests for approved frontend interaction, state, validation, error, and recovery behavior. |
 | frontend-component-modeling | Designs or reconstructs frontend routes, screens, TypeScript components, Tailwind conventions, states, events, validation, accessibility, and backend dependencies. |
 | frontend-impact-validation | Evaluates complete production-shaped browser-impact evidence using existing project runtime and browser-testing infrastructure. |
@@ -67,7 +67,7 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | git-change-baseline | Records a safe ownership baseline before task-owned editing begins. |
 | git-delegated-change-commit | Reviews and commits one validated delegate-owned change batch from an established clean ownership baseline. |
 | github-blocked-issue-resolution | Reconciles one GitHub work issue's blocked state and safely promotes it when every execution blocker is resolved. |
-| github-issue-capture | Creates or deduplicates one contract-validated ready GitHub work issue in the current checkout's repository. |
+| github-issue-capture | Creates or deduplicates one contract-validated ready or policy-authorized blocked GitHub work issue in the current checkout's repository. |
 | github-issue-close | Closes one existing GitHub issue and verifies its closed state. |
 | github-issue-comment | Posts one verified progress or completion comment to an existing GitHub issue. |
 | github-issue-deletion | Permanently deletes one GitHub issue only after explicit issue-specific confirmation. |
@@ -125,6 +125,7 @@ Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exi
 
 ## Workflow ownership
 
+- An optional `/tmp/opencode/lifecycle-policy.json` supplies a validated version-1 lifecycle override: base, feature prefix, sources, remote, evidence IDs, check and visual allowlists, and delegate hints. It cannot relax exact-head/provenance, explicit authorization, validation, authenticated-actor, manual-squash/no-auto-merge, rejection-open, sequential-commit, or fail-closed recovery invariants.
 - `sdlc-orchestrator` is the sole code-change lifecycle owner for explicit `cli`, `openchamber`, and `github-issue` entry points. Every successful run publishes one pull request and ends with a verified user-performed manual squash merge or exact-head rejection.
 - CLI preparation creates a clean `feature/*` branch and can recover a current non-base CLI branch. Direct OpenChamber preparation validates or recovers its existing linked worktree and branch. Issue preparation additionally recovers GitHub state and verifies issue readiness, route, and dependencies.
 - Requirements route to `prd-strategist`, shared architecture and cross-feature decisions to `app-spec-architect`, bounded feature contracts to `code-spec-engineer`, defects to `bug-fixer`, and other implementation to `code-implementor`.
@@ -136,6 +137,19 @@ Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exi
 - Code-writing delegates end with `project-validation`. Unsupported project-native validation commands require confirmation instead of being silently unavailable.
 - Browser-capture commands and comparison behavior live in `browser-visual-capture`; agents only decide when the skill applies.
 - Frontend component examples live behind `frontend-reference-examples`: agents read its catalog, then only a matching component document. References never override approved requirements, specifications, or repository conventions.
+
+### Lifecycle policy overrides
+
+Every lifecycle script accepts `--policy /tmp/opencode/lifecycle-policy.json`. Omit it for the documented defaults. The JSON object is versioned (`version: 1`), rejects unknown keys, and records its effective value in lifecycle evidence.
+
+| Section | Policy fields | Rule |
+| --- | --- | --- |
+| Repository | `base_branch`, `feature_branch_prefix`, `provenance`, `remote` | Selects the repository-local lifecycle names and permitted entry sources. |
+| Authorization | `authorization.commit`, `publication`, `cleanup`, `comment`, `closure` | Declares the required gate; unsafe substitutions are rejected. |
+| Evidence | `evidence.current_id`, `completion_id`, `require_authenticated_actor`, `actor_transfer` | Allows named evidence IDs while requiring one authenticated actor for current and completion evidence. |
+| Decision/recovery | `manual_merge`, `pull_request`, `recovery` | Manual squash, ready/rejection-open, exact head, and block-on-ambiguity remain required. |
+| Validation | `validation.required_check_allowlist`, `visual_scenarios` | When nonempty, blocks unallowlisted checks or visual scenarios. |
+| Delegation/intake | `delegates.hints`, `commit_strategy`, `blocked_issue_creation` | Carries delegate hints; commits remain sequential/reviewed and blocked issue creation remains forbidden. |
 
 ## Container note
 

@@ -91,6 +91,16 @@ class PublicationTests(unittest.TestCase):
         self.assertEqual(return_code, 2)
         self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
 
+    def test_publication_without_authorization_is_denied_before_external_commands(self):
+        argv = ["publish-pr.py", "--provenance", "cli", "--expected-head", "h", "--validated-head", "h", "--title", "x", "--body", "x"]
+        output = io.StringIO()
+        with mock.patch.object(MODULE, "run", side_effect=AssertionError("publication must remain local and committed")), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+            return_code = MODULE.main()
+        result = json.loads(output.getvalue())
+        self.assertEqual(return_code, 2)
+        self.assertEqual(result["disposition"], "blocked-unsafe")
+        self.assertEqual(result["blocker"], "explicit publication authorization is required")
+
     def test_publication_pushes_only_validated_commit_refspec(self):
         calls = []
         list_results = iter([[], [self.pull_request()]])
@@ -119,7 +129,7 @@ class PublicationTests(unittest.TestCase):
                 return self.completed(args, "https://github.com/o/r/pull/1\n")
             raise AssertionError(args)
 
-        argv = ["publish-pr.py", "--provenance", "cli", "--expected-head", "h", "--validated-head", "h", "--title", "x", "--body", "x"]
+        argv = ["publish-pr.py", "--provenance", "cli", "--expected-head", "h", "--validated-head", "h", "--title", "x", "--body", "x", "--authorize-publication"]
         output = io.StringIO()
         with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
             return_code = MODULE.main()
@@ -153,7 +163,7 @@ class PublicationTests(unittest.TestCase):
                 return self.completed(args, "git@github.com:o/r.git\n")
             raise AssertionError(args)
 
-        argv = ["publish-pr.py", "--provenance", "cli", "--expected-head", "h", "--validated-head", "h", "--title", "x", "--body", "x"]
+        argv = ["publish-pr.py", "--provenance", "cli", "--expected-head", "h", "--validated-head", "h", "--title", "x", "--body", "x", "--authorize-publication"]
         output = io.StringIO()
         with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
             return_code = MODULE.main()
@@ -186,7 +196,7 @@ class PublicationTests(unittest.TestCase):
                 return self.completed(args, "git@github.com:o/r.git\n")
             raise AssertionError(args)
 
-        argv = ["publish-pr.py", "--provenance", "cli", "--expected-head", "h", "--validated-head", "h", "--title", "x", "--body", "x"]
+        argv = ["publish-pr.py", "--provenance", "cli", "--expected-head", "h", "--validated-head", "h", "--title", "x", "--body", "x", "--authorize-publication"]
         output = io.StringIO()
         with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
             return_code = MODULE.main()

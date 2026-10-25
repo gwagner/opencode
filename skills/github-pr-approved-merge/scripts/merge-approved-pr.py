@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from github_lifecycle_policy import add_policy_argument, load_policy, policy_evidence
 from github_pr_lifecycle_common import (
     emit as result_emit,
     head_repository_matches,
@@ -38,17 +39,24 @@ def main() -> int:
     parser.add_argument("--pr", required=True)
     parser.add_argument("--expected-head", required=True)
     parser.add_argument("--expected-branch", required=True)
-    parser.add_argument("--expected-base", default="main")
-    parser.add_argument("--confirmed-manual-squash", action="store_true")
+    parser.add_argument("--expected-base", default=None)
+    parser.add_argument("--confirmed-manual-method", choices=("squash", "merge", "rebase"))
     parser.add_argument("--max-rechecks", type=int, default=2)
     parser.add_argument("--wait-seconds", type=int, default=2)
+    add_policy_argument(parser)
     args = parser.parse_args()
-    evidence: dict[str, object] = {}
-    if not args.confirmed_manual_squash:
-        return result_emit("blocked", "blocked-unsafe", evidence, "fresh explicit manual-squash attestation is required")
+    try:
+        policy = load_policy(args.policy)
+    except ValueError as exc:
+        return result_emit("blocked", "blocked-unsafe", {}, str(exc))
+    if args.expected_base is None:
+        args.expected_base = policy["base_branch"]
+    evidence: dict[str, object] = policy_evidence(policy)
+    if args.confirmed_manual_method != policy["manual_merge"]["method"]:
+        return result_emit("blocked", "blocked-unsafe", evidence, "fresh explicit attestation of the policy manual merge method is required")
     if args.max_rechecks < 0 or args.wait_seconds < 0:
         return result_emit("blocked", "blocked-unsafe", evidence, "recheck bounds must be nonnegative")
-    evidence["user_attestation"] = "claimed-manual-squash-of-exact-pr"
+    evidence["user_attestation"] = f"claimed-manual-{args.confirmed_manual_method}-of-exact-pr"
     evidence["verification_scope"] = "exact pull-request merge state only; merge method and actor are not technically proven"
 
     auth = run(["gh", "auth", "status"])
@@ -60,8 +68,8 @@ def main() -> int:
         return result_emit("blocked", "blocked-unsafe", evidence, "repository identity is malformed or incomplete")
     evidence["repository"] = repository
 
-    origin = run(["git", "remote", "get-url", "--all", "origin"])
-    push_origin = run(["git", "remote", "get-url", "--push", "--all", "origin"])
+    origin = run(["git", "remote", "get-url", "--all", policy["remote"]])
+    push_origin = run(["git", "remote", "get-url", "--push", "--all", policy["remote"]])
     if origin.returncode != 0 or push_origin.returncode != 0:
         return result_emit("blocked", "blocked-unsafe", evidence, "origin remote identity is unavailable")
     evidence["origin_url"] = origin.stdout.strip()

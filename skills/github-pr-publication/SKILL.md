@@ -6,9 +6,12 @@ opencode_permission:
   shell:
     "python3 /code/skills/github-pr-publication/scripts/publish-pr.py *": allow
   external_directory:
+    "/code/skills/github_lifecycle_policy.py": allow
+    "/tmp/opencode/lifecycle-policy.json": allow
     "/code/skills/github_pr_lifecycle_common.py": allow
     "/code/skills/github-pr-publication/scripts/publish-pr.py": allow
 inputs:
+  - optional `/tmp/opencode/lifecycle-policy.json`
   - provenance: cli, openchamber, or github-issue
   - current non-main branch and expected committed head
   - retained passed project-validation and commit evidence for that exact head
@@ -22,6 +25,8 @@ inputs:
 ## Inputs
 
 Require provenance `cli`, `openchamber`, or `github-issue`; the current non-`main` branch and expected committed head; retained passed `project-validation` and commit evidence naming that exact head; a caller-provided pull-request title and body; an originating issue number exactly when provenance is `github-issue`; and an authenticated GitHub CLI.
+
+A caller MAY provide `/tmp/opencode/lifecycle-policy.json`; every invocation passes it as `--policy /tmp/opencode/lifecycle-policy.json`. It may change only validated repository-local names, sources, evidence IDs, check/visual allowlists, and delegate hints; exact-head, authenticated-actor, validation, no-auto-merge, manual-method, and fail-closed disambiguation invariants remain mandatory.
 
 ## Procedure
 

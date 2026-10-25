@@ -7,6 +7,8 @@ opencode_permission:
     "python3 /code/skills/github-issue-comment/scripts/post-comment.py *": allow
     "rm -f /tmp/opencode/github-issue-manager-comment.md": allow
   external_directory:
+    "/code/skills/github_lifecycle_policy.py": allow
+    "/tmp/opencode/lifecycle-policy.json": allow
     "/code/skills/github_issue_comment_common.py": allow
     "/code/skills/github_pr_lifecycle_common.py": allow
     "/code/skills/github-issue-comment/scripts/post-comment.py": allow
@@ -14,6 +16,7 @@ opencode_permission:
   edit:
     "/tmp/opencode/github-issue-manager-comment.md": allow
 inputs:
+  - optional `/tmp/opencode/lifecycle-policy.json`
   - one existing GitHub issue URL or number
   - current Git checkout for the issue repository
   - one caller-provided comment body
@@ -27,6 +30,8 @@ inputs:
 ## Inputs
 
 Require one existing GitHub issue URL or number, the current Git checkout for its repository, one caller-provided comment body with a stable caller-supplied idempotency identity, optional caller-provided image or video attachment paths under `/tmp/opencode`, and an authenticated GitHub CLI version that supports `gh issue comment --attach`. A non-lifecycle body must contain exactly one `OpenCode-Comment-ID: <identity>` line. Lifecycle identity is exactly `current:<pr>:<head>` or `completion:<pr>:<head>` and requires those exact PR and head inputs.
+
+A caller MAY provide `/tmp/opencode/lifecycle-policy.json`; every invocation passes it as `--policy /tmp/opencode/lifecycle-policy.json`. It may change only validated repository-local names, sources, evidence IDs, check/visual allowlists, and delegate hints; exact-head, authenticated-actor, validation, no-auto-merge, manual-method, and fail-closed disambiguation invariants remain mandatory.
 
 ## Procedure
 

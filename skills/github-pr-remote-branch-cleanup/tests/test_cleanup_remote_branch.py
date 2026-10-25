@@ -113,7 +113,7 @@ class CleanupTests(unittest.TestCase):
             raise AssertionError(args)
 
         output = io.StringIO()
-        argv = ["cleanup-remote-branch.py", "--pr", "1", "--expected-head", "h", "--provenance", "cli"]
+        argv = ["cleanup-remote-branch.py", "--pr", "1", "--expected-head", "h", "--provenance", "cli", "--authorize-cleanup"]
         with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 2)
@@ -150,7 +150,7 @@ class CleanupTests(unittest.TestCase):
             raise AssertionError(args)
 
         output = io.StringIO()
-        argv = ["cleanup-remote-branch.py", "--pr", "1", "--expected-head", "h", "--provenance", "cli"]
+        argv = ["cleanup-remote-branch.py", "--pr", "1", "--expected-head", "h", "--provenance", "cli", "--authorize-cleanup"]
         with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 2)
@@ -193,6 +193,7 @@ class CleanupTests(unittest.TestCase):
             "h",
             "--provenance",
             "cli",
+            "--authorize-cleanup",
         ]
         with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
             return_code = MODULE.main()
@@ -235,7 +236,7 @@ class CleanupTests(unittest.TestCase):
             raise AssertionError(args)
 
         output = io.StringIO()
-        argv = ["cleanup-remote-branch.py", "--pr", "1", "--expected-head", "h", "--provenance", "cli"]
+        argv = ["cleanup-remote-branch.py", "--pr", "1", "--expected-head", "h", "--provenance", "cli", "--authorize-cleanup"]
         with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 0)
@@ -276,7 +277,7 @@ class CleanupTests(unittest.TestCase):
             raise AssertionError(args)
 
         output = io.StringIO()
-        argv = ["cleanup-remote-branch.py", "--pr", "1", "--expected-head", "h", "--provenance", "cli"]
+        argv = ["cleanup-remote-branch.py", "--pr", "1", "--expected-head", "h", "--provenance", "cli", "--authorize-cleanup"]
         with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
             return_code = MODULE.main()
         result = json.loads(output.getvalue())

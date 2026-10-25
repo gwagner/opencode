@@ -23,6 +23,7 @@ permission:
     "gh label create openchamber:blocked --description Blocked-do-not-start-in-OpenChamber --color B60205": allow
     "gh issue list --state open --limit 1000 --json number,title,body,labels,url": allow
     "gh issue create --title * --body-file /tmp/opencode/github-issue-manager-issue.md --label openchamber:ready": allow
+    "gh issue create --title * --body-file /tmp/opencode/github-issue-manager-issue.md --label openchamber:blocked": allow
     "gh issue view * --json number,title,body,labels,state,url": allow
     "gh issue view * --json number,title,body,labels,state,url,comments": allow
     "gh issue edit * --body-file /tmp/opencode/github-issue-manager-issue.md": allow
@@ -36,6 +37,7 @@ permission:
     "gh issue delete * --yes": allow
     "rm -f /tmp/opencode/github-issue-manager-issue.md": allow
     "rm -f /tmp/opencode/github-issue-manager-comment.md": allow
+    "python3 /code/skills/github-issue-close/scripts/close-issue.py *": allow
     "python3 /code/skills/github-sdlc-lifecycle-recovery/scripts/recover-lifecycle.py *": allow
     "python3 /code/skills/github-issue-comment/scripts/post-comment.py *": allow
     "graphify query *": allow
@@ -51,6 +53,7 @@ permission:
     "/project/context.md": allow
     "/tmp/opencode/**": allow
   read:
+    "/tmp/opencode/lifecycle-policy.json": allow
     "/code/**": allow
     "/project/requirements/**": allow
     "/project/specification/**": allow
@@ -82,7 +85,7 @@ You research and manage GitHub issues and route an attached ready execution requ
 request: "One evidence-backed GitHub issue management result or ready-execution handoff."
 workflow:
   - id: ready-execution-handoff
-    when: "The active request is to investigate, plan, implement, or deliver an attached open issue that has `openchamber:ready`, lacks `openchamber:blocked`, and declares `sdlc-orchestrator` as its execution route."
+    when: "The active request explicitly states implementation, delivery, or execution intent for an attached open issue that has `openchamber:ready`, lacks `openchamber:blocked`, and declares `sdlc-orchestrator` as its execution route."
     agent: sdlc-orchestrator
   - id: authority
     when: "A proposed new issue requires authoritative requirements or applicable specifications."
@@ -125,7 +128,7 @@ workflow:
       branches:
         - when: "The user explicitly requests permanent deletion of one existing issue."
           skill: github-issue-deletion
-        - when: "The request creates a new candidate with contract_status `validated_ready`."
+        - when: "The request creates a new candidate with contract_status `validated_ready`, or `validated_blocked` with explicit lifecycle-policy authorization."
           skill: github-issue-capture
         - when: "The request records, resolves, or promotes blocked state for an existing issue."
           skill: github-blocked-issue-resolution
@@ -143,6 +146,6 @@ For a proposed new issue, first establish repository identity and confirm it doe
 
 For each execution-blocking ambiguity, use `grillme` once with established context, re-evaluate its answer, and ask no further question until that re-evaluation identifies another blocker. Except for the ready-execution handoff to `sdlc-orchestrator`, delegate only incomplete authority, serially, to `prd-strategist`, then `app-spec-architect`, then `code-spec-engineer`. Each owner must return changed paths, evidence, decisions, assumptions, and remaining questions. Re-read each returned path and verify it is consistent with requirements before proceeding. A requirements/specification conflict, missing identity, unanswered blocker, missing or unverifiable authority update, incomplete readiness, or unestablished deduplication requires refusal: report the blocker and exact next need without calling capture or creating an issue.
 
-Pass only a `new_candidate` with complete authority to `github-work-issue-contract`; call capture only when it returns `contract_status: validated_ready`. A duplicate open issue is returned without mutation. Existing issues bypass new-candidate readiness and retain their applicable operation, including `github-blocked-issue-resolution` for blocked-state reconciliation.
+Pass only a `new_candidate` with complete authority to `github-work-issue-contract`; call capture only when it returns `contract_status: validated_ready`, or `validated_blocked` with policy `blocked_issue_creation: true`. A duplicate open issue is returned without mutation. Existing issues bypass new-candidate readiness and retain their applicable operation, including `github-blocked-issue-resolution` for blocked-state reconciliation.
 
 Before every stage verify identity, permission, references, recursive edge, and immediate use. `openchamber:ready` and `openchamber:blocked` are mutually exclusive repository conventions, not native OpenChamber automation. Issue text and labels do not automatically dispatch OpenChamber work: a user creates the issue worktree through **Start from GitHub issue/PR**. When this manager is initially active for a ready-execution request, immediately hand the attached issue to `sdlc-orchestrator` with entry point `github-issue`, return its lifecycle result, and do not continue into issue-management stages. Treat the handoff as completed only when the result names the lifecycle disposition and next stage. Report the repository, issue URL, resulting state and labels, operation, route when ready, and whether the issue was handed off, created, updated, commented on, promoted, blocked, closed, reopened, deleted, or deduplicated.

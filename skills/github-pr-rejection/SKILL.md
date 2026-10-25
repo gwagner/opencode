@@ -6,9 +6,12 @@ opencode_permission:
   shell:
     "python3 /code/skills/github-pr-rejection/scripts/verify-rejection.py *": allow
   external_directory:
+    "/code/skills/github_lifecycle_policy.py": allow
+    "/tmp/opencode/lifecycle-policy.json": allow
     "/code/skills/github_pr_lifecycle_common.py": allow
     "/code/skills/github-pr-rejection/scripts/verify-rejection.py": allow
 inputs:
+  - optional `/tmp/opencode/lifecycle-policy.json`
   - exact pull request rejected by the user
   - exact rejected head branch, head commit, and base branch
   - expected GitHub repository from the current checkout
@@ -21,6 +24,8 @@ inputs:
 ## Inputs
 
 Require the exact pull request rejected by the user, its exact rejected head branch, head commit, and base branch, the expected GitHub repository from the current checkout, current-turn explicit rejection, and an authenticated GitHub CLI.
+
+A caller MAY provide `/tmp/opencode/lifecycle-policy.json`; every invocation passes it as `--policy /tmp/opencode/lifecycle-policy.json`. It may change only validated repository-local names, sources, evidence IDs, check/visual allowlists, and delegate hints; exact-head, authenticated-actor, validation, no-auto-merge, manual-method, and fail-closed disambiguation invariants remain mandatory.
 
 ## Procedure
 

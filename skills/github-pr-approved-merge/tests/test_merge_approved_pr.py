@@ -56,7 +56,7 @@ class MergeVerificationTests(unittest.TestCase):
             raise AssertionError(args)
 
         output = io.StringIO()
-        argv = ["merge-approved-pr.py", "--pr", "1", "--expected-head", "h", "--expected-branch", "feature/x", "--confirmed-manual-squash", "--wait-seconds", "0"]
+        argv = ["merge-approved-pr.py", "--pr", "1", "--expected-head", "h", "--expected-branch", "feature/x", "--confirmed-manual-method", "squash", "--wait-seconds", "0"]
         with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
             return_code = MODULE.main()
         return return_code, json.loads(output.getvalue()), calls

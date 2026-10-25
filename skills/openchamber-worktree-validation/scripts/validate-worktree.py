@@ -8,6 +8,10 @@ import json
 import subprocess
 import sys
 from dataclasses import asdict, dataclass
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from github_lifecycle_policy import add_policy_argument, load_policy, policy_evidence
 
 
 VERSION = 1
@@ -72,11 +76,22 @@ def current_worktree_blocks(listing: str, root: str) -> list[list[str]]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=("fresh", "resume-publication", "resume-pull-request"), required=True)
-    parser.add_argument("--base", default="main")
+    parser.add_argument("--base")
     parser.add_argument("--expected-head")
+    add_policy_argument(parser)
     args = parser.parse_args()
+    try:
+        policy = load_policy(args.policy)
+    except ValueError as exc:
+        print(json.dumps(asdict(Result(evidence={}, blocker=str(exc))), sort_keys=True))
+        return 2
+    if args.base is None:
+        args.base = policy["base_branch"]
+    if args.base != policy["base_branch"]:
+        print(json.dumps(asdict(Result(evidence=policy_evidence(policy), blocker="base differs from lifecycle policy")), sort_keys=True))
+        return 2
 
-    evidence: dict[str, object] = {}
+    evidence: dict[str, object] = policy_evidence(policy)
     inside = run("git", "rev-parse", "--is-inside-work-tree")
     if inside.returncode != 0 or inside.stdout.strip() != "true":
         result = Result(evidence=evidence, blocker="current directory is not a Git worktree")
@@ -124,23 +139,23 @@ def main() -> int:
         print(json.dumps(asdict(result), sort_keys=True))
         return 2
 
-    fetched = run("git", "fetch", "origin", args.base)
+    fetched = run("git", "fetch", policy["remote"], args.base)
     if fetched.returncode != 0:
         result = Result(status="waiting", disposition="waiting-external", evidence=evidence, blocker=fetched.stderr.strip())
         print(json.dumps(asdict(result), sort_keys=True))
         return 3
-    remote = run("git", "rev-parse", f"origin/{args.base}")
+    remote = run("git", "rev-parse", f"{policy['remote']}/{args.base}")
     if remote.returncode != 0:
         result = Result(evidence=evidence, blocker="cannot resolve refreshed base revision")
         print(json.dumps(asdict(result), sort_keys=True))
         return 2
     evidence["base_revision"] = remote.stdout.strip()
-    ancestry = run("git", "merge-base", "--is-ancestor", values["head"], f"origin/{args.base}")
+    ancestry = run("git", "merge-base", "--is-ancestor", values["head"], f"{policy['remote']}/{args.base}")
     if ancestry.returncode not in (0, 1):
         result = Result(evidence=evidence, blocker="cannot establish refreshed-base ancestry")
         print(json.dumps(asdict(result), sort_keys=True))
         return 2
-    feature_range = run("git", "rev-list", "--count", f"origin/{args.base}..{values['head']}")
+    feature_range = run("git", "rev-list", "--count", f"{policy['remote']}/{args.base}..{values['head']}")
     try:
         feature_commit_count = int(feature_range.stdout.strip()) if feature_range.returncode == 0 else -1
     except ValueError:

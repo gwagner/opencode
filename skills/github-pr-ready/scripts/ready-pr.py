@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from github_lifecycle_policy import add_authorization_argument, add_policy_argument, authorized, load_policy, policy_evidence
 from github_pr_lifecycle_common import (
     emit as result_emit,
     head_repository_matches,
@@ -40,9 +41,21 @@ def main() -> int:
     parser.add_argument("--pr", required=True)
     parser.add_argument("--expected-head", required=True)
     parser.add_argument("--expected-branch", required=True)
-    parser.add_argument("--expected-base", default="main")
+    parser.add_argument("--expected-base", default=None)
+    add_policy_argument(parser)
+    add_authorization_argument(parser, "ready")
     args = parser.parse_args()
-    evidence: dict[str, object] = {}
+    try:
+        policy = load_policy(args.policy)
+    except ValueError as exc:
+        return result_emit("blocked", "blocked-unsafe", {}, str(exc))
+    if args.expected_base is None:
+        args.expected_base = policy["base_branch"]
+    evidence: dict[str, object] = policy_evidence(policy)
+    if policy["pull_request"]["ready_policy"] == "keep-draft":
+        return result_emit("passed", "kept-draft", evidence, next_stage="user-decision")
+    if policy["pull_request"]["ready_policy"] == "ask" and not authorized(policy, "ready", args.authorize_ready):
+        return result_emit("waiting", "waiting-user-authorization", evidence, "explicit ready authorization is required")
 
     auth = run(["gh", "auth", "status"])
     repo = run(["gh", "repo", "view", "--json", "nameWithOwner,url"])
@@ -53,8 +66,8 @@ def main() -> int:
         return result_emit("blocked", "blocked-unsafe", evidence, "repository identity is malformed or incomplete")
     evidence["repository"] = repository
 
-    origin = run(["git", "remote", "get-url", "--all", "origin"])
-    push_origin = run(["git", "remote", "get-url", "--push", "--all", "origin"])
+    origin = run(["git", "remote", "get-url", "--all", policy["remote"]])
+    push_origin = run(["git", "remote", "get-url", "--push", "--all", policy["remote"]])
     if origin.returncode != 0 or push_origin.returncode != 0:
         return result_emit("blocked", "blocked-unsafe", evidence, "origin remote identity is unavailable")
     evidence["origin_url"] = origin.stdout.strip()

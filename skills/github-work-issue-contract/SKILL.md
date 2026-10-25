@@ -34,7 +34,7 @@ For `new_candidate`, verified authority references must support every ready-sche
 
 ## New-candidate ready result
 
-For `lifecycle_context: new_candidate`, return `contract_status: validated_ready` only when authority is complete and consistent, there are no blocking questions, the scope is atomic, the route is known, and the complete ready schema is present. The result includes canonical title and ordered body, `status_label: openchamber:ready`, `execution_route: sdlc-orchestrator`, verified authority references, explicit assumptions, empty blocking questions, and a duplicate-comparison key. Otherwise reject with exactly one applicable category: `authority_missing`, `authority_conflict`, `blocking_question`, `non_atomic_scope`, `schema_incomplete`, `route_unknown`, or `new_blocked_forbidden`.
+For `lifecycle_context: new_candidate`, return `contract_status: validated_ready` only when authority is complete and consistent, there are no blocking questions, the scope is atomic, the route is known, and the complete ready schema is present. The result includes canonical title and ordered body, `status_label: openchamber:ready`, `execution_route: sdlc-orchestrator`, verified authority references, explicit assumptions, empty blocking questions, and a duplicate-comparison key. Otherwise reject with exactly one applicable category: `authority_missing`, `authority_conflict`, `blocking_question`, `non_atomic_scope`, `schema_incomplete`, or `route_unknown`.
 
 A valid new candidate has `openchamber:ready` as its only OpenChamber status label and must not have `openchamber:blocked`. Unrelated repository labels may remain. Its body uses these sections in order:
 
@@ -50,16 +50,18 @@ A valid new candidate has `openchamber:ready` as its only OpenChamber status lab
 
 The processing handoff is issue-body text only: it does not natively select, route, or dispatch an OpenChamber agent. A user starts a worktree from the issue and selects `sdlc-orchestrator` with entry point `github-issue`. OpenChamber owns creation and checkout of the resulting non-`main` issue branch and its branch name, so the issue must not prescribe a branch and the orchestrator must not create one.
 
-## Existing-issue blocked result
+## Blocked result
 
-Only for `lifecycle_context: existing_issue`, a blocked issue may have `openchamber:blocked` as its only OpenChamber status label and must not have `openchamber:ready`. Unrelated repository labels may remain. Its body uses `Scope`, `Why`, `Actions`, `Evidence`, and `Acceptance`, followed by:
+For `lifecycle_context: new_candidate`, return `contract_status: validated_blocked` only when lifecycle policy explicitly sets `blocked_issue_creation: true`, the candidate has verified authority references, atomic scope, canonical title and body, a duplicate-comparison key, and an explicit execution-critical blocker. Otherwise return the applicable ready-result rejection category. A validated blocked result has `status_label: openchamber:blocked`, explicit blockers, and no `execution_route`, processing handoff, or delivery section.
+
+For `lifecycle_context: existing_issue`, retain its applicable ready or blocked result. A blocked issue may have `openchamber:blocked` as its only OpenChamber status label and must not have `openchamber:ready`. Unrelated repository labels may remain. Its body uses `Scope`, `Why`, `Actions`, `Evidence`, and `Acceptance`, followed by:
 
 - `Blocked by` — the current execution-critical obstacle.
 - `Required to unblock` — decisions, information, actions, dependency closures, or authoritative updates needed.
 - Optional `Questions` and `Assumptions`.
 
-Blocked issues do not use `Execution route`. Promote only after every execution blocker is resolved; then apply the complete ready schema before changing labels. Reject any `new_candidate` that selects or contains blocked status as `new_blocked_forbidden`.
+Blocked issues do not use `Execution route`, including policy-authorized validated blocked new candidates. Promote only after every execution blocker is resolved; then apply the complete ready schema before changing labels.
 
 ## Completion
 
-Return the lifecycle context and either the valid new-candidate result or one rejection category. For `validated_ready`, return the canonical title, ordered body, ready label, execution route, processing handoff, authority references, assumptions, empty blocking questions, and duplicate-comparison key. For `existing_issue`, return the applicable ready or blocked contract result.
+Return the lifecycle context and either the valid new-candidate result or one rejection category. For `validated_ready`, return the canonical title, ordered body, ready label, execution route, processing handoff, authority references, assumptions, empty blocking questions, and duplicate-comparison key. For `validated_blocked`, return the canonical title, ordered body, blocked label, policy evidence, explicit blockers, authority references, and duplicate-comparison key, with no route. For `existing_issue`, return the applicable ready or blocked contract result.
