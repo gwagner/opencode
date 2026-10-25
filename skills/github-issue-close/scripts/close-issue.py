@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from github_lifecycle_policy import add_authorization_argument, add_policy_argument, authorized, load_policy, policy_digest, policy_evidence
-from github_pr_lifecycle_common import emit, parse_object, run
+from github_pr_lifecycle_common import emit, run
 
 
 def recovery_command(args, policy_path: str) -> list[str]:
@@ -18,13 +18,20 @@ def recovery_command(args, policy_path: str) -> list[str]:
         "--completion-branch", args.expected_branch,
         "--completion-merge-commit", args.expected_merge_commit,
     ]
-    command.extend(["--policy", policy_path, "--expected-policy-digest", args.expected_policy_digest])
+    command.extend(["--policy", policy_path, "--expected-policy-digest", args.expected_policy_digest, "--repository", args.repository, "--lifecycle-run", args.lifecycle_run])
     return command
 
 
 def recover(args, policy_path: str) -> tuple[dict | None, str | None]:
     completed = run(recovery_command(args, policy_path))
-    result = parse_object(completed)
+    # Lifecycle envelopes are meaningful even when their status maps to a
+    # nonzero process exit.  Parse stdout directly so a safe waiting/blocker is
+    # preserved instead of being mislabeled as malformed recovery.
+    try:
+        import json
+        result = json.loads(completed.stdout)
+    except json.JSONDecodeError:
+        result = None
     if result is None or result.get("version") != 1:
         return None, "recovery result is malformed"
     if result.get("status") != "passed":
@@ -32,9 +39,9 @@ def recover(args, policy_path: str) -> tuple[dict | None, str | None]:
     return result, None
 
 
-def unchanged_policy(path: str, expected_digest: str) -> bool:
+def unchanged_policy(path: str, expected_digest: str, repository: str, lifecycle_run: str) -> bool:
     try:
-        return policy_digest(path) == expected_digest
+        return policy_digest(path, repository, lifecycle_run) == expected_digest
     except OSError:
         return False
 
@@ -46,11 +53,11 @@ def main():
     p.add_argument("--expected-branch", required=True)
     p.add_argument("--expected-merge-commit", required=True)
     add_policy_argument(p); add_authorization_argument(p, "closure"); a=p.parse_args()
-    try: policy=load_policy(a.policy, a.expected_policy_digest)
+    try: policy=load_policy(a.policy, a.expected_policy_digest, a.repository, a.lifecycle_run)
     except ValueError as e: return emit("blocked", "blocked-unsafe", {}, str(e))
     evidence = policy_evidence(policy)
     try:
-        expected_policy_digest = policy_digest(a.policy)
+        expected_policy_digest = policy_digest(a.policy, a.repository, a.lifecycle_run)
     except OSError as exc:
         return emit("blocked", "blocked-unsafe", evidence, f"policy snapshot is unavailable: {exc}")
     evidence["policy_digest"] = expected_policy_digest
@@ -62,7 +69,7 @@ def main():
     if before is None:
         return emit("blocked", "blocked-unsafe", evidence, blocker)
     evidence["recovery_before"] = before
-    if not unchanged_policy(a.policy, expected_policy_digest):
+    if not unchanged_policy(a.policy, expected_policy_digest, a.repository, a.lifecycle_run):
         return emit("blocked", "blocked-unsafe", evidence, "policy source changed after recovery")
     if before.get("disposition") == "closed":
         return emit("passed", "already-closed", evidence)
@@ -79,7 +86,7 @@ def main():
     if after is None or after.get("disposition") != "closed":
         return emit("blocked", "blocked-unsafe", evidence, blocker or "post-close recovery did not prove closure")
     evidence["recovery_after"] = after
-    if not unchanged_policy(a.policy, expected_policy_digest):
+    if not unchanged_policy(a.policy, expected_policy_digest, a.repository, a.lifecycle_run):
         return emit("blocked", "blocked-unsafe", evidence, "policy source changed during closure")
     return emit("passed", "closed", evidence)
 if __name__ == "__main__": raise SystemExit(main())

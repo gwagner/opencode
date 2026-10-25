@@ -68,15 +68,17 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | git-delegated-change-commit | Reviews and commits one validated delegate-owned change batch from an established clean ownership baseline. |
 | github-blocked-issue-resolution | Reconciles one GitHub work issue's blocked state and safely promotes it when every execution blocker is resolved. |
 | github-issue-capture | Creates or deduplicates one contract-validated ready or policy-authorized blocked GitHub work issue in the current checkout's repository. |
-| github-issue-close | Closes one existing GitHub issue and verifies its closed state. |
-| github-issue-comment | Posts one verified progress or completion comment to an existing GitHub issue. |
+| github-issue-close | Closes one non-lifecycle GitHub issue and verifies its closed state. |
+| github-issue-comment | Posts one verified non-lifecycle comment to an existing GitHub issue. |
 | github-issue-deletion | Permanently deletes one GitHub issue only after explicit issue-specific confirmation. |
 | github-issue-reopen | Reopens one closed GitHub issue and verifies its open state. |
 | github-issue-update | Applies one requested reversible title, body, or label update to an existing GitHub issue. |
-| github-pr-approved-merge | Verifies that a user manually squash-merged one exact approved GitHub pull request without performing the merge. |
+| github-lifecycle-issue-close | Closes one lifecycle issue only after exact merged pull-request recovery evidence. |
+| github-lifecycle-issue-evidence | Posts and verifies one exact actor-bound GitHub issue lifecycle evidence comment. |
+| github-pr-approved-merge | Verifies that a user manually performed the policy-selected merge of one exact approved GitHub pull request. |
 | github-pr-check-validation | Deterministically classifies and boundedly rechecks required checks for one unchanged open pull request. |
 | github-pr-lifecycle-recovery | Selects the resumable branch or pull-request state for one CLI- or OpenChamber-originated non-issue lifecycle without mutating it. |
-| github-policy-resolution | Resolves one read-only lifecycle policy source into the fixed immutable snapshot used by one SDLC run. |
+| github-policy-resolution | Resolves one read-only lifecycle policy source into the repository-and-run-bound immutable snapshot used by one SDLC run. |
 | github-pr-publication | Idempotently publishes one validated committed head to a unique draft pull request for a supported SDLC entry point. |
 | github-pr-ready | Marks one checked draft pull request ready, or verifies an already-ready pull request, for an exact-head user decision. |
 | github-pr-rejection | Verifies that one exact user-rejected pull request remains open and unchanged without mutating GitHub. |
@@ -126,14 +128,14 @@ Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exi
 
 ## Workflow ownership
 
-- The first lifecycle stage lets `github-policy-resolution` alone read the optional `/tmp/opencode/lifecycle-policy.json`, validate and normalize it (or the default) into `/tmp/opencode/lifecycle-policy.snapshot.json`, and emit its immutable digest. The source can supply version-1 base, feature prefix, sources, remote, evidence IDs, check and visual allowlists, and delegate hints; it cannot relax exact-head/provenance, explicit authorization, validation, authenticated-actor, manual-squash/no-auto-merge, rejection-open, sequential-commit, or fail-closed recovery invariants.
-- `sdlc-orchestrator` is the sole code-change lifecycle owner for explicit `cli`, `openchamber`, and `github-issue` entry points. Every successful run publishes one pull request and ends with a verified user-performed manual squash merge or exact-head rejection.
+- The first lifecycle stage lets `github-policy-resolution` alone read the optional `/tmp/opencode/lifecycle-policy.json`, validate and normalize it (or the default) into `/tmp/opencode/lifecycle-policy.<repository-hash>.<lifecycle-run>.snapshot.json`, and emit its immutable digest. The source can supply version-1 base, feature prefix, sources, remote, evidence IDs, check and visual allowlists, and delegate hints; it cannot relax exact-head/provenance, explicit authorization, validation, authenticated-actor, manual-squash/no-auto-merge, rejection-open, sequential-commit, or fail-closed recovery invariants.
+- `sdlc-orchestrator` is the sole code-change lifecycle owner for explicit `cli`, `openchamber`, and `github-issue` entry points. Every successful run publishes one pull request and ends with a verified user-performed manual policy-selected merge merge or exact-head rejection.
 - CLI preparation creates a clean `feature/*` branch and can recover a current non-base CLI branch. Direct OpenChamber preparation validates or recovers its existing linked worktree and branch. Issue preparation additionally recovers GitHub state and verifies issue readiness, route, and dependencies.
 - Requirements route to `prd-strategist`, shared architecture and cross-feature decisions to `app-spec-architect`, bounded feature contracts to `code-spec-engineer`, defects to `bug-fixer`, and other implementation to `code-implementor`.
 - Implementation delegates edit and validate only. The orchestrator owns baselines, reviewed commits, idempotent pull-request publication, required checks, correction loops, user decisions, manual-merge verification, and remote-branch cleanup. Agents never merge pull requests automatically.
 - The orchestrator owns the ordered user-decision ask and selection directly; `github-pr-approved-merge` and `github-pr-rejection` remain separate leaf procedures. GitHub lifecycle scripts share `/code/skills/github_pr_lifecycle_common.py` for fail-closed identity and version-1 result-envelope primitives.
 - A rejected pull request and branch remain open without mutation. Pending or unavailable hosted checks return a resumable waiting state rather than a terminal failure.
-- `github-issue-manager` manages issue intake and routes ready execution to `sdlc-orchestrator` with entry point `github-issue`. Current-head lifecycle evidence is posted after required checks pass; the completion comment and issue closure occur only after a verified user-performed manual squash merge and verified remote-branch cleanup.
+- `github-issue-manager` manages issue intake and routes ready execution to `sdlc-orchestrator` with entry point `github-issue`. Current-head lifecycle evidence is posted after required checks pass; the completion comment and issue closure occur only after a verified user-performed manual policy-selected merge merge and verified remote-branch cleanup.
 - Direct `agent-builder` use is audit-only. Agent or skill edits require orchestrator delegation and return changed paths plus validation without staging, committing, or pushing.
 - Code-writing delegates end with `project-validation`. Unsupported project-native validation commands require confirmation instead of being silently unavailable.
 - Browser-capture commands and comparison behavior live in `browser-visual-capture`; agents only decide when the skill applies.
@@ -141,13 +143,13 @@ Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exi
 
 ### Lifecycle policy overrides
 
-Every lifecycle script requires only the resolved `--policy /tmp/opencode/lifecycle-policy.snapshot.json --expected-policy-digest <digest>` pair and records its digest in lifecycle evidence. On a resumed run, the resolver accepts only the retained exact digest and validates the existing snapshot without rereading the source. It rejects an absent pair, caller-selected policy path, non-normalized snapshot, or changed bytes. After a verified terminal `user-merged`, `closed`, or `rejected-open-pr` report, the resolver alone may remove the fixed snapshot using its exact digest and terminal disposition; no other lifecycle role edits policy files.
+Every lifecycle script requires only the resolved `--policy /tmp/opencode/lifecycle-policy.<repository-hash>.<lifecycle-run>.snapshot.json --expected-policy-digest <digest> --repository <owner/name> --lifecycle-run <run-id>` pair and records its digest in lifecycle evidence. On a resumed run, the resolver accepts only the retained exact digest and validates the existing snapshot without rereading the source. It rejects an absent pair, caller-selected policy path, non-normalized snapshot, or changed bytes. After a verified terminal `user-merged`, `closed`, or `rejected-open-pr` report, the resolver alone may remove the bound snapshot using its exact digest and terminal disposition; no other lifecycle role edits policy files.
 
 | Section | Policy fields | Rule |
 | --- | --- | --- |
 | Repository | `base_branch`, `feature_branch_prefix`, `provenance`, `remote` | Selects the repository-local lifecycle names and permitted entry sources. |
 | Authorization | No policy field | Every mutating lifecycle action requires its matching current-turn `--authorize-*` flag; policy cannot grant mutation authority. |
-| Evidence | `evidence.current_id`, `completion_id`, `require_authenticated_actor`, `actor_transfer` | Allows named evidence IDs while requiring one authenticated actor for current and completion evidence. |
+| Evidence | `evidence.current_id`, `completion_id`, `require_authenticated_actor` | Allows named evidence IDs while requiring one authenticated actor for current and completion evidence. |
 | Decision/recovery | `manual_merge`, `pull_request`, `recovery` | Manual squash, ready/rejection-open, exact head, and block-on-ambiguity remain required. |
 | Validation | `validation.check_mode`, `check_names`, `max_rechecks`, `wait_seconds`, `max_corrections`, `visual_scenarios` | Selects required/all check handling, bounded rechecks and corrections, and exact visual scenarios. |
 | Intake | `blocked_issue_creation` | Enables policy-authorized blocked-issue creation; commits remain sequential and reviewed as a nonconfigurable invariant. |

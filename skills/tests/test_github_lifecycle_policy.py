@@ -19,7 +19,7 @@ class LifecyclePolicyTests(unittest.TestCase):
         return handle.name
 
     def load(self, value):
-        return policy.resolve_policy_source(json.dumps(value).encode())[0]
+        return policy.resolve_policy_source(json.dumps(value).encode(), "test-owner/test-repository", "test-policy-run")[0]
 
     def test_valid_repository_override_supports_approved_modes(self):
         loaded = self.load({
@@ -32,8 +32,8 @@ class LifecyclePolicyTests(unittest.TestCase):
                 "completion_id": "delivery-complete",
                 "require_authenticated_actor": True,
             },
-            "manual_merge": {"method": "rebase", "require_current_turn_attestation": True},
-            "pull_request": {"ready_policy": "ask", "rejection_policy": "close-pr"},
+            "manual_merge": {"method": "rebase"},
+            "pull_request": {"ready_policy": "ask", "rejection_policy": "leave-open"},
             "validation": {
                 "check_mode": "all",
                 "check_names": ["test"],
@@ -51,6 +51,19 @@ class LifecyclePolicyTests(unittest.TestCase):
 
     def test_rejects_incompatible_completion(self):
         with self.assertRaisesRegex(ValueError, "requires remote_cleanup delete"):
+            self.load({"remote_cleanup": "retain", "issue_completion": "close"})
+
+    def test_remote_cleanup_issue_completion_matrix(self):
+        for cleanup, completion in (
+            ("delete", "close"),
+            ("delete", "comment-only"),
+            ("delete", "none"),
+            ("retain", "comment-only"),
+            ("retain", "none"),
+        ):
+            with self.subTest(cleanup=cleanup, completion=completion):
+                self.load({"remote_cleanup": cleanup, "issue_completion": completion})
+        with self.assertRaises(ValueError):
             self.load({"remote_cleanup": "retain", "issue_completion": "close"})
 
     def test_external_actions_always_need_current_turn_authorization(self):
@@ -84,22 +97,43 @@ class LifecyclePolicyTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.load(override)
 
-    def test_consumers_require_the_fixed_snapshot_and_its_digest(self):
-        _, normalized, digest = policy.resolve_policy_source(b'{"base_branch":"release"}')
-        snapshot = pathlib.Path(policy.SNAPSHOT_PATH)
+    def test_consumers_require_the_repository_and_run_bound_snapshot_and_digest(self):
+        repository, run = "owner/repository", "run-12345678"
+        _, normalized, digest = policy.resolve_policy_source(b'{"base_branch":"release"}', repository, run)
+        snapshot = pathlib.Path(policy.snapshot_path(repository, run))
         original = snapshot.read_bytes() if snapshot.exists() else None
-        self.addCleanup(lambda: snapshot.write_bytes(original) if original is not None else snapshot.unlink(missing_ok=True))
+        if snapshot.exists():
+            snapshot.chmod(0o600)
+        self.addCleanup(lambda: (snapshot.chmod(0o600) if snapshot.exists() else None, snapshot.write_bytes(original) if original is not None else snapshot.unlink(missing_ok=True)))
         snapshot.write_bytes(normalized)
-        self.assertEqual(policy.load_policy(policy.SNAPSHOT_PATH, digest)["base_branch"], "release")
-        with self.assertRaisesRegex(ValueError, "fixed"):
-            policy.load_policy("/tmp/other-policy.json", digest)
+        self.assertEqual(policy.load_policy(str(snapshot), digest, repository, run)["base_branch"], "release")
+        with self.assertRaisesRegex(ValueError, "repository-and-run-bound"):
+            policy.load_policy("/tmp/other-policy.json", digest, repository, run)
         with self.assertRaisesRegex(ValueError, "required"):
-            policy.load_policy(policy.SNAPSHOT_PATH, None)
+            policy.load_policy(str(snapshot), None, repository, run)
         with self.assertRaisesRegex(ValueError, "digest"):
-            policy.load_policy(policy.SNAPSHOT_PATH, "0" * 64)
+            policy.load_policy(str(snapshot), "0" * 64, repository, run)
         snapshot.write_text('{"base_branch":"main"}')
         with self.assertRaisesRegex(ValueError, "digest"):
-            policy.load_policy(policy.SNAPSHOT_PATH, digest)
+            policy.load_policy(str(snapshot), digest, repository, run)
+
+    def test_snapshot_paths_are_repository_and_run_unique(self):
+        self.assertNotEqual(policy.snapshot_path("a/repository", "run-12345678"), policy.snapshot_path("b/repository", "run-12345678"))
+        self.assertNotEqual(policy.snapshot_path("a/repository", "run-12345678"), policy.snapshot_path("a/repository", "run-87654321"))
+
+    def test_policy_cannot_configure_attestation_or_exact_head_away(self):
+        for override in (
+            {"manual_merge": {"require_current_turn_attestation": False}},
+            {"recovery": {"require_exact_head": False}},
+        ):
+            with self.assertRaisesRegex(ValueError, "unsupported lifecycle policy key"):
+                self.load(override)
+
+    def test_check_names_are_realistic_display_names(self):
+        loaded = self.load({"validation": {"check_names": ["CI / unit tests (Python 3.14)"]}})
+        self.assertEqual(loaded["validation"]["check_names"], ["CI / unit tests (Python 3.14)"])
+        with self.assertRaises(ValueError):
+            self.load({"validation": {"check_names": ["bad\nname"]}})
 
     def test_all_lifecycle_consumers_use_the_shared_fail_closed_policy_loader(self):
         root = pathlib.Path(__file__).parents[1]
@@ -157,7 +191,7 @@ class LifecyclePolicyTests(unittest.TestCase):
         self.assertNotEqual(missing.returncode, 0)
         mismatch = subprocess.run([
             sys.executable, str(script), "--outcome", "x", "--policy", "/tmp/not-policy.json",
-            "--expected-policy-digest", "0" * 64,
+            "--expected-policy-digest", "0" * 64, "--repository", "owner/repository", "--lifecycle-run", "run-12345678",
         ], text=True, capture_output=True, check=False)
         self.assertNotEqual(mismatch.returncode, 0)
-        self.assertIn("fixed lifecycle policy snapshot", mismatch.stderr)
+        self.assertIn("repository-and-run-bound lifecycle policy snapshot", mismatch.stderr)

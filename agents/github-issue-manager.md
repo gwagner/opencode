@@ -37,9 +37,9 @@ permission:
     "gh issue delete * --yes": allow
     "rm -f /tmp/opencode/github-issue-manager-issue.md": allow
     "rm -f /tmp/opencode/github-issue-manager-comment.md": allow
-    "python3 /code/skills/github-issue-close/scripts/close-issue.py *": allow
+    "python3 /code/skills/github-issue-close/scripts/close-generic-issue.py *": allow
     "python3 /code/skills/github-sdlc-lifecycle-recovery/scripts/recover-lifecycle.py *": allow
-    "python3 /code/skills/github-issue-comment/scripts/post-comment.py *": allow
+    "python3 /code/skills/github-issue-comment/scripts/post-generic-comment.py *": allow
     "graphify query *": allow
     "graphify explain *": allow
     "graphify path *": allow
@@ -54,6 +54,7 @@ permission:
     "/tmp/opencode/**": allow
   read:
     "/tmp/opencode/lifecycle-policy.json": allow
+    "/tmp/opencode/github-issue-manager-comment.md": allow
     "/code/**": allow
     "/project/requirements/**": allow
     "/project/specification/**": allow

@@ -15,7 +15,7 @@ def main():
     p.add_argument("--outcome", required=True)
     add_policy_argument(p)
     a = p.parse_args()
-    try: policy = load_policy(a.policy, a.expected_policy_digest)
+    try: policy = load_policy(a.policy, a.expected_policy_digest, a.repository, a.lifecycle_run)
     except ValueError as e: print(e, file=sys.stderr); return 2
     slug = re.sub(r"[^a-z0-9]+", "-", a.outcome.lower()).strip("-")[:48]
     if not slug: print("outcome cannot produce a branch slug", file=sys.stderr); return 2

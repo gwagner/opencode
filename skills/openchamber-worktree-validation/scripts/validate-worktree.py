@@ -81,7 +81,7 @@ def main() -> int:
     add_policy_argument(parser)
     args = parser.parse_args()
     try:
-        policy = load_policy(args.policy, args.expected_policy_digest)
+        policy = load_policy(args.policy, args.expected_policy_digest, args.repository, args.lifecycle_run)
     except ValueError as exc:
         print(json.dumps(asdict(Result(evidence={}, blocker=str(exc))), sort_keys=True))
         return 2

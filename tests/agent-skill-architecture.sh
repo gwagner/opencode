@@ -37,7 +37,7 @@ for identity in feature-branch-setup openchamber-worktree-validation \
   github-sdlc-lifecycle-recovery github-pr-lifecycle-recovery issue-worktree-validation git-change-baseline \
   git-delegated-change-commit github-pr-publication github-pr-check-validation \
   github-pr-ready github-pr-remote-branch-cleanup \
-  github-issue-comment github-issue-close; do
+  github-lifecycle-issue-evidence github-lifecycle-issue-close; do
   grep -q "^    $identity: allow$" "$orchestrator"
   grep -q "skill: $identity" "$orchestrator"
 done
@@ -56,13 +56,9 @@ grep -Fq 'recovered-merged-needs-reattest' "$orchestrator"
 grep -Fq 'Approval and manual-merge confirmation are separate user acts.' "$orchestrator"
 grep -Fq 'no agent may run an automatic merge' "$orchestrator"
 
-grep -Fq 'stable comment IDs' "$root/skills/github-issue-comment/SKILL.md"
-grep -Fq 'post-comment.py --issue <issue>' "$root/skills/github-issue-comment/SKILL.md"
-grep -Fq 'including when that call reports failure' "$root/skills/github-issue-comment/SKILL.md"
-grep -Fq 'A final cleanup warning does not invalidate' "$root/skills/github-issue-comment/SKILL.md"
-grep -Fq -- '--completion-merge-commit <merge>' "$root/skills/github-issue-close/SKILL.md"
-grep -Fq '"/code/skills/github_issue_comment_common.py": allow' "$root/skills/github-issue-close/SKILL.md"
-grep -Fq 'python3 /code/skills/github-sdlc-lifecycle-recovery/scripts/recover-lifecycle.py *' "$root/skills/github-issue-close/SKILL.md"
+grep -Fq 'non-lifecycle' "$root/skills/github-issue-comment/SKILL.md"
+grep -Fq 'github-lifecycle-issue-evidence' "$root/skills/github-lifecycle-issue-evidence/SKILL.md"
+grep -Fq 'github-lifecycle-issue-close' "$root/skills/github-lifecycle-issue-close/SKILL.md"
 grep -Fq 'mutation attribution `uncertain`' "$root/skills/github-pr-publication/SKILL.md"
 grep -Fq 'mutation attribution `uncertain`' "$root/skills/github-pr-ready/SKILL.md"
 grep -Fq 'does not prove merge method or actor' "$root/skills/github-pr-approved-merge/SKILL.md"

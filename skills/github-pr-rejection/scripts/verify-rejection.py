@@ -5,7 +5,7 @@ import argparse
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from github_lifecycle_policy import add_authorization_argument, add_policy_argument, authorized, load_policy, policy_evidence
+from github_lifecycle_policy import add_policy_argument, load_policy, policy_evidence
 from github_pr_lifecycle_common import emit, head_repository_matches, parse_object, remote_urls_match, repository_matches, run, verified_checkout
 
 def matches(record: dict, head: str, base: str, branch: str) -> bool:
@@ -18,10 +18,9 @@ def main() -> int:
     parser.add_argument("--expected-branch", required=True)
     parser.add_argument("--expected-base", default=None)
     add_policy_argument(parser)
-    add_authorization_argument(parser, "rejection")
     args = parser.parse_args()
     try:
-        policy = load_policy(args.policy, args.expected_policy_digest)
+        policy = load_policy(args.policy, args.expected_policy_digest, args.repository, args.lifecycle_run)
     except ValueError as exc:
         return emit("blocked", "blocked-unsafe", {}, str(exc))
     if args.expected_base is None:
@@ -51,16 +50,6 @@ def main() -> int:
         return emit("blocked", "blocked-unsafe", evidence, "pull request does not belong to the current repository", "user-decision")
     if not matches(pull_request, args.expected_head, args.expected_base, args.expected_branch):
         return emit("blocked", "blocked-unsafe", evidence, "pull request changed after rejection", "user-decision")
-    if policy["pull_request"]["rejection_policy"] == "close-pr":
-        if not authorized(policy, "rejection", args.authorize_rejection):
-            return emit("waiting", "waiting-user-authorization", evidence, "explicit rejection-close authorization is required")
-        closed = run(["gh", "pr", "close", str(pull_request["number"]), "--repo", repository["nameWithOwner"]])
-        verified = run(["gh", "pr", "view", str(pull_request["number"]), "--repo", repository["nameWithOwner"], "--json", "state,headRefOid,headRefName,baseRefName"])
-        closed_record = parse_object(verified)
-        if closed.returncode != 0 or not closed_record or closed_record.get("state") != "CLOSED" or closed_record.get("headRefOid") != args.expected_head or closed_record.get("headRefName") != args.expected_branch or closed_record.get("baseRefName") != args.expected_base:
-            return emit("waiting", "waiting-external", evidence, closed.stderr.strip() or "rejection close was not verified")
-        evidence["rejection_close"] = "verified"
-        return emit("passed", "rejected-closed-pr", evidence)
     return emit("passed", "rejected-open-pr", evidence)
 
 if __name__ == "__main__":

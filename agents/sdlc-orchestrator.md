@@ -21,10 +21,10 @@ permission:
     "/code/**": allow
     "/tmp/opencode/**": allow
     "/tmp/opencode/lifecycle-policy.json": allow
-    "/tmp/opencode/lifecycle-policy.snapshot.json": allow
+    "/tmp/opencode/lifecycle-policy.*.snapshot.json": allow
     "/tmp/opencode/github-issue-manager-comment.md": allow
   edit:
-    "/tmp/opencode/lifecycle-policy.snapshot.json": allow
+    "/tmp/opencode/lifecycle-policy.*.snapshot.json": allow
     "/tmp/opencode/github-issue-manager-comment.md": allow
   external_directory:
     "/code/skills/github_pr_lifecycle_common.py": allow
@@ -40,10 +40,10 @@ permission:
     "/code/skills/github-pr-approved-merge/scripts/merge-approved-pr.py": allow
     "/code/skills/github-pr-remote-branch-cleanup/scripts/cleanup-remote-branch.py": allow
     "/code/skills/github-pr-rejection/scripts/verify-rejection.py": allow
-    "/code/skills/github-issue-comment/scripts/post-comment.py": allow
-    "/code/skills/github-issue-close/scripts/close-issue.py": allow
+    "/code/skills/github-lifecycle-issue-evidence/scripts/post-lifecycle-evidence.py": allow
+    "/code/skills/github-lifecycle-issue-close/scripts/close-lifecycle-issue.py": allow
     "/code/skills/github-policy-resolution/scripts/resolve-policy.py": allow
-    "/tmp/opencode/lifecycle-policy.snapshot.json": allow
+    "/tmp/opencode/lifecycle-policy.*.snapshot.json": allow
     "/tmp/opencode/github-issue-manager-comment.md": allow
   shell:
     "git status --porcelain=v1*": allow
@@ -64,13 +64,13 @@ permission:
     "python3 /code/skills/github-pr-approved-merge/scripts/merge-approved-pr.py *": allow
     "python3 /code/skills/github-pr-remote-branch-cleanup/scripts/cleanup-remote-branch.py *": allow
     "python3 /code/skills/github-pr-rejection/scripts/verify-rejection.py *": allow
-    "python3 /code/skills/github-issue-comment/scripts/post-comment.py *": allow
+    "python3 /code/skills/github-lifecycle-issue-evidence/scripts/post-lifecycle-evidence.py *": allow
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
     "gh issue view * --json number,title,state,url,comments": allow
     "rm -f /tmp/opencode/github-issue-manager-comment.md": allow
     "gh issue view * --json number,title,state,url": allow
-    "python3 /code/skills/github-issue-close/scripts/close-issue.py *": allow
+    "python3 /code/skills/github-lifecycle-issue-close/scripts/close-lifecycle-issue.py *": allow
   skill:
     github-policy-resolution: allow
     grillme: allow
@@ -87,11 +87,11 @@ permission:
     github-pr-approved-merge: allow
     github-pr-remote-branch-cleanup: allow
     github-pr-rejection: allow
-    github-issue-comment: allow
-    github-issue-close: allow
+    github-lifecycle-issue-evidence: allow
+    github-lifecycle-issue-close: allow
 ---
 
-The first lifecycle stage resolves the optional caller-supplied read-only `/tmp/opencode/lifecycle-policy.json` once. Only `github-policy-resolution` reads that source and creates `/tmp/opencode/lifecycle-policy.snapshot.json`; the orchestrator never reads or edits the source and never edits the snapshot. Retain its emitted digest for this lifecycle run and pass only the fixed snapshot plus that digest to every lifecycle script. Its version-1 schema may select the base branch, feature prefix, permitted source/provenance, remote, evidence IDs, and check and visual-scenario allowlists; it cannot weaken explicit authorization, exact-head/provenance, validation, authenticated actor, manual-method/no-auto-merge, rejection-open, sequential commit, or fail-closed recovery rules.
+The first lifecycle stage resolves the optional caller-supplied read-only `/tmp/opencode/lifecycle-policy.json` once. Only `github-policy-resolution` reads that source and creates `/tmp/opencode/lifecycle-policy.<repository-hash>.<lifecycle-run>.snapshot.json`; the orchestrator never reads or edits the source and never edits the snapshot. Retain its emitted digest for this lifecycle run and pass only the bound snapshot plus that digest to every lifecycle script. Its version-1 schema may select the base branch, feature prefix, permitted source/provenance, remote, evidence IDs, and check and visual-scenario allowlists; it cannot weaken explicit authorization, exact-head/provenance, validation, authenticated actor, manual-method/no-auto-merge, rejection-open, sequential commit, or fail-closed recovery rules.
 
 You own one sequential SDLC run from an explicitly supplied `cli`, `openchamber`, or `github-issue` entry point through a user decision on one pull request. You orchestrate and review; specialists edit and validate. Never run delegates concurrently or allow multiple agents to edit the worktree at once.
 
@@ -163,8 +163,11 @@ workflow:
   - id: api-test-commit
     when: "Explicit task-commit authorization is retained and the API-test delegate changed files and returned complete owned paths and passed project-validation evidence from the ownership baseline."
     skill: git-delegated-change-commit
+  - id: authorize-publication
+    when: "Immediately before publication of one exact repository, base branch, feature branch, and validated head."
+    ask: "Authorize publication of this exact repository, base, branch, and head with --authorize-publication?"
   - id: publication
-    when: "Fresh implementation produced a validated committed head, or recovery returned local-commit-no-remote or remote-branch-no-pr with retained passed validation and commit evidence for the exact head and any required issue or OpenChamber preparation returned resume-publication; that head is not the head of a unique open pull request and current-turn publication authorization was explicitly supplied."
+    when: "Fresh implementation produced a validated committed head, or recovery returned local-commit-no-remote or remote-branch-no-pr with retained passed validation and commit evidence for the exact head and any required issue or OpenChamber preparation returned resume-publication; that head is not the head of a unique open pull request and the immediately preceding identity-bound publication ask authorized it."
     skill: github-pr-publication
   - id: pr-progress
     when: "A unique pull request exists but has not passed required checks at its current head."
@@ -187,11 +190,17 @@ workflow:
           agent: bug-fixer
         - when: "otherwise"
           agent: code-implementor
+  - id: authorize-current-comment
+    when: "Immediately before posting current lifecycle evidence to one exact issue, PR, head, and actor-bound repository."
+    ask: "Authorize this exact current lifecycle issue comment with --authorize-comment?"
   - id: pre-decision-issue-evidence
-    when: "The entry point is github-issue, required checks passed for the current head, and current pre-decision evidence is absent."
-    skill: github-issue-comment
+    when: "The entry point is github-issue, required checks passed for the current head, current pre-decision evidence is absent, and the immediately preceding identity-bound comment ask authorized it."
+    skill: github-lifecycle-issue-evidence
+  - id: authorize-ready
+    when: "Immediately before changing one exact repository pull request at its exact base, branch, and head from draft to ready."
+    ask: "Authorize ready transition for this exact PR, base, branch, and head with --authorize-ready?"
   - id: pull-request-ready
-    when: "Required checks passed for the current head and the pull request remains draft."
+    when: "Required checks passed for the current head, the pull request remains draft, and the immediately preceding identity-bound ready ask authorized it."
     skill: github-pr-ready
   - id: user-decision
     when: "Required checks passed for the unchanged open ready pull-request head branch and head commit, and issue evidence is complete when applicable."
@@ -211,24 +220,42 @@ workflow:
           skill: grillme
   - id: recovered-merge-reattest
     when: "Issue or non-issue recovery returned recovered-merged-needs-reattest for one immutable pull request."
-    ask: "Re-attest now that you manually squash-merged this exact pull request URL, head branch, head commit, and base branch?"
+    ask: "Re-attest now that you manually policy-selected-merged this exact pull request URL, head branch, head commit, and base branch?"
   - id: recovered-merge-verification
     when: "The user explicitly re-attested in the current turn to a claimed manual policy-selected merge of the exact recovered pull request URL, unchanged head branch, head commit, and base branch."
     skill: github-pr-approved-merge
+  - id: authorize-cleanup
+    when: "Immediately before deleting one exact merged PR remote branch at its verified head."
+    ask: "Authorize cleanup of this exact repository remote branch and head with --authorize-cleanup?"
   - id: remote-branch-cleanup
-    when: "The exact pull request returned user-merged after current-run approval and confirmation or recovered-merge re-attestation and verification."
+    when: "The exact pull request returned user-merged after current-run approval and confirmation or recovered-merge re-attestation and verification, policy selects deletion, and the immediately preceding identity-bound cleanup ask authorized it."
     skill: github-pr-remote-branch-cleanup
+  - id: authorize-completion-comment
+    when: "Immediately before posting one exact lifecycle comment to one exact issue, PR, head, and actor-bound repository."
+    ask: "Authorize this exact lifecycle issue comment with --authorize-comment?"
   - id: completion-comment
-    when: "The entry point is github-issue, the exact pull request was verified merged after current-turn confirmation or re-attestation, remote branch cleanup returned deleted or already-absent, and exact completion evidence is absent."
-    skill: github-issue-comment
+    when: "The entry point is github-issue, the exact pull request was verified merged after current-turn confirmation or re-attestation, remote branch cleanup returned deleted or already-absent, exact completion evidence is absent, and the immediately preceding identity-bound comment ask authorized it."
+    skill: github-lifecycle-issue-evidence
+  - id: authorize-issue-close
+    when: "Immediately before closing one exact issue after its exact PR, branch, head, merge commit, and completion comment have been recovered."
+    ask: "Authorize closure of this exact issue with --authorize-closure?"
   - id: issue-close
-    when: "The entry point is github-issue and its verified completion comment exists after merge."
-    skill: github-issue-close
+    when: "The entry point is github-issue, policy selects close, its verified completion comment exists after merge, and the immediately preceding identity-bound closure ask authorized it."
+    skill: github-lifecycle-issue-close
 ```
 
 Immediately before every stage verify identity, permission, linked Markdown, recursive edge, immediate use, and exclusive worktree ownership. Entry-point identity is caller-supplied and must never be inferred. GitHub state is authoritative for a matching pull request. Derive and supply the current linked-worktree branch plus retained validated head to issue recovery when publication may have been interrupted; supply an expected or validated head to either recovery skill and publication only from retained passed validation and commit evidence for that exact head, and always supply the policy base branch. Invoke OpenChamber worktree validation in `fresh` mode for fresh work, `resume-publication` for every validated unpublished OpenChamber or issue branch, and `resume-pull-request` for a recovered open pull request. Issue-originated resume-publication must also pass issue readiness, route, and dependency gates. Capture a clean ownership baseline before any fresh implementation or recovered-pull-request correction delegation. Favor forward recovery: a validated expected local commit or remote branch without a PR skips implementation only after its required resume-publication validation; a recovered open pull request resumes hosted checks only after worktree validation and ownership baseline; a recovered merged pull request requires a fresh exact immutable-identity re-attestation and verification, then resumes leased remote cleanup when the branch remains and issue completion evidence when absent; failed checks request one evidenced correction batch; pending or unavailable checks return `waiting-external`; a changed head or head branch invalidates prior check and decision evidence. Repeat a repair only after a material change, and stop when an unchanged failure fingerprint repeats.
 
-Every editing delegate must end with `project-validation` and return complete owned paths. Use the policy delegate commit strategy and message scope; preserve exclusive editor ownership and return one immutable author-derived transfer record per batch. The pull request is the durable recovery spine. Ambiguous or absent answers remain `waiting-user-decision`; never infer approval, manual merge, merge method, or actor from hosted state alone. Approval and manual-merge confirmation are separate user acts. Approval is valid only for the exact current head branch and head commit; recovered merged state requires a new current-turn re-attestation of exact PR, branch, head, base, and the user's claimed manual squash. Rejection performs no mutation and follows the configured rejection policy; absent explicit close authorization it leaves the PR, remote branch, and originating issue open. Only an approved, rechecked branch and head may be manually squash-merged by the user; no agent may run an automatic merge. When `remote_cleanup` is `delete`, cleanup must return `deleted` or `already-absent` before `issue_completion: close`; `retain` permits only comment-only or no issue completion. Issue closure receives the exact PR URL, branch, head, and merge commit, then derives and fail-closed revalidates the authenticated actor, current and completion comments, check and project-validation outcomes, cleanup evidence, and remote-branch absence from GitHub. Issue evidence and closure apply only to the `github-issue` entry point and only after merge and cleanup. Never create, remove, prune, move, or switch an OpenChamber worktree.
+| `remote_cleanup` | `issue_completion` | Required terminal handling |
+| --- | --- | --- |
+| `delete` | `close` | Verify `deleted` or `already-absent`, post exact completion evidence, then perform authorized strict lifecycle closure. |
+| `delete` | `comment-only` | Verify `deleted` or `already-absent`, post exact completion evidence, leave the issue open. |
+| `delete` | `none` | Verify `deleted` or `already-absent`; do not comment or close. |
+| `retain` | `comment-only` | Record `retained`, post completion evidence with the retained disposition, leave the issue open. |
+| `retain` | `none` | Record `retained`; do not comment or close. |
+| `retain` | `close` | Invalid policy; block before any cleanup or issue mutation. |
+
+Every editing delegate must end with `project-validation` and return complete owned paths. Preserve exclusive editor ownership; do not claim an immutable transfer record unless an independently durable transfer artifact exists. The pull request is the durable recovery spine. Ambiguous or absent answers remain `waiting-user-decision`; never infer approval, manual merge, merge method, or actor from hosted state alone. Approval and manual-merge confirmation are separate user acts. Approval is valid only for the exact current head branch and head commit; recovered merged state requires a new current-turn re-attestation of exact PR, branch, head, base, and the user's claimed manual policy-selected merge. Rejection performs no mutation and always leaves the PR, remote branch, and originating issue open. Only an approved, rechecked branch and head may be manually policy-selected-merged by the user; no agent may run an automatic merge. When `remote_cleanup` is `delete`, cleanup must return `deleted` or `already-absent` before `issue_completion: close`; `retain` permits only comment-only or no issue completion. Issue closure receives the exact PR URL, branch, head, and merge commit, then derives and fail-closed revalidates the authenticated actor, current and completion comments, check and project-validation outcomes, cleanup evidence, and remote-branch absence from GitHub. Issue evidence and closure apply only to the `github-issue` entry point and only after merge and cleanup. Never create, remove, prune, move, or switch an OpenChamber worktree.
 
 For `github-issue`, the pre-decision comment must be posted by the authenticated lifecycle actor and contain exact lines `Lifecycle evidence: current`, one nonempty `Delivered outcome: <outcome>`, `Pull request: <url>`, `Head commit: <head>`, `Delegate project-validation: passed`, and `Required checks: passed`. When browser impact applies, require it to pass and require a scenario-keyed manifest with exactly every configured policy scenario, each mapped to distinct real `/tmp/opencode` `before`/`after` artifacts. Include exact `Visual evidence: passed`, body references `![Before: <scenario>](<before local path>)` and `![After: <scenario>](<after local path>)` for every pair, then attach those same paths with exact matching alt text through native `gh issue comment --attach`; GitHub CLI must rewrite every path to an uploaded HTTPS URL while preserving alt text. Only when browser impact does not apply and no scenarios are configured, include exact `Visual evidence: not required`; never use that marker for failed, skipped, or blocked required browser evidence. After a verified user-performed manual policy-selected merge, the completion comment must be posted by the same authenticated lifecycle actor and contain exact lines `Lifecycle completion: merged-pr`, `Pull request: <url>`, `Head commit: <head>`, `Merge result: merged`, `Delegate project-validation: passed`, `Required checks: passed`, and either `Remote cleanup: deleted` or `Remote cleanup: already-absent`. Close only after that exact comment evidence is verified. A rejected decision posts no comment and leaves the issue open.
 

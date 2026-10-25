@@ -6,10 +6,22 @@ mutations remain in their owning scripts.
 from __future__ import annotations
 
 import json
+import hashlib
 import subprocess
 from urllib.parse import urlparse
 
 VERSION = 1
+
+
+def failure_fingerprint(records: list[dict] | None) -> str | None:
+    """Stable evidence fingerprint used to stop unchanged correction loops."""
+    if records is None:
+        return None
+    relevant = [
+        {key: record.get(key) for key in ("name", "bucket", "state", "workflow", "link")}
+        for record in records
+    ]
+    return hashlib.sha256(json.dumps(relevant, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
 def run(args: list[str], *, input_text: str | None = None) -> subprocess.CompletedProcess[str]:

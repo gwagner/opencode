@@ -7,11 +7,11 @@ opencode_permission:
     "python3 /code/skills/github-pr-check-validation/scripts/validate-checks.py *": allow
   external_directory:
     "/code/skills/github_lifecycle_policy.py": allow
-    "/tmp/opencode/lifecycle-policy.snapshot.json": allow
+    "/tmp/opencode/lifecycle-policy.*.snapshot.json": allow
     "/code/skills/github_pr_lifecycle_common.py": allow
     "/code/skills/github-pr-check-validation/scripts/validate-checks.py": allow
 inputs:
-  - resolved `/tmp/opencode/lifecycle-policy.snapshot.json` and its expected digest
+  - resolved `/tmp/opencode/lifecycle-policy.<repository-hash>.<lifecycle-run>.snapshot.json` and its expected digest
   - one open GitHub pull request
   - expected pull-request head commit
   - expected GitHub repository from the current checkout
@@ -25,7 +25,7 @@ inputs:
 
 Require one open GitHub pull request, its expected head commit, the expected GitHub repository from the current checkout, an authenticated GitHub CLI, and a bounded recheck count and interval.
 
-The orchestrator first resolves the caller source into `/tmp/opencode/lifecycle-policy.snapshot.json`; every invocation passes that snapshot as `--policy /tmp/opencode/lifecycle-policy.snapshot.json --expected-policy-digest <digest>` and never reuses the source. It may change only validated repository-local names, sources, evidence IDs, check/visual allowlists, and delegate hints; exact-head, authenticated-actor, validation, no-auto-merge, manual-method, and fail-closed disambiguation invariants remain mandatory.
+The orchestrator first resolves the caller source into `/tmp/opencode/lifecycle-policy.<repository-hash>.<lifecycle-run>.snapshot.json`; every invocation passes that snapshot as `--policy /tmp/opencode/lifecycle-policy.<repository-hash>.<lifecycle-run>.snapshot.json --expected-policy-digest <digest> --repository <owner/name> --lifecycle-run <run-id>` and never reuses the source. It may change only validated repository-local names, sources, evidence IDs, check/visual allowlists, and delegate hints; exact-head, authenticated-actor, validation, no-auto-merge, manual-method, and fail-closed disambiguation invariants remain mandatory.
 
 ## Procedure
 

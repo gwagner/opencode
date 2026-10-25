@@ -14,6 +14,7 @@ from github_lifecycle_policy import add_policy_argument, load_policy, policy_evi
 from github_pr_lifecycle_common import (
     emit as result_emit,
     head_repository_matches,
+    failure_fingerprint,
     remote_urls_match,
     repository_matches,
     run,
@@ -88,17 +89,19 @@ def main() -> int:
     parser.add_argument("--expected-head", required=True)
     parser.add_argument("--max-rechecks", type=int, default=None)
     parser.add_argument("--wait-seconds", type=int, default=30)
+    parser.add_argument("--correction-count", type=int, default=0)
+    parser.add_argument("--prior-failure-fingerprint")
     add_policy_argument(parser)
     args = parser.parse_args()
     try:
-        policy = load_policy(args.policy, args.expected_policy_digest)
+        policy = load_policy(args.policy, args.expected_policy_digest, args.repository, args.lifecycle_run)
     except ValueError as exc:
         return result_emit("blocked", "blocked-unsafe", {}, str(exc))
     evidence: dict[str, object] = {**policy_evidence(policy), "attempts": []}
     args.max_rechecks = policy["validation"]["max_rechecks"] if args.max_rechecks is None else args.max_rechecks
     args.wait_seconds = policy["validation"]["wait_seconds"] if args.wait_seconds == 30 else args.wait_seconds
-    if args.max_rechecks < 0 or args.wait_seconds < 0:
-        return result_emit("blocked", "blocked-unsafe", evidence, "recheck count and wait interval must be nonnegative")
+    if args.max_rechecks < 0 or args.wait_seconds < 0 or args.correction_count < 0:
+        return result_emit("blocked", "blocked-unsafe", evidence, "recheck count, correction count, and wait interval must be nonnegative")
 
     auth = run(["gh", "auth", "status"])
     repo = run(["gh", "repo", "view", "--json", "nameWithOwner,url"])
@@ -111,6 +114,8 @@ def main() -> int:
     if not isinstance(repository, dict) or not repository.get("nameWithOwner") or not repository.get("url"):
         return result_emit("blocked", "blocked-unsafe", evidence, "repository identity is incomplete")
     evidence["repository"] = repository
+    if repository["nameWithOwner"] != args.repository:
+        return result_emit("blocked", "blocked-unsafe", evidence, "policy repository binding does not match the authenticated checkout")
 
     origin = run(["git", "remote", "get-url", "--all", policy["remote"]])
     push_origin = run(["git", "remote", "get-url", "--push", "--all", policy["remote"]])
@@ -167,6 +172,13 @@ def main() -> int:
         if disposition == "passed":
             return result_emit("passed", "passed", evidence, next_stage="pull-request-ready")
         if disposition == "repair-needed":
+            fingerprint = failure_fingerprint(records)
+            evidence["failure_fingerprint"] = fingerprint
+            evidence["correction_count"] = args.correction_count
+            if args.correction_count >= policy["validation"]["max_corrections"]:
+                return result_emit("blocked", "blocked-unsafe", evidence, "maximum correction count reached")
+            if fingerprint and fingerprint == args.prior_failure_fingerprint:
+                return result_emit("blocked", "blocked-unsafe", evidence, "unchanged failed-check fingerprint forbids another correction")
             return result_emit("repair", "repair-needed", evidence, "one or more required checks failed", "correction")
         if disposition == "blocked-unsafe":
             return result_emit("blocked", disposition, evidence, "required-check output was malformed or ambiguous")

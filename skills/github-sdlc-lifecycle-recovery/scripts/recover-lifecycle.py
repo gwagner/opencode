@@ -102,7 +102,7 @@ def main() -> int:
     add_policy_argument(parser)
     args = parser.parse_args()
     try:
-        policy = load_policy(args.policy, args.expected_policy_digest)
+        policy = load_policy(args.policy, args.expected_policy_digest, args.repository, args.lifecycle_run)
     except ValueError as exc:
         return result_emit("blocked", "blocked-unsafe", {}, str(exc))
     evidence: dict[str, object] = policy_evidence(policy)
@@ -120,6 +120,8 @@ def main() -> int:
     if not isinstance(repository, dict) or not repository.get("nameWithOwner") or not repository.get("url"):
         return result_emit("blocked", "blocked-unsafe", evidence, "repository identity is incomplete", None)
     evidence["repository"] = repository
+    if repository["nameWithOwner"] != args.repository:
+        return result_emit("blocked", "blocked-unsafe", evidence, "policy repository binding does not match the authenticated checkout")
     origin = run(["git", "remote", "get-url", "--all", policy["remote"]])
     push_origin = run(["git", "remote", "get-url", "--push", "--all", policy["remote"]])
     if origin.returncode != 0 or push_origin.returncode != 0:

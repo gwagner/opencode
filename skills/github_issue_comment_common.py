@@ -40,11 +40,16 @@ def visual_evidence_matches(lines: list[str], scenarios: list[str] | None = None
         return False
     if len(before_by_scenario) != len(before_pairs) or len(after_by_scenario) != len(after_pairs):
         return False
+    # A screenshot may prove exactly one phase of one scenario.  Reuse would
+    # make a policy-wide manifest look complete while losing scenario evidence.
+    urls = [*before_by_scenario.values(), *after_by_scenario.values()]
+    if len(urls) != len(set(urls)):
+        return False
     return all(
         urlparse(url).scheme == "https"
         and urlparse(url).hostname == "github.com"
         and urlparse(url).path.startswith("/user-attachments/")
-        for url in [*before_by_scenario.values(), *after_by_scenario.values()]
+        for url in urls
     )
 
 
@@ -69,6 +74,8 @@ def completion_comment_matches(comment: dict, url: str, head: str, actor: str, p
     policy = policy or {"evidence": {"completion_id": "merged-pr"}}
     lines = (comment.get("body") or "").splitlines()
     cleanup = {"Remote cleanup: deleted", "Remote cleanup: already-absent"}
+    if policy and policy.get("remote_cleanup") == "retain":
+        cleanup.add("Remote cleanup: retained")
     return (
         comment_author_matches(comment, actor)
         and exact_controlled_line(lines, "Lifecycle completion:", f"Lifecycle completion: {policy['evidence']['completion_id']}")

@@ -46,6 +46,7 @@ def validate_visual_manifest(value: object, scenarios: list[str]) -> dict[str, d
     if not isinstance(value, dict) or set(value) != set(scenarios):
         return None
     manifest: dict[str, dict[str, str]] = {}
+    artifact_paths: set[Path] = set()
     for scenario in scenarios:
         pair = value.get(scenario)
         if not isinstance(pair, dict) or set(pair) != {"before", "after"}:
@@ -63,6 +64,10 @@ def validate_visual_manifest(value: object, scenarios: list[str]) -> dict[str, d
         # A pair cannot make a meaningful before/after claim from one artifact.
         if Path(normalized["before"]).resolve() == Path(normalized["after"]).resolve():
             return None
+        resolved_pair = {Path(normalized["before"]).resolve(), Path(normalized["after"]).resolve()}
+        if artifact_paths.intersection(resolved_pair):
+            return None
+        artifact_paths.update(resolved_pair)
         manifest[scenario] = normalized
     return manifest
 
@@ -171,7 +176,7 @@ def main() -> int:
     add_authorization_argument(parser, "comment")
     args = parser.parse_args()
     try:
-        policy = load_policy(args.policy, args.expected_policy_digest)
+        policy = load_policy(args.policy, args.expected_policy_digest, args.repository, args.lifecycle_run)
     except ValueError as exc:
         return result_emit("blocked", "blocked-unsafe", {}, str(exc))
     evidence: dict[str, object] = {**policy_evidence(policy), "identity": args.identity, "kind": args.kind}

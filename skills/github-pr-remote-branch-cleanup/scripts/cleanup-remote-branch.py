@@ -48,7 +48,7 @@ def main() -> int:
     add_authorization_argument(parser, "cleanup")
     args = parser.parse_args()
     try:
-        policy = load_policy(args.policy, args.expected_policy_digest)
+        policy = load_policy(args.policy, args.expected_policy_digest, args.repository, args.lifecycle_run)
     except ValueError as exc:
         return result_emit("blocked", "blocked-unsafe", {}, str(exc))
     if args.expected_base is None:
@@ -69,6 +69,8 @@ def main() -> int:
     if not repository or not repository.get("nameWithOwner") or not repository.get("url"):
         return result_emit("blocked", "blocked-unsafe", evidence, "repository identity is malformed or incomplete")
     evidence["repository"] = repository
+    if repository["nameWithOwner"] != args.repository:
+        return result_emit("blocked", "blocked-unsafe", evidence, "policy repository binding does not match the authenticated checkout")
 
     origin = run(["git", "remote", "get-url", "--all", policy["remote"]])
     push_origin = run(["git", "remote", "get-url", "--push", "--all", policy["remote"]])
