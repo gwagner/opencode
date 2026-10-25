@@ -6,15 +6,11 @@ opencode_permission:
   question: allow
   shell:
     "python3 /code/skills/github-pr-check-validation/scripts/validate-checks.py *": allow
+    "python3 /code/skills/github-pr-approved-merge/scripts/merge-approved-pr.py *": allow
     "python3 /code/skills/github-pr-rejection/scripts/verify-rejection.py *": allow
-    "gh auth status": allow
-    "gh repo view --json nameWithOwner,url": allow
-    "gh pr view * --json number,url,state,mergeable,baseRefName,headRefName,headRefOid": allow
-    "gh pr merge * --squash --match-head-commit *": allow
-    "git ls-remote --heads origin *": allow
-    "git push origin --delete *": allow
   external_directory:
     "/code/skills/github-pr-check-validation/scripts/validate-checks.py": allow
+    "/code/skills/github-pr-approved-merge/scripts/merge-approved-pr.py": allow
     "/code/skills/github-pr-rejection/scripts/verify-rejection.py": allow
   skill:
     github-pr-approved-merge: allow
@@ -59,4 +55,4 @@ Approval is invalid after any head, branch, base, state, or required-check chang
 
 ## Completion
 
-Report `merged`, `merged-cleanup-pending`, or `rejected-open-pr`; exact head, check evidence, user decision, and blocker.
+Report `merged` or `rejected-open-pr`; exact head, check evidence, user decision, and blocker. Remote branch cleanup follows a merged result in the owning orchestrator.

@@ -1,18 +1,14 @@
 ---
 name: github-pr-approved-merge
-description: Squash-merges one user-approved GitHub pull request after canonical required-check validation of its unchanged head and deletes only its remote branch.
+description: Squash-merges one user-approved GitHub pull request after canonical required-check validation of its unchanged head.
 classification: technical
 opencode_permission:
   shell:
     "python3 /code/skills/github-pr-check-validation/scripts/validate-checks.py *": allow
-    "gh auth status": allow
-    "gh repo view --json nameWithOwner,url": allow
-    "gh pr view * --json number,url,state,mergeable,baseRefName,headRefName,headRefOid": allow
-    "gh pr merge * --squash --match-head-commit *": allow
-    "git ls-remote --heads origin *": allow
-    "git push origin --delete *": allow
+    "python3 /code/skills/github-pr-approved-merge/scripts/merge-approved-pr.py *": allow
   external_directory:
     "/code/skills/github-pr-check-validation/scripts/validate-checks.py": allow
+    "/code/skills/github-pr-approved-merge/scripts/merge-approved-pr.py": allow
   skill:
     github-pr-check-validation: allow
 inputs:
@@ -30,7 +26,7 @@ Require one open GitHub pull request targeting `main`, explicit user merge appro
 ## Workflow
 
 ```yaml
-request: "One squash-merged, user-approved pull request with only its remote branch deleted."
+request: "One squash-merged, user-approved pull request."
 workflow:
   - id: required-check-recheck
     when: "The open pull request, approved head, and base branch have passed the initial merge gate."
@@ -39,18 +35,16 @@ workflow:
 
 ## Procedure
 
-1. Run `gh auth status`, `gh repo view --json nameWithOwner,url`, and `gh pr view <pr> --json number,url,state,mergeable,baseRefName,headRefName,headRefOid`.
-2. Require open state, base `main`, mergeable status, and an exact match between the current head and current-turn user approval. Stop if any value differs.
-3. Invoke `github-pr-check-validation` immediately before merging, supplying this exact current head. Require its `passed` result.
-4. Re-read the pull request with `gh pr view <pr> --json number,url,state,mergeable,baseRefName,headRefName,headRefOid`. Require open state, base `main`, mergeable status, and unchanged head commit, head branch, and base branch that exactly match the approved head. Stop if any gate changed.
-5. Run `gh pr merge <pr> --squash --match-head-commit <approved head>` once. Re-read the pull request and require merged state before cleanup.
-6. Run `git ls-remote --heads origin <head branch>`. If the branch remains, delete it with `git push origin --delete <head branch>`, then require a second `git ls-remote --heads origin <head branch>` to return no ref. Never delete or switch the local branch or worktree. Return `merged-cleanup-pending` when cleanup fails without obscuring the successful merge.
+1. Require open state, base `main`, mergeable status, ready state, and an exact match between the current head and current-turn user approval.
+2. Invoke `github-pr-check-validation` immediately before merging, supplying this exact current head. Require its `passed` result.
+3. Run `python3 /code/skills/github-pr-approved-merge/scripts/merge-approved-pr.py --pr <pr> --expected-head <approved head> --expected-base main`.
+4. Require one versioned JSON result. Accept `merged` only after the script verifies merged state and unchanged head, head branch, and base.
 
 ## Boundaries
 
 - Never parse, classify, or recheck required checks outside `github-pr-check-validation`; never bypass its result, use administrative merge, infer approval, merge a changed head, or merge into a base other than `main`.
-- Never delete a local branch, worktree, or directory.
+- Never delete a local or remote branch, worktree, or directory. Remote branch cleanup belongs to `github-pr-remote-branch-cleanup`.
 
 ## Completion
 
-Report `merged` or `merged-cleanup-pending`; repository, pull-request URL, approved head and base branch, canonical required-check result, squash-merge result, and remote-branch deletion result.
+Report `merged`, `waiting-external`, or `blocked-unsafe`; repository, pull-request URL, approved head and base branch, canonical required-check result, squash-merge result, and blocker.

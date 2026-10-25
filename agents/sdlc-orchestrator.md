@@ -38,15 +38,12 @@ permission:
     "python3 /code/skills/github-pr-lifecycle-recovery/scripts/recover-pr.py *": allow
     "python3 /code/skills/github-pr-publication/scripts/publish-pr.py *": allow
     "python3 /code/skills/github-pr-check-validation/scripts/validate-checks.py *": allow
+    "python3 /code/skills/github-pr-ready/scripts/ready-pr.py *": allow
+    "python3 /code/skills/github-pr-approved-merge/scripts/merge-approved-pr.py *": allow
+    "python3 /code/skills/github-pr-remote-branch-cleanup/scripts/cleanup-remote-branch.py *": allow
     "python3 /code/skills/github-pr-rejection/scripts/verify-rejection.py *": allow
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
-    "gh pr view * --json number,url,state,mergeable,baseRefName,headRefName,headRefOid": allow
-    "gh pr view * --json number,url,state,isDraft,baseRefName,headRefName,headRefOid": allow
-    "gh pr ready *": allow
-    "gh pr merge * --squash --match-head-commit *": allow
-    "git ls-remote --heads origin *": allow
-    "git push origin --delete *": allow
     "gh issue comment --help": allow
     "gh issue view * --json number,title,state,url,comments": allow
     "gh issue comment * --body-file /tmp/opencode/github-issue-manager-comment.md": allow
@@ -68,6 +65,7 @@ permission:
     github-pr-ready: allow
     github-pr-user-decision: allow
     github-pr-approved-merge: allow
+    github-pr-remote-branch-cleanup: allow
     github-pr-rejection: allow
     github-issue-comment: allow
     github-issue-close: allow
@@ -173,18 +171,21 @@ workflow:
   - id: user-decision
     when: "Required checks passed for the unchanged open ready pull-request head and issue evidence is complete when applicable."
     skill: github-pr-user-decision
+  - id: remote-branch-cleanup
+    when: "The approved pull request was verified merged, or lifecycle recovery returned merged-needs-cleanup."
+    skill: github-pr-remote-branch-cleanup
   - id: completion-comment
-    when: "The entry point is github-issue and the approved pull request was verified merged."
+    when: "The entry point is github-issue, the approved pull request was verified merged, and remote branch cleanup returned deleted or already-absent."
     skill: github-issue-comment
   - id: issue-close
     when: "The entry point is github-issue and its verified completion comment exists after merge."
     skill: github-issue-close
 ```
 
-Before every stage verify identity, permission, linked Markdown, recursive edge, immediate use, and exclusive worktree ownership. Entry-point identity is caller-supplied and must never be inferred. GitHub state is authoritative for a matching pull request. Favor forward recovery: a remote branch without a PR resumes publication; failed checks request one evidenced correction batch; pending or unavailable checks return `waiting-external`; a changed head invalidates prior check and decision evidence. Repeat a repair only after a material change, and stop when an unchanged failure fingerprint repeats.
+Before every stage verify identity, permission, linked Markdown, recursive edge, immediate use, and exclusive worktree ownership. Entry-point identity is caller-supplied and must never be inferred. GitHub state is authoritative for a matching pull request. Supply an expected unpublished local head to non-issue recovery only from retained passed validation and commit evidence for that exact head. Favor forward recovery: a validated expected local commit or remote branch without a PR resumes publication; failed checks request one evidenced correction batch; pending or unavailable checks return `waiting-external`; a changed head invalidates prior check and decision evidence. Repeat a repair only after a material change, and stop when an unchanged failure fingerprint repeats.
 
-Every editing delegate must end with `project-validation` and return complete owned paths. Review and commit each batch sequentially. The pull request is the durable recovery spine. Approval is valid only for the exact current head; rejection performs no mutation and leaves the PR, remote branch, and originating issue open. Only an approved, rechecked head may merge. Issue evidence and closure apply only to the `github-issue` entry point and only after merge. Never create, remove, prune, move, or switch an OpenChamber worktree.
+Every editing delegate must end with `project-validation` and return complete owned paths. Review and commit each batch sequentially. The pull request is the durable recovery spine. Approval is valid only for the exact current head; rejection performs no mutation and leaves the PR, remote branch, and originating issue open. Only an approved, rechecked head may merge. Remote branch cleanup must return `deleted` or `already-absent` before issue completion. Issue evidence and closure apply only to the `github-issue` entry point and only after merge and cleanup. Never create, remove, prune, move, or switch an OpenChamber worktree.
 
 For `github-issue`, the pre-decision comment must include `Lifecycle evidence: current`, `Delivered outcome:`, the pull-request URL, `Head commit: <head>`, `Delegate project-validation: passed`, and `Required checks: passed`. When browser impact passed, attach labelled same-scenario Before and After screenshots using native `gh issue comment --attach`; otherwise state that visual evidence is not required. After an approved merge, the completion comment must include `Lifecycle completion: merged-pr`, the pull-request URL, `Head commit: <head>`, merge result, retained validation and check evidence, and remote-cleanup result. Close only after that comment is verified. A rejected decision posts no comment and leaves the issue open.
 
-Report entry point, issue when present, worktree disposition, selected delegates, changed paths, validation, commits, published head, PR, checks, correction attempts, exact user decision, `merged`, `merged-cleanup-pending`, or `rejected-open-pr`, cleanup, issue completion, and blockers.
+Report entry point, issue when present, worktree disposition, selected delegates, changed paths, validation, commits, published head, PR, checks, correction attempts, exact user decision, `merged` or `rejected-open-pr`, cleanup disposition, issue completion, and blockers.

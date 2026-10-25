@@ -19,7 +19,10 @@ permission:
     "/code/**": allow
     "/code/.opencode/**": deny
   edit:
-    "/code/**": allow
+    "/code/agents/**": allow
+    "/code/skills/**": allow
+    "/code/README.md": allow
+    "/code/tests/**": allow
     "/code/.opencode/**": deny
   shell:
     "go build *": allow
@@ -89,7 +92,7 @@ workflow:
         - when: "otherwise"
           skill: non-technical-agent-skill-builder
   - id: validation
-    when: "After approved agent or skill Markdown edits."
+    when: "After any approved agent-or-skill work-item edit."
     skill: project-validation
     report:
       - passed

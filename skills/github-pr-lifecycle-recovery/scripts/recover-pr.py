@@ -20,6 +20,8 @@ def classify(
     base_head: str,
     provenance: str,
     base: str = "main",
+    clean: bool = True,
+    expected_head: str | None = None,
 ) -> tuple[str, str | None, str | None]:
     if len(prs) > 1:
         return "blocked-unsafe", None, "multiple pull requests use the current branch"
@@ -29,6 +31,10 @@ def classify(
                 return "blocked-unsafe", None, "local and remote branch heads differ without a pull request"
             return "remote-branch-no-pr", "pr-publication", None
         if local_head != base_head:
+            if not clean:
+                return "waiting-user-cleanup", None, "local worktree contains uncommitted changes"
+            if expected_head == local_head:
+                return "local-commit-no-remote", "pr-publication", None
             return "blocked-unsafe", None, "unpublished local commits lack durable remote ownership evidence"
         next_stage = "ownership-baseline" if provenance == "cli" else "worktree-validation"
         return "fresh-local", next_stage, None
@@ -41,7 +47,9 @@ def classify(
         if pr.get("headRefOid") != local_head:
             return "blocked-unsafe", None, "local and merged pull-request heads differ"
         if remote_head:
-            return "merged-cleanup-pending", None, None
+            if remote_head != pr.get("headRefOid"):
+                return "blocked-unsafe", None, "remote branch no longer points to the merged head"
+            return "merged-needs-cleanup", "remote-branch-cleanup", None
         return "merged", None, None
     if pr.get("state") != "OPEN":
         return "blocked-unsafe", None, "current branch has a non-open pull request"
@@ -59,17 +67,20 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--provenance", choices=("cli", "openchamber"), required=True)
     parser.add_argument("--base", default="main")
+    parser.add_argument("--expected-head")
     args = parser.parse_args()
     evidence: dict[str, object] = {}
     branch = run(["git", "branch", "--show-current"])
     head = run(["git", "rev-parse", "HEAD"])
     base_head_result = run(["git", "rev-parse", args.base])
-    if branch.returncode != 0 or head.returncode != 0 or base_head_result.returncode != 0 or not branch.stdout.strip() or branch.stdout.strip() == args.base:
+    status_result = run(["git", "status", "--porcelain=v1"])
+    if branch.returncode != 0 or head.returncode != 0 or base_head_result.returncode != 0 or status_result.returncode != 0 or not branch.stdout.strip() or branch.stdout.strip() == args.base:
         return emit("blocked", "blocked-unsafe", None, evidence, "current branch identity is invalid")
     branch_name = branch.stdout.strip()
     local_head = head.stdout.strip()
     base_head = base_head_result.stdout.strip()
-    evidence.update({"provenance": args.provenance, "branch": branch_name, "local_head": local_head, "base_head": base_head})
+    clean = status_result.stdout == ""
+    evidence.update({"provenance": args.provenance, "branch": branch_name, "local_head": local_head, "base_head": base_head, "clean": clean, "expected_head": args.expected_head})
     if args.provenance == "cli" and not branch_name.startswith("feature/"):
         return emit("blocked", "blocked-unsafe", None, evidence, "cli recovery requires an orchestrator-owned feature/* branch")
     auth = run(["gh", "auth", "status"])
@@ -94,9 +105,10 @@ def main() -> int:
         return emit("blocked", "blocked-unsafe", None, evidence, "invalid pull-request list JSON")
     if not isinstance(prs, list) or any(not isinstance(record, dict) for record in prs):
         return emit("blocked", "blocked-unsafe", None, evidence, "pull-request list shape is invalid")
-    disposition, next_stage, blocker = classify(prs, remote_head, local_head, base_head, args.provenance, args.base)
+    disposition, next_stage, blocker = classify(prs, remote_head, local_head, base_head, args.provenance, args.base, clean, args.expected_head)
     evidence.update({"remote_head": remote_head, "pull_requests": prs})
-    return emit("passed" if disposition != "blocked-unsafe" else "blocked", disposition, next_stage, evidence, blocker)
+    status = "waiting" if disposition == "waiting-user-cleanup" else "blocked" if disposition == "blocked-unsafe" else "passed"
+    return emit(status, disposition, next_stage, evidence, blocker)
 
 
 if __name__ == "__main__":

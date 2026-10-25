@@ -31,6 +31,14 @@ class RecoveryTests(unittest.TestCase):
     def test_unpublished_local_commits_block(self):
         self.assertEqual(MODULE.classify([], None, "local", "base", "cli")[0], "blocked-unsafe")
 
+    def test_expected_clean_local_commit_resumes_publication(self):
+        result = MODULE.classify([], None, "local", "base", "cli", "main", True, "local")
+        self.assertEqual(result[:2], ("local-commit-no-remote", "pr-publication"))
+
+    def test_expected_dirty_local_commit_waits(self):
+        result = MODULE.classify([], None, "local", "base", "cli", "main", False, "local")
+        self.assertEqual(result[0], "waiting-user-cleanup")
+
     def test_remote_without_pr(self):
         self.assertEqual(MODULE.classify([], "h", "h", "base", "openchamber")[0], "remote-branch-no-pr")
 
@@ -54,8 +62,9 @@ class RecoveryTests(unittest.TestCase):
     def test_merged_without_remote_branch_is_terminal(self):
         self.assertEqual(MODULE.classify([self.pr(state="MERGED")], None, "h", "base", "openchamber")[0], "merged")
 
-    def test_merged_with_remote_branch_reports_cleanup_pending(self):
-        self.assertEqual(MODULE.classify([self.pr(state="MERGED")], "h", "h", "base", "openchamber")[0], "merged-cleanup-pending")
+    def test_merged_with_remote_branch_resumes_cleanup(self):
+        result = MODULE.classify([self.pr(state="MERGED")], "h", "h", "base", "openchamber")
+        self.assertEqual(result[:2], ("merged-needs-cleanup", "remote-branch-cleanup"))
 
 
 if __name__ == "__main__":

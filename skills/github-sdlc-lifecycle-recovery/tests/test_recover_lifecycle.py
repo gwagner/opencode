@@ -36,6 +36,11 @@ class RecoveryTests(unittest.TestCase):
         pr = {"state": "MERGED", "url": "u", "headRefName": "feature/x", "headRefOid": "h"}
         self.assertEqual(MODULE.classify("OPEN", [pr], False, [])[0], "blocked-unsafe")
 
+    def test_merged_pr_with_remote_branch_resumes_cleanup(self):
+        pr = {"state": "MERGED", "url": "u", "headRefName": "feature/x", "headRefOid": "h"}
+        result = MODULE.classify("OPEN", [pr], True, [])
+        self.assertEqual(result[:2], ("merged-needs-cleanup", "remote-branch-cleanup"))
+
     def test_duplicate_exact_current_evidence_is_recoverable(self):
         pr = {"state": "MERGED", "url": "u", "headRefName": "feature/x", "headRefOid": "h"}
         comment = {

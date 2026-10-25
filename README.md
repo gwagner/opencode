@@ -73,12 +73,13 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | github-issue-deletion | Permanently deletes one GitHub issue only after explicit issue-specific confirmation. |
 | github-issue-reopen | Reopens one closed GitHub issue and verifies its open state. |
 | github-issue-update | Applies one requested reversible title, body, or label update to an existing GitHub issue. |
-| github-pr-approved-merge | Squash-merges one user-approved GitHub pull request after canonical required-check validation of its unchanged head and deletes only its remote branch. |
+| github-pr-approved-merge | Squash-merges one user-approved GitHub pull request after canonical required-check validation of its unchanged head. |
 | github-pr-check-validation | Deterministically classifies and boundedly rechecks required checks for one unchanged open pull request. |
 | github-pr-lifecycle-recovery | Selects the resumable branch or pull-request state for one CLI- or OpenChamber-originated non-issue lifecycle without mutating it. |
 | github-pr-publication | Idempotently publishes one validated committed head to a unique draft pull request for a supported SDLC entry point. |
 | github-pr-ready | Marks one checked draft pull request ready, or verifies an already-ready pull request, for an exact-head user decision. |
 | github-pr-rejection | Verifies that one exact user-rejected pull request remains open and unchanged without mutating GitHub. |
+| github-pr-remote-branch-cleanup | Deletes one verified merged pull request's unchanged remote branch and confirms its absence. |
 | github-pr-user-decision | Routes one exact checked pull-request head through explicit user approval or non-mutating rejection. |
 | github-sdlc-lifecycle-recovery | Selects the safe resumable state for an issue-originated pull-request lifecycle without mutating it. |
 | github-work-issue-contract | Validates lifecycle-aware canonical GitHub work-issue contracts without publishing or changing authority. |
@@ -130,7 +131,7 @@ Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exi
 - Requirements route to `prd-strategist`, shared architecture and cross-feature decisions to `app-spec-architect`, bounded feature contracts to `code-spec-engineer`, defects to `bug-fixer`, and other implementation to `code-implementor`.
 - Implementation delegates edit and validate only. The orchestrator owns baselines, reviewed commits, idempotent pull-request publication, required checks, correction loops, user decisions, approved merge, and remote-branch cleanup.
 - A rejected pull request and branch remain open without mutation. Pending or unavailable hosted checks return a resumable waiting state rather than a terminal failure.
-- `github-issue-manager` manages issue intake and routes ready execution to `sdlc-orchestrator` with entry point `github-issue`. Current-head lifecycle evidence is posted after required checks pass; the completion comment and issue closure occur only after an approved merge.
+- `github-issue-manager` manages issue intake and routes ready execution to `sdlc-orchestrator` with entry point `github-issue`. Current-head lifecycle evidence is posted after required checks pass; the completion comment and issue closure occur only after an approved merge and verified remote-branch cleanup.
 - Direct `agent-builder` use is audit-only. Agent or skill edits require orchestrator delegation and return changed paths plus validation without staging, committing, or pushing.
 - Code-writing delegates end with `project-validation`. Unsupported project-native validation commands require confirmation instead of being silently unavailable.
 - Browser-capture commands and comparison behavior live in `browser-visual-capture`; agents only decide when the skill applies.

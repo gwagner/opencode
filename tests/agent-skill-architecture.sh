@@ -36,7 +36,8 @@ orchestrator="$root/agents/sdlc-orchestrator.md"
 for identity in feature-branch-setup openchamber-worktree-validation \
   github-sdlc-lifecycle-recovery github-pr-lifecycle-recovery issue-worktree-validation git-change-baseline \
   git-delegated-change-commit github-pr-publication github-pr-check-validation \
-  github-pr-ready github-pr-user-decision github-issue-comment github-issue-close; do
+  github-pr-ready github-pr-user-decision github-pr-remote-branch-cleanup \
+  github-issue-comment github-issue-close; do
   grep -q "^    $identity: allow$" "$orchestrator"
   grep -q "skill: $identity" "$orchestrator"
 done
@@ -71,6 +72,9 @@ for script in \
   "$root/skills/openchamber-worktree-validation/scripts/validate-worktree.py" \
   "$root/skills/github-pr-publication/scripts/publish-pr.py" \
   "$root/skills/github-pr-check-validation/scripts/validate-checks.py" \
+  "$root/skills/github-pr-ready/scripts/ready-pr.py" \
+  "$root/skills/github-pr-approved-merge/scripts/merge-approved-pr.py" \
+  "$root/skills/github-pr-remote-branch-cleanup/scripts/cleanup-remote-branch.py" \
   "$root/skills/github-sdlc-lifecycle-recovery/scripts/recover-lifecycle.py" \
   "$root/skills/github-pr-lifecycle-recovery/scripts/recover-pr.py" \
   "$root/skills/github-pr-rejection/scripts/verify-rejection.py"; do
@@ -85,49 +89,14 @@ done
 python3 -m unittest discover -s "$root/skills/openchamber-worktree-validation/tests" -p 'test_*.py'
 python3 -m unittest discover -s "$root/skills/github-pr-publication/tests" -p 'test_*.py'
 python3 -m unittest discover -s "$root/skills/github-pr-check-validation/tests" -p 'test_*.py'
+python3 -m unittest discover -s "$root/skills/github-pr-ready/tests" -p 'test_*.py'
+python3 -m unittest discover -s "$root/skills/github-pr-approved-merge/tests" -p 'test_*.py'
+python3 -m unittest discover -s "$root/skills/github-pr-remote-branch-cleanup/tests" -p 'test_*.py'
 python3 -m unittest discover -s "$root/skills/github-sdlc-lifecycle-recovery/tests" -p 'test_*.py'
 python3 -m unittest discover -s "$root/skills/github-pr-lifecycle-recovery/tests" -p 'test_*.py'
 python3 -m unittest discover -s "$root/skills/github-pr-rejection/tests" -p 'test_*.py'
 
-python3 - "$root" <<'PY'
-from pathlib import Path
-import re
-import sys
-
-root = Path(sys.argv[1])
-files = list((root / "agents").glob("*.md")) + list((root / "skills").glob("*/SKILL.md"))
-broken = []
-flow = []
-for path in files:
-    text = path.read_text()
-    lines = text.splitlines()
-    in_frontmatter = False
-    in_yaml = False
-    delimiters = 0
-    for number, line in enumerate(lines, 1):
-        if line == "---" and delimiters < 2:
-            delimiters += 1
-            in_frontmatter = delimiters == 1
-            continue
-        if line == "```yaml":
-            in_yaml = True
-            continue
-        if line == "```" and in_yaml:
-            in_yaml = False
-            continue
-        if (in_frontmatter or in_yaml) and re.search(r":\s*\[[^\]]+\]|:\s*\{[^}]+\}", line):
-            flow.append(f"{path.relative_to(root)}:{number}")
-    for match in re.finditer(r"\[[^\]]*\]\(([^)]+\.md)(?:#[^)]+)?\)", text):
-        target = match.group(1)
-        if target.startswith(("/", "http://", "https://")):
-            continue
-        if not (path.parent / target).resolve().exists():
-            broken.append(f"{path.relative_to(root)} -> {target}")
-if flow:
-    raise SystemExit("flow-style YAML: " + ", ".join(flow))
-if broken:
-    raise SystemExit("broken Markdown links: " + ", ".join(broken))
-PY
+python3 "$root/tests/validate-agent-skill-architecture.py" "$root"
 
 if grep -R -qE 'agent: github-sdlc|execution_route: github-sdlc|`github-sdlc`' "$root/agents" "$root/skills"; then
   printf '%s\n' 'obsolete github-sdlc routing remains' >&2

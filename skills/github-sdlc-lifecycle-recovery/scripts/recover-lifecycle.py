@@ -32,6 +32,8 @@ def classify(issue_state: str, prs: list[dict], branch_exists: bool, comments: l
         return "open-pull-request", "hosted-checks", None
     if pr.get("state") != "MERGED":
         return "blocked-unsafe", None, "matching pull request is neither open nor merged"
+    if branch_exists:
+        return "merged-needs-cleanup", "remote-branch-cleanup", None
     head = pr.get("headRefOid")
     url = pr.get("url")
     current = [
@@ -114,6 +116,8 @@ def main() -> int:
             evidence["remote_head"] = remote_head
             if not prs and (local.returncode != 0 or local.stdout.strip() != remote_head):
                 return emit("blocked", "blocked-unsafe", None, evidence, "local and remote branch heads differ without a matching pull request")
+            if prs and prs[0].get("state") == "MERGED" and remote_head != prs[0].get("headRefOid"):
+                return emit("blocked", "blocked-unsafe", None, evidence, "remote branch no longer points to the merged pull-request head")
     disposition, next_stage, blocker = classify(issue_record.get("state"), prs, branch_exists, issue_record.get("comments") or [])
     evidence["pull_requests"] = prs
     evidence["remote_branch_exists"] = branch_exists
