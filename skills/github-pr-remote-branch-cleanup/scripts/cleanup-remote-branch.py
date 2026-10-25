@@ -96,7 +96,15 @@ def parse_remote_head(stdout: str, branch: str | None = None) -> tuple[str | Non
     return lines[0][0], True
 
 
-def merged_identity_matches(record: dict, head: str, base: str, provenance: str) -> bool:
+def merged_identity_matches(record: dict, head: str, base: str, provenance: str, issue: str | None = None) -> bool:
+    lines = (record.get("body") or "").splitlines()
+    origins = [line for line in lines if line.startswith("OpenCode-Origin:")]
+    references = [line for line in lines if line.startswith("Refs #")]
+    markers_match = origins == [f"OpenCode-Origin: {provenance}"]
+    if provenance == "github-issue":
+        markers_match = markers_match and references == [f"Refs #{issue.lstrip('#') if issue else ''}"]
+    else:
+        markers_match = markers_match and not references
     return (
         record.get("state") == "MERGED"
         and record.get("headRefOid") == head
@@ -104,7 +112,7 @@ def merged_identity_matches(record: dict, head: str, base: str, provenance: str)
         and bool(record.get("number"))
         and bool(record.get("url"))
         and bool(record.get("headRefName"))
-        and f"OpenCode-Origin: {provenance}" in (record.get("body") or "").splitlines()
+        and markers_match
     )
 
 
@@ -114,8 +122,11 @@ def main() -> int:
     parser.add_argument("--expected-head", required=True)
     parser.add_argument("--expected-base", default="main")
     parser.add_argument("--provenance", choices=("cli", "openchamber", "github-issue"), required=True)
+    parser.add_argument("--issue")
     args = parser.parse_args()
     evidence: dict[str, object] = {}
+    if (args.provenance == "github-issue") != bool(args.issue) or (args.issue and not args.issue.lstrip("#").isdigit()):
+        return emit("blocked", "blocked-unsafe", evidence, "numeric issue identity is required only for github-issue provenance")
 
     auth = run(["gh", "auth", "status"])
     repo = run(["gh", "repo", "view", "--json", "nameWithOwner,url"])
@@ -146,7 +157,7 @@ def main() -> int:
         return emit("blocked", "blocked-unsafe", evidence, "pull request does not belong to the current repository")
     if not head_repository_matches(repository, pull_request):
         return emit("blocked", "blocked-unsafe", evidence, "pull request head repository does not match origin")
-    if not merged_identity_matches(pull_request, args.expected_head, args.expected_base, args.provenance):
+    if not merged_identity_matches(pull_request, args.expected_head, args.expected_base, args.provenance, args.issue):
         return emit("blocked", "blocked-unsafe", evidence, "pull request failed the merged-branch cleanup gate")
     branch = pull_request["headRefName"]
     if branch == args.expected_base:
@@ -179,6 +190,8 @@ def main() -> int:
         return emit("blocked", "blocked-unsafe", evidence, "remote branch changed during deletion")
     if remaining_head is not None:
         return emit("waiting", "waiting-external", evidence, deleted.stderr.strip() or "remote branch deletion was not confirmed")
+    if deleted.returncode != 0:
+        return emit("passed", "already-absent", evidence)
     return emit("passed", "deleted", evidence)
 
 

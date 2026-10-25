@@ -57,6 +57,31 @@ class CleanupTests(unittest.TestCase):
         }
         self.assertFalse(MODULE.merged_identity_matches(record, "h", "main", "cli"))
 
+    def test_conflicting_lifecycle_markers_block_identity(self):
+        record = {
+            "number": 1,
+            "url": "u",
+            "state": "MERGED",
+            "body": "OpenCode-Origin: cli\nOpenCode-Origin: github-issue\nRefs #7\n",
+            "baseRefName": "main",
+            "headRefName": "feature/x",
+            "headRefOid": "h",
+        }
+        self.assertFalse(MODULE.merged_identity_matches(record, "h", "main", "cli"))
+
+    def test_issue_identity_requires_exact_single_marker(self):
+        record = {
+            "number": 1,
+            "url": "u",
+            "state": "MERGED",
+            "body": "OpenCode-Origin: github-issue\nRefs #7\n",
+            "baseRefName": "main",
+            "headRefName": "feature/x",
+            "headRefOid": "h",
+        }
+        self.assertTrue(MODULE.merged_identity_matches(record, "h", "main", "github-issue", "7"))
+        self.assertFalse(MODULE.merged_identity_matches(record, "h", "main", "github-issue", "8"))
+
     def test_repository_identity_requires_exact_pr_url(self):
         repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
         local = {"number": 1, "url": "https://github.com/o/r/pull/1"}
@@ -226,6 +251,45 @@ class CleanupTests(unittest.TestCase):
             ["git", "push", "--force-with-lease=refs/heads/feature/x:h", "--delete", "origin", "feature/x"],
             calls,
         )
+
+    def test_failed_leased_delete_followed_by_external_absence_is_not_owned(self):
+        repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
+        pull_request = {
+            "number": 1,
+            "url": "https://github.com/o/r/pull/1",
+            "state": "MERGED",
+            "body": "OpenCode-Origin: cli\n",
+            "baseRefName": "main",
+            "headRefName": "feature/x",
+            "headRefOid": "h",
+            "isCrossRepository": False,
+            "headRepository": {"nameWithOwner": "o/r"},
+        }
+        remote_reads = iter(["h\trefs/heads/feature/x\n", ""])
+
+        def fake_run(args):
+            if args[:3] == ["gh", "auth", "status"]:
+                return self.completed(args)
+            if args[:3] == ["gh", "repo", "view"]:
+                return self.completed(args, json.dumps(repository))
+            if args == ["git", "remote", "get-url", "--all", "origin"] or args == ["git", "remote", "get-url", "--push", "--all", "origin"]:
+                return self.completed(args, "git@github.com:o/r.git\n")
+            if args[:3] == ["gh", "pr", "view"]:
+                return self.completed(args, json.dumps(pull_request))
+            if args[:4] == ["git", "ls-remote", "--heads", "origin"]:
+                return self.completed(args, next(remote_reads))
+            if args[:2] == ["git", "push"]:
+                return self.completed(args, stderr="lease rejected", returncode=1)
+            raise AssertionError(args)
+
+        output = io.StringIO()
+        argv = ["cleanup-remote-branch.py", "--pr", "1", "--expected-head", "h", "--provenance", "cli"]
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+            return_code = MODULE.main()
+        result = json.loads(output.getvalue())
+        self.assertEqual(return_code, 0)
+        self.assertEqual(result["disposition"], "already-absent")
+        self.assertEqual(result["evidence"]["delete_exit_code"], 1)
 
 
 if __name__ == "__main__":

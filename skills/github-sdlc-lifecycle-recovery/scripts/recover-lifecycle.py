@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from urllib.parse import urlparse
@@ -22,31 +23,58 @@ def comment_author_matches(comment: dict, actor: str) -> bool:
     return isinstance(author, dict) and (author.get("login") or "").casefold() == actor.casefold()
 
 
+def exact_controlled_line(lines: list[str], prefix: str, expected: str) -> bool:
+    return [line for line in lines if line.startswith(prefix)] == [expected]
+
+
+def visual_evidence_matches(lines: list[str]) -> bool:
+    visual = [line for line in lines if line.startswith("Visual evidence:")]
+    if visual == ["Visual evidence: not required"]:
+        return not any(line.startswith("![Before:") or line.startswith("![After:") for line in lines)
+    if visual != ["Visual evidence: passed"]:
+        return False
+    before = [line for line in lines if line.startswith("![Before:")]
+    after = [line for line in lines if line.startswith("![After:")]
+    if len(before) != 1 or len(after) != 1:
+        return False
+    before_match = re.fullmatch(r"!\[Before: ([^\]]+)\]\((https://[^)]+)\)", before[0])
+    after_match = re.fullmatch(r"!\[After: ([^\]]+)\]\((https://[^)]+)\)", after[0])
+    if before_match is None or after_match is None or before_match.group(1) != after_match.group(1):
+        return False
+    urls = (urlparse(before_match.group(2)), urlparse(after_match.group(2)))
+    return all(url.hostname == "github.com" and url.path.startswith("/user-attachments/") for url in urls)
+
+
 def current_comment_matches(comment: dict, url: str, head: str, actor: str) -> bool:
     lines = (comment.get("body") or "").splitlines()
-    required = {
-        "Lifecycle evidence: current",
-        f"Pull request: {url}",
-        f"Head commit: {head}",
-        "Delegate project-validation: passed",
-        "Required checks: passed",
-    }
     delivered = [line for line in lines if line.startswith("Delivered outcome:")]
-    return comment_author_matches(comment, actor) and required.issubset(set(lines)) and len(delivered) == 1 and bool(delivered[0].removeprefix("Delivered outcome:").strip())
+    return (
+        comment_author_matches(comment, actor)
+        and exact_controlled_line(lines, "Lifecycle evidence:", "Lifecycle evidence: current")
+        and len(delivered) == 1
+        and bool(delivered[0].removeprefix("Delivered outcome:").strip())
+        and exact_controlled_line(lines, "Pull request:", f"Pull request: {url}")
+        and exact_controlled_line(lines, "Head commit:", f"Head commit: {head}")
+        and exact_controlled_line(lines, "Delegate project-validation:", "Delegate project-validation: passed")
+        and exact_controlled_line(lines, "Required checks:", "Required checks: passed")
+        and visual_evidence_matches(lines)
+    )
 
 
 def completion_comment_matches(comment: dict, url: str, head: str, actor: str) -> bool:
     lines = (comment.get("body") or "").splitlines()
-    required = {
-        "Lifecycle completion: merged-pr",
-        f"Pull request: {url}",
-        f"Head commit: {head}",
-        "Merge result: merged",
-        "Delegate project-validation: passed",
-        "Required checks: passed",
-    }
     cleanup = {"Remote cleanup: deleted", "Remote cleanup: already-absent"}
-    return comment_author_matches(comment, actor) and required.issubset(set(lines)) and sum(line in cleanup for line in lines) == 1
+    return (
+        comment_author_matches(comment, actor)
+        and exact_controlled_line(lines, "Lifecycle completion:", "Lifecycle completion: merged-pr")
+        and exact_controlled_line(lines, "Pull request:", f"Pull request: {url}")
+        and exact_controlled_line(lines, "Head commit:", f"Head commit: {head}")
+        and exact_controlled_line(lines, "Merge result:", "Merge result: merged")
+        and exact_controlled_line(lines, "Delegate project-validation:", "Delegate project-validation: passed")
+        and exact_controlled_line(lines, "Required checks:", "Required checks: passed")
+        and sum(line in cleanup for line in lines) == 1
+        and len([line for line in lines if line.startswith("Remote cleanup:")]) == 1
+    )
 
 
 def issue_repository_matches(repository: dict, issue: dict) -> bool:
@@ -109,6 +137,13 @@ def parse_remote_head(stdout: str, branch: str) -> tuple[str | None, bool]:
     return lines[0][0], True
 
 
+def issue_marker_identity_matches(record: dict, issue_number: int) -> bool:
+    lines = (record.get("body") or "").splitlines()
+    references = [line for line in lines if line.startswith("Refs #")]
+    origins = [line for line in lines if line.startswith("OpenCode-Origin:")]
+    return references == [f"Refs #{issue_number}"] and origins == ["OpenCode-Origin: github-issue"]
+
+
 def classify(issue_state: str, prs: list[dict], remote_branch_state: str, comments: list[dict], actor: str) -> tuple[str, str | None, str | None]:
     if issue_state not in ("OPEN", "CLOSED"):
         return "blocked-unsafe", None, "unsupported issue state"
@@ -117,7 +152,7 @@ def classify(issue_state: str, prs: list[dict], remote_branch_state: str, commen
     if not prs:
         if issue_state == "CLOSED":
             return "blocked-unsafe", None, "closed issue has no matching merged pull request"
-        return ("remote-branch-no-pr", "pr-publication", None) if remote_branch_state == "present-exact" else ("fresh-start", "worktree-validation", None)
+        return ("remote-branch-no-pr", "worktree-validation", None) if remote_branch_state == "present-exact" else ("fresh-start", "worktree-validation", None)
     pr = prs[0]
     if any(not pr.get(key) for key in ("url", "headRefName", "headRefOid")):
         return "blocked-unsafe", None, "matching pull-request identity is incomplete"
@@ -133,9 +168,7 @@ def classify(issue_state: str, prs: list[dict], remote_branch_state: str, commen
     if not isinstance(merge_commit, dict) or not merge_commit.get("oid"):
         return "blocked-unsafe", None, "merged pull-request merge commit is missing"
     if remote_branch_state == "present-exact":
-        if issue_state == "CLOSED":
-            return "blocked-unsafe", None, "closed issue still requires remote branch cleanup"
-        return "merged-needs-cleanup", "remote-branch-cleanup", None
+        return "blocked-unsafe", None, "recovered merged pull request lacks durable lifecycle-owned approval and merge evidence"
     if remote_branch_state != "already-absent":
         return "blocked-unsafe", None, "merged pull-request remote branch is unverified"
     head = pr.get("headRefOid")
@@ -149,9 +182,7 @@ def classify(issue_state: str, prs: list[dict], remote_branch_state: str, commen
     if not current:
         return "blocked-unsafe", None, "merged lifecycle evidence is missing"
     if not completion:
-        if issue_state == "CLOSED":
-            return "blocked-unsafe", None, "closed issue lacks exact completion evidence"
-        return "merged-needs-completion", "completion-comment", None
+        return "blocked-unsafe", None, "recovered merge lacks exact lifecycle completion evidence"
     if issue_state == "CLOSED":
         return "closed", None, None
     return "merged-needs-close", "issue-close", None
@@ -166,6 +197,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--issue", required=True)
     parser.add_argument("--branch")
+    parser.add_argument("--validated-head")
     args = parser.parse_args()
     evidence: dict[str, object] = {}
     auth = run(["gh", "auth", "status"])
@@ -206,6 +238,9 @@ def main() -> int:
         return emit("blocked", "blocked-unsafe", None, evidence, "invalid issue JSON")
     if not isinstance(issue_record, dict) or not issue_record.get("number") or not issue_record.get("url") or not issue_record.get("state"):
         return emit("blocked", "blocked-unsafe", None, evidence, "issue identity is incomplete")
+    comments = issue_record.get("comments")
+    if not isinstance(comments, list) or any(not isinstance(comment, dict) or not isinstance(comment.get("body"), str) for comment in comments):
+        return emit("blocked", "blocked-unsafe", None, evidence, "issue comment shape is invalid")
     evidence["issue"] = issue_record
     if not issue_repository_matches(repository, issue_record):
         return emit("blocked", "blocked-unsafe", None, evidence, "issue does not belong to the current repository")
@@ -220,12 +255,15 @@ def main() -> int:
     if not isinstance(candidates, list) or any(not isinstance(record, dict) for record in candidates):
         return emit("blocked", "blocked-unsafe", None, evidence, "pull-request list shape is invalid")
     marker = f"Refs #{issue_record['number']}"
-    issue_matches = [record for record in candidates if marker in (record.get("body") or "").splitlines() and record.get("baseRefName") == "main"]
-    provenance_marker = "OpenCode-Origin: github-issue"
-    invalid_provenance = [record for record in issue_matches if provenance_marker not in (record.get("body") or "").splitlines()]
-    if invalid_provenance:
+    issue_matches = [record for record in candidates if marker in (record.get("body") or "").splitlines()]
+    wrong_base = [record for record in issue_matches if record.get("baseRefName") != "main"]
+    if wrong_base:
         evidence["pull_requests"] = issue_matches
-        return emit("blocked", "blocked-unsafe", None, evidence, "matching pull-request provenance is invalid")
+        return emit("blocked", "blocked-unsafe", None, evidence, "matching pull-request base is invalid")
+    invalid_markers = [record for record in issue_matches if not issue_marker_identity_matches(record, issue_record["number"])]
+    if invalid_markers:
+        evidence["pull_requests"] = issue_matches
+        return emit("blocked", "blocked-unsafe", None, evidence, "matching pull-request lifecycle markers are conflicting or invalid")
     prs = issue_matches
     if any(not pull_request_repositories_match(repository, record) for record in prs):
         evidence["pull_requests"] = prs
@@ -256,13 +294,21 @@ def main() -> int:
             if not prs:
                 current_branch = run(["git", "branch", "--show-current"])
                 evidence["current_branch"] = current_branch.stdout.strip() if current_branch.returncode == 0 else None
+                evidence["validated_head"] = args.validated_head
                 if current_branch.returncode != 0 or current_branch.stdout.strip() != branch:
                     return emit("blocked", "blocked-unsafe", None, evidence, "supplied branch is not the current local branch")
+                status_result = run(["git", "status", "--porcelain=v1"])
+                if status_result.returncode != 0:
+                    return emit("blocked", "blocked-unsafe", None, evidence, "local worktree state is unavailable")
+                if status_result.stdout:
+                    return emit("waiting", "waiting-user-cleanup", None, evidence, "local worktree contains uncommitted changes")
                 if local.returncode != 0 or local.stdout.strip() != remote_head:
                     return emit("blocked", "blocked-unsafe", None, evidence, "local and remote branch heads differ without a matching pull request")
+                if args.validated_head != remote_head:
+                    return emit("blocked", "blocked-unsafe", None, evidence, "remote branch without a pull request lacks retained validated-head evidence")
             if prs and remote_head != prs[0].get("headRefOid"):
                 return emit("blocked", "blocked-unsafe", None, evidence, "remote branch no longer points to the pull-request head")
-    disposition, next_stage, blocker = classify(issue_record.get("state"), prs, remote_branch_state, issue_record.get("comments") or [], actor)
+    disposition, next_stage, blocker = classify(issue_record.get("state"), prs, remote_branch_state, comments, actor)
     evidence["pull_requests"] = prs
     evidence["remote_branch_state"] = remote_branch_state
     if prs and prs[0].get("state") == "MERGED" and remote_branch_state == "already-absent":

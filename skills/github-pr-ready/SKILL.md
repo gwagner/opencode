@@ -9,7 +9,7 @@ opencode_permission:
     "/code/skills/github-pr-ready/scripts/ready-pr.py": allow
 inputs:
   - one open pull request with passed required checks
-  - exact expected head and base branch
+  - exact expected head branch, head commit, and base branch
   - expected GitHub repository from the current checkout
   - authenticated GitHub CLI
 ---
@@ -18,14 +18,14 @@ inputs:
 
 ## Inputs
 
-Require one open pull request with passed required checks, its exact expected head and base branch, the expected GitHub repository from the current checkout, and an authenticated GitHub CLI.
+Require one open pull request with passed required checks, its exact expected head branch, head commit, and base branch, the expected GitHub repository from the current checkout, and an authenticated GitHub CLI.
 
 ## Procedure
 
-1. Require canonical passed required-check evidence for the expected head.
-2. Run `python3 /code/skills/github-pr-ready/scripts/ready-pr.py --pr <pr> --expected-head <head> --expected-base <base>`. The script re-reads the canonical checkout-repository pull request immediately before any ready mutation and blocks if its identity or head changed.
-3. Require one versioned JSON result. Accept `ready` or `already-ready` only for a pull request in the checkout repository with open non-draft state and unchanged head, head branch, and base.
-4. Return `waiting-external` for authentication, network, GitHub availability, or an unconfirmed transition. Return `blocked-unsafe` for malformed output, changed identity, changed head, or changed base.
+1. Require canonical passed required-check evidence for the expected head branch and head commit.
+2. Run `python3 /code/skills/github-pr-ready/scripts/ready-pr.py --pr <pr> --expected-head <head> --expected-branch <branch> --expected-base <base>`. The script re-reads the canonical checkout-repository pull request immediately before any ready mutation and blocks if its identity changed.
+3. Require one versioned JSON result. Accept `ready` or `already-ready` only after every configured `origin` fetch and effective push URL and the non-cross-repository PR head match the checkout repository, and the PR has open non-draft state with unchanged head, head branch, and base.
+4. Return `waiting-external` for authentication, network, GitHub availability, or an unconfirmed transition. Return `blocked-unsafe` for malformed output, changed repository identity, changed head or branch, changed base, or an externally completed transition after the ready command failed.
 
 ## Boundaries
 

@@ -50,7 +50,14 @@ class RecoveryTests(unittest.TestCase):
         self.assertEqual(result[0], "waiting-user-cleanup")
 
     def test_remote_without_pr(self):
-        self.assertEqual(MODULE.classify([], "h", "h", "base", "openchamber")[0], "remote-branch-no-pr")
+        self.assertEqual(MODULE.classify([], "h", "h", "base", "openchamber", "main", True, "h")[:2], ("remote-branch-no-pr", "worktree-validation"))
+
+    def test_openchamber_local_commit_resumes_worktree_validation(self):
+        result = MODULE.classify([], None, "local", "base", "openchamber", "main", True, "local")
+        self.assertEqual(result[:2], ("local-commit-no-remote", "worktree-validation"))
+
+    def test_remote_without_pr_requires_validated_head(self):
+        self.assertEqual(MODULE.classify([], "h", "h", "base", "openchamber")[0], "blocked-unsafe")
 
     def test_different_remote_without_pr_blocks(self):
         self.assertEqual(MODULE.classify([], "other", "h", "base", "openchamber")[0], "blocked-unsafe")
@@ -61,6 +68,14 @@ class RecoveryTests(unittest.TestCase):
     def test_cli_open_pr(self):
         self.assertEqual(MODULE.classify([self.pr(provenance="cli")], "h", "h", "base", "cli")[:2], ("open-pull-request", "ownership-baseline"))
 
+    def test_dirty_open_pr_waits(self):
+        result = MODULE.classify([self.pr(provenance="cli")], "h", "h", "base", "cli", "main", False)
+        self.assertEqual(result[0], "waiting-user-cleanup")
+
+    def test_dirty_closed_pr_still_blocks_unsafe_state(self):
+        result = MODULE.classify([self.pr(state="CLOSED", provenance="cli")], "h", "h", "base", "cli", "main", False)
+        self.assertEqual(result[0], "blocked-unsafe")
+
     def test_changed_head_blocks(self):
         self.assertEqual(MODULE.classify([self.pr(head="other")], "other", "h", "base", "openchamber")[0], "blocked-unsafe")
 
@@ -69,12 +84,23 @@ class RecoveryTests(unittest.TestCase):
         pr["body"] = "OpenCode-Origin: cli\n"
         self.assertEqual(MODULE.classify([pr], "h", "h", "base", "openchamber")[0], "blocked-unsafe")
 
-    def test_merged_without_remote_branch_is_terminal(self):
-        self.assertEqual(MODULE.classify([self.pr(state="MERGED")], None, "h", "base", "openchamber")[0], "merged")
+    def test_recovered_merged_pr_blocks_without_owned_merge_evidence(self):
+        self.assertEqual(MODULE.classify([self.pr(state="MERGED")], None, "h", "base", "openchamber")[0], "blocked-unsafe")
 
-    def test_merged_with_remote_branch_resumes_cleanup(self):
+    def test_recovered_merged_pr_with_remote_branch_still_blocks(self):
         result = MODULE.classify([self.pr(state="MERGED")], "h", "h", "base", "openchamber")
-        self.assertEqual(result[:2], ("merged-needs-cleanup", "remote-branch-cleanup"))
+        self.assertEqual(result[0], "blocked-unsafe")
+
+    def test_conflicting_provenance_or_issue_marker_blocks(self):
+        conflicting = self.pr(provenance="cli")
+        conflicting["body"] += "OpenCode-Origin: openchamber\n"
+        self.assertEqual(MODULE.classify([conflicting], "h", "h", "base", "cli")[0], "blocked-unsafe")
+        issue_marked = self.pr(provenance="cli")
+        issue_marked["body"] += "Refs #7\n"
+        self.assertEqual(MODULE.classify([issue_marked], "h", "h", "base", "cli")[0], "blocked-unsafe")
+
+    def test_non_main_base_blocks(self):
+        self.assertEqual(MODULE.classify([], None, "h", "base", "cli", "release")[0], "blocked-unsafe")
 
     def test_origin_identity_requires_same_repository(self):
         repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
@@ -95,6 +121,12 @@ class RecoveryTests(unittest.TestCase):
         pull_request["isCrossRepository"] = True
         pull_request["headRepository"] = {"nameWithOwner": "fork/r"}
         self.assertFalse(MODULE.pull_request_repositories_match(repository, pull_request))
+
+    def test_remote_head_requires_one_exact_ref(self):
+        self.assertEqual(MODULE.parse_remote_head("", "feature/x"), (None, True))
+        self.assertEqual(MODULE.parse_remote_head("h\trefs/heads/feature/x\n", "feature/x"), ("h", True))
+        self.assertEqual(MODULE.parse_remote_head("h refs/heads/feature/x\nother refs/heads/feature/x\n", "feature/x"), (None, False))
+        self.assertEqual(MODULE.parse_remote_head("h refs/heads/feature/other\n", "feature/x"), (None, False))
 
     def test_fork_pull_request_blocks_before_remote_branch_lookup(self):
         calls = []

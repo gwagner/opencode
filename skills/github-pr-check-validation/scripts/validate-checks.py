@@ -8,6 +8,7 @@ import json
 import subprocess
 import sys
 import time
+from urllib.parse import urlparse
 
 
 VERSION = 1
@@ -83,6 +84,39 @@ def repository_matches(repository: dict, pull_request: dict) -> bool:
     )
 
 
+def remote_repository_matches(repository: dict, remote_url: str) -> bool:
+    expected_url = urlparse(repository.get("url") or "")
+    expected_name = (repository.get("nameWithOwner") or "").strip("/")
+    remote_url = remote_url.strip()
+    if "://" in remote_url:
+        parsed = urlparse(remote_url)
+        host = parsed.hostname or ""
+        path = parsed.path
+    elif ":" in remote_url:
+        host_part, path = remote_url.split(":", 1)
+        host = host_part.rsplit("@", 1)[-1]
+    else:
+        return False
+    remote_name = path.strip("/")
+    if remote_name.endswith(".git"):
+        remote_name = remote_name[:-4]
+    return bool(expected_url.hostname and expected_name) and host.casefold() == expected_url.hostname.casefold() and remote_name.casefold() == expected_name.casefold()
+
+
+def remote_urls_match(repository: dict, remote_urls: str) -> bool:
+    urls = [url for url in remote_urls.splitlines() if url.strip()]
+    return bool(urls) and all(remote_repository_matches(repository, url) for url in urls)
+
+
+def head_repository_matches(repository: dict, pull_request: dict) -> bool:
+    head_repository = pull_request.get("headRepository")
+    return (
+        pull_request.get("isCrossRepository") is False
+        and isinstance(head_repository, dict)
+        and (head_repository.get("nameWithOwner") or "").casefold() == (repository.get("nameWithOwner") or "").casefold()
+    )
+
+
 def verify_zero(owner_repo: str, base: str) -> tuple[bool, dict]:
     protection = run(["gh", "api", "--include", f"repos/{owner_repo}/branches/{base}/protection"])
     rulesets = run(["gh", "api", f"repos/{owner_repo}/rulesets?includes_parents=true"])
@@ -124,7 +158,17 @@ def main() -> int:
         return emit("blocked", "blocked-unsafe", evidence, "repository identity is incomplete")
     evidence["repository"] = repository
 
-    initial = run(["gh", "pr", "view", args.pr, "--json", "number,url,state,baseRefName,headRefName,headRefOid"])
+    origin = run(["git", "remote", "get-url", "--all", "origin"])
+    push_origin = run(["git", "remote", "get-url", "--push", "--all", "origin"])
+    if origin.returncode != 0 or push_origin.returncode != 0:
+        return emit("blocked", "blocked-unsafe", evidence, "origin remote identity is unavailable")
+    evidence["origin_url"] = origin.stdout.strip()
+    evidence["origin_push_url"] = push_origin.stdout.strip()
+    if not remote_urls_match(repository, origin.stdout) or not remote_urls_match(repository, push_origin.stdout):
+        return emit("blocked", "blocked-unsafe", evidence, "origin does not match the verified GitHub repository")
+
+    identity_fields = "number,url,state,baseRefName,headRefName,headRefOid,isCrossRepository,headRepository"
+    initial = run(["gh", "pr", "view", args.pr, "--json", identity_fields])
     if initial.returncode != 0:
         return emit("waiting", "waiting-external", evidence, initial.stderr.strip())
     try:
@@ -136,6 +180,8 @@ def main() -> int:
         return emit("blocked", "blocked-unsafe", evidence, "pull request is not open at the expected head")
     if not repository_matches(repository, identity):
         return emit("blocked", "blocked-unsafe", evidence, "pull request does not belong to the current repository")
+    if not head_repository_matches(repository, identity):
+        return emit("blocked", "blocked-unsafe", evidence, "pull request head repository does not match origin")
     evidence["pull_request"] = identity
     pr_number = str(identity["number"])
     owner_repo = repository["nameWithOwner"]
@@ -144,7 +190,7 @@ def main() -> int:
         checked = run(["gh", "pr", "checks", pr_number, "--repo", owner_repo, "--required", "--json", "bucket,name,state,workflow,link"])
         disposition, records = classify(checked.returncode, checked.stdout, checked.stderr)
         evidence["attempts"].append({"attempt": attempt + 1, "exit_code": checked.returncode, "stdout": checked.stdout, "stderr": checked.stderr, "classification": disposition, "records": records})
-        current = run(["gh", "pr", "view", pr_number, "--repo", owner_repo, "--json", "number,url,state,baseRefName,headRefName,headRefOid"])
+        current = run(["gh", "pr", "view", pr_number, "--repo", owner_repo, "--json", identity_fields])
         if current.returncode != 0:
             return emit("waiting", "waiting-external", evidence, current.stderr.strip())
         try:

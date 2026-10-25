@@ -52,6 +52,22 @@ def pull_request_repositories_match(repository: dict, pull_request: dict) -> boo
     )
 
 
+def parse_remote_head(stdout: str, branch: str) -> tuple[str | None, bool]:
+    lines = [line.split() for line in stdout.splitlines() if line.strip()]
+    if not lines:
+        return None, True
+    if len(lines) != 1 or len(lines[0]) != 2 or lines[0][1] != f"refs/heads/{branch}":
+        return None, False
+    return lines[0][0], True
+
+
+def provenance_matches(record: dict, provenance: str) -> bool:
+    lines = (record.get("body") or "").splitlines()
+    origins = [line for line in lines if line.startswith("OpenCode-Origin:")]
+    references = [line for line in lines if line.startswith("Refs #")]
+    return origins == [f"OpenCode-Origin: {provenance}"] and not references
+
+
 def classify(
     prs: list[dict],
     remote_head: str | None,
@@ -62,38 +78,40 @@ def classify(
     clean: bool = True,
     expected_head: str | None = None,
 ) -> tuple[str, str | None, str | None]:
+    if base != "main":
+        return "blocked-unsafe", None, "non-issue lifecycle recovery requires base main"
     if len(prs) > 1:
         return "blocked-unsafe", None, "multiple pull requests use the current branch"
     if not prs:
+        if not clean:
+            return "waiting-user-cleanup", None, "local worktree contains uncommitted changes"
         if remote_head:
             if remote_head != local_head:
                 return "blocked-unsafe", None, "local and remote branch heads differ without a pull request"
-            return "remote-branch-no-pr", "pr-publication", None
+            if expected_head != local_head:
+                return "blocked-unsafe", None, "remote branch without a pull request lacks retained validated-head evidence"
+            next_stage = "pr-publication" if provenance == "cli" else "worktree-validation"
+            return "remote-branch-no-pr", next_stage, None
         if local_head != base_head:
-            if not clean:
-                return "waiting-user-cleanup", None, "local worktree contains uncommitted changes"
             if expected_head == local_head:
-                return "local-commit-no-remote", "pr-publication", None
+                next_stage = "pr-publication" if provenance == "cli" else "worktree-validation"
+                return "local-commit-no-remote", next_stage, None
             return "blocked-unsafe", None, "unpublished local commits lack durable remote ownership evidence"
         next_stage = "ownership-baseline" if provenance == "cli" else "worktree-validation"
         return "fresh-local", next_stage, None
     pr = prs[0]
     if any(not pr.get(key) for key in ("url", "headRefName", "headRefOid", "baseRefName")):
         return "blocked-unsafe", None, "current branch pull-request identity is incomplete"
-    if pr.get("baseRefName") != base or f"OpenCode-Origin: {provenance}" not in (pr.get("body") or "").splitlines():
+    if pr.get("baseRefName") != base or not provenance_matches(pr, provenance):
         return "blocked-unsafe", None, "current branch pull-request base or provenance is invalid"
     if pr.get("state") == "MERGED":
-        if pr.get("headRefOid") != local_head:
-            return "blocked-unsafe", None, "local and merged pull-request heads differ"
-        if remote_head:
-            if remote_head != pr.get("headRefOid"):
-                return "blocked-unsafe", None, "remote branch no longer points to the merged head"
-            return "merged-needs-cleanup", "remote-branch-cleanup", None
-        return "merged", None, None
+        return "blocked-unsafe", None, "recovered merged pull request lacks durable lifecycle-owned approval and merge evidence"
     if pr.get("state") != "OPEN":
         return "blocked-unsafe", None, "current branch has a non-open pull request"
     if pr.get("headRefOid") != local_head or remote_head != local_head:
         return "blocked-unsafe", None, "local, remote, and pull-request heads differ"
+    if not clean:
+        return "waiting-user-cleanup", None, "local worktree contains uncommitted changes"
     next_stage = "ownership-baseline" if provenance == "cli" else "worktree-validation"
     return "open-pull-request", next_stage, None
 
@@ -110,6 +128,8 @@ def main() -> int:
     parser.add_argument("--expected-head")
     args = parser.parse_args()
     evidence: dict[str, object] = {}
+    if args.base != "main":
+        return emit("blocked", "blocked-unsafe", None, evidence, "non-issue lifecycle recovery requires base main")
     branch = run(["git", "branch", "--show-current"])
     head = run(["git", "rev-parse", "HEAD"])
     base_head_result = run(["git", "rev-parse", args.base])
@@ -157,7 +177,9 @@ def main() -> int:
     remote = run(["git", "ls-remote", "--heads", "origin", branch_name])
     if remote.returncode != 0:
         return emit("waiting", "waiting-external", None, evidence, remote.stderr.strip())
-    remote_head = remote.stdout.split()[0] if remote.stdout.strip() else None
+    remote_head, remote_valid = parse_remote_head(remote.stdout, branch_name)
+    if not remote_valid:
+        return emit("blocked", "blocked-unsafe", None, evidence, "remote branch identity is ambiguous")
     disposition, next_stage, blocker = classify(prs, remote_head, local_head, base_head, args.provenance, args.base, clean, args.expected_head)
     evidence.update({"remote_head": remote_head, "pull_requests": prs})
     status = "waiting" if disposition == "waiting-user-cleanup" else "blocked" if disposition == "blocked-unsafe" else "passed"

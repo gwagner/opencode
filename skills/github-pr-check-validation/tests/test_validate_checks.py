@@ -38,6 +38,15 @@ class ClassificationTests(unittest.TestCase):
         self.assertTrue(MODULE.repository_matches(repository, local))
         self.assertFalse(MODULE.repository_matches(repository, foreign))
 
+    def test_origin_and_head_repository_require_checkout_repository(self):
+        repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
+        self.assertTrue(MODULE.remote_urls_match(repository, "git@github.com:o/r.git\nhttps://github.com/o/r.git\n"))
+        self.assertFalse(MODULE.remote_urls_match(repository, "git@github.com:o/r.git\ngit@github.com:other/r.git\n"))
+        local = {"isCrossRepository": False, "headRepository": {"nameWithOwner": "o/r"}}
+        fork = {"isCrossRepository": True, "headRepository": {"nameWithOwner": "fork/r"}}
+        self.assertTrue(MODULE.head_repository_matches(repository, local))
+        self.assertFalse(MODULE.head_repository_matches(repository, fork))
+
 
 if __name__ == "__main__":
     unittest.main()
