@@ -8,6 +8,10 @@ import unittest
 from contextlib import redirect_stdout
 from unittest import mock
 
+TEST_SUPPORT = pathlib.Path(__file__).resolve().parents[2] / "tests"
+sys.path.insert(0, str(TEST_SUPPORT))
+from lifecycle_policy_test_support import LifecycleSnapshotTestCase
+
 
 SCRIPT = pathlib.Path(__file__).parents[1] / "scripts" / "ready-pr.py"
 SPEC = importlib.util.spec_from_file_location("ready_pr", SCRIPT)
@@ -16,7 +20,7 @@ assert SPEC.loader
 SPEC.loader.exec_module(MODULE)
 
 
-class ReadyTests(unittest.TestCase):
+class ReadyTests(LifecycleSnapshotTestCase):
     @staticmethod
     def completed(args, stdout="", stderr="", returncode=0):
         return subprocess.CompletedProcess(args, returncode, stdout, stderr)
@@ -116,7 +120,7 @@ class ReadyTests(unittest.TestCase):
 
         output = io.StringIO()
         argv = ["ready-pr.py", "--pr", "https://github.com/other/r/pull/1", "--expected-head", "h", "--expected-branch", "feature/x"]
-        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 2)
         self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
@@ -152,8 +156,8 @@ class ReadyTests(unittest.TestCase):
             raise AssertionError(args)
 
         output = io.StringIO()
-        argv = ["ready-pr.py", "--pr", "1", "--expected-head", "h", "--expected-branch", "feature/x"]
-        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        argv = ["ready-pr.py", "--pr", "1", "--expected-head", "h", "--expected-branch", "feature/x", "--authorize-ready"]
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 2)
         self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
@@ -189,8 +193,8 @@ class ReadyTests(unittest.TestCase):
             raise AssertionError(args)
 
         output = io.StringIO()
-        argv = ["ready-pr.py", "--pr", "1", "--expected-head", "h", "--expected-branch", "feature/x"]
-        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        argv = ["ready-pr.py", "--pr", "1", "--expected-head", "h", "--expected-branch", "feature/x", "--authorize-ready"]
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 0)
         result = json.loads(output.getvalue())

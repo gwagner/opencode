@@ -16,23 +16,35 @@ def exact_controlled_line(lines: list[str], prefix: str, expected: str) -> bool:
 
 
 def visual_evidence_matches(lines: list[str], scenarios: list[str] | None = None) -> bool:
+    """Require one uploaded, accessible before/after pair for every policy scenario."""
+    scenarios = scenarios or []
     visual = [line for line in lines if line.startswith("Visual evidence:")]
     if visual == ["Visual evidence: not required"]:
-        return not any(line.startswith("![Before:") or line.startswith("![After:") for line in lines)
+        # An empty policy is the lifecycle's explicit browser-impact-nonapplicable
+        # state. A configured scenario always requires concrete evidence.
+        return not scenarios and not any(line.startswith("![Before:") or line.startswith("![After:") for line in lines)
     if visual != ["Visual evidence: passed"]:
         return False
     before = [line for line in lines if line.startswith("![Before:")]
     after = [line for line in lines if line.startswith("![After:")]
-    if len(before) != 1 or len(after) != 1:
+    if len(before) != len(scenarios) or len(after) != len(scenarios):
         return False
-    before_match = re.fullmatch(r"!\[Before: ([^\]]+)\]\((https://[^)]+)\)", before[0])
-    after_match = re.fullmatch(r"!\[After: ([^\]]+)\]\((https://[^)]+)\)", after[0])
-    if before_match is None or after_match is None or before_match.group(1) != after_match.group(1):
+    before_pairs = [re.fullmatch(r"!\[Before: ([^\]]+)\]\((https://[^)]+)\)", line) for line in before]
+    after_pairs = [re.fullmatch(r"!\[After: ([^\]]+)\]\((https://[^)]+)\)", line) for line in after]
+    if any(pair is None for pair in before_pairs + after_pairs):
         return False
-    urls = (urlparse(before_match.group(2)), urlparse(after_match.group(2)))
-    return (
-        all(url.hostname == "github.com" and url.path.startswith("/user-attachments/") for url in urls)
-        and (not scenarios or before_match.group(1) in scenarios)
+    assert all(pair is not None for pair in before_pairs + after_pairs)
+    before_by_scenario = {pair.group(1): pair.group(2) for pair in before_pairs}
+    after_by_scenario = {pair.group(1): pair.group(2) for pair in after_pairs}
+    if set(before_by_scenario) != set(scenarios) or set(after_by_scenario) != set(scenarios):
+        return False
+    if len(before_by_scenario) != len(before_pairs) or len(after_by_scenario) != len(after_pairs):
+        return False
+    return all(
+        urlparse(url).scheme == "https"
+        and urlparse(url).hostname == "github.com"
+        and urlparse(url).path.startswith("/user-attachments/")
+        for url in [*before_by_scenario.values(), *after_by_scenario.values()]
     )
 
 

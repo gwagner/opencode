@@ -7,12 +7,12 @@ opencode_permission:
     "python3 /code/skills/openchamber-worktree-validation/scripts/validate-worktree.py *": allow
   external_directory:
     "/code/skills/github_lifecycle_policy.py": allow
-    "/tmp/opencode/lifecycle-policy.json": allow
+    "/tmp/opencode/lifecycle-policy.snapshot.json": allow
     "/code/skills/openchamber-worktree-validation/scripts/validate-worktree.py": allow
   skill:
     openchamber-worktree-validation: allow
 inputs:
-  - optional `/tmp/opencode/lifecycle-policy.json`
+  - resolved `/tmp/opencode/lifecycle-policy.snapshot.json` and its expected digest
   - attached GitHub issue context
   - fresh-start or resumable lifecycle disposition
   - expected execution route
@@ -24,7 +24,7 @@ inputs:
 
 ## Inputs
 
-Require the attached GitHub issue context, a fresh-start or resumable lifecycle disposition, the expected execution route, dependency closure evidence when dependencies are declared, the current OpenChamber-linked worktree, and an optional `/tmp/opencode/lifecycle-policy.json`.
+Require the attached GitHub issue context, a fresh-start or resumable lifecycle disposition, the expected execution route, dependency closure evidence when dependencies are declared, the current OpenChamber-linked worktree, and an resolved `/tmp/opencode/lifecycle-policy.snapshot.json` and its expected digest.
 
 ## Workflow
 

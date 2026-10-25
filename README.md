@@ -76,6 +76,7 @@ Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect thos
 | github-pr-approved-merge | Verifies that a user manually squash-merged one exact approved GitHub pull request without performing the merge. |
 | github-pr-check-validation | Deterministically classifies and boundedly rechecks required checks for one unchanged open pull request. |
 | github-pr-lifecycle-recovery | Selects the resumable branch or pull-request state for one CLI- or OpenChamber-originated non-issue lifecycle without mutating it. |
+| github-policy-resolution | Resolves one read-only lifecycle policy source into the fixed immutable snapshot used by one SDLC run. |
 | github-pr-publication | Idempotently publishes one validated committed head to a unique draft pull request for a supported SDLC entry point. |
 | github-pr-ready | Marks one checked draft pull request ready, or verifies an already-ready pull request, for an exact-head user decision. |
 | github-pr-rejection | Verifies that one exact user-rejected pull request remains open and unchanged without mutating GitHub. |
@@ -125,7 +126,7 @@ Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exi
 
 ## Workflow ownership
 
-- An optional `/tmp/opencode/lifecycle-policy.json` supplies a validated version-1 lifecycle override: base, feature prefix, sources, remote, evidence IDs, check and visual allowlists, and delegate hints. It cannot relax exact-head/provenance, explicit authorization, validation, authenticated-actor, manual-squash/no-auto-merge, rejection-open, sequential-commit, or fail-closed recovery invariants.
+- The first lifecycle stage lets `github-policy-resolution` alone read the optional `/tmp/opencode/lifecycle-policy.json`, validate and normalize it (or the default) into `/tmp/opencode/lifecycle-policy.snapshot.json`, and emit its immutable digest. The source can supply version-1 base, feature prefix, sources, remote, evidence IDs, check and visual allowlists, and delegate hints; it cannot relax exact-head/provenance, explicit authorization, validation, authenticated-actor, manual-squash/no-auto-merge, rejection-open, sequential-commit, or fail-closed recovery invariants.
 - `sdlc-orchestrator` is the sole code-change lifecycle owner for explicit `cli`, `openchamber`, and `github-issue` entry points. Every successful run publishes one pull request and ends with a verified user-performed manual squash merge or exact-head rejection.
 - CLI preparation creates a clean `feature/*` branch and can recover a current non-base CLI branch. Direct OpenChamber preparation validates or recovers its existing linked worktree and branch. Issue preparation additionally recovers GitHub state and verifies issue readiness, route, and dependencies.
 - Requirements route to `prd-strategist`, shared architecture and cross-feature decisions to `app-spec-architect`, bounded feature contracts to `code-spec-engineer`, defects to `bug-fixer`, and other implementation to `code-implementor`.
@@ -140,16 +141,16 @@ Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exi
 
 ### Lifecycle policy overrides
 
-Every lifecycle script accepts `--policy /tmp/opencode/lifecycle-policy.json`. Omit it for the documented defaults. The JSON object is versioned (`version: 1`), rejects unknown keys, and records its effective value in lifecycle evidence.
+Every lifecycle script requires only the resolved `--policy /tmp/opencode/lifecycle-policy.snapshot.json --expected-policy-digest <digest>` pair and records its digest in lifecycle evidence. On a resumed run, the resolver accepts only the retained exact digest and validates the existing snapshot without rereading the source. It rejects an absent pair, caller-selected policy path, non-normalized snapshot, or changed bytes. After a verified terminal `user-merged`, `closed`, or `rejected-open-pr` report, the resolver alone may remove the fixed snapshot using its exact digest and terminal disposition; no other lifecycle role edits policy files.
 
 | Section | Policy fields | Rule |
 | --- | --- | --- |
 | Repository | `base_branch`, `feature_branch_prefix`, `provenance`, `remote` | Selects the repository-local lifecycle names and permitted entry sources. |
-| Authorization | `authorization.commit`, `publication`, `cleanup`, `comment`, `closure` | Declares the required gate; unsafe substitutions are rejected. |
+| Authorization | No policy field | Every mutating lifecycle action requires its matching current-turn `--authorize-*` flag; policy cannot grant mutation authority. |
 | Evidence | `evidence.current_id`, `completion_id`, `require_authenticated_actor`, `actor_transfer` | Allows named evidence IDs while requiring one authenticated actor for current and completion evidence. |
 | Decision/recovery | `manual_merge`, `pull_request`, `recovery` | Manual squash, ready/rejection-open, exact head, and block-on-ambiguity remain required. |
-| Validation | `validation.required_check_allowlist`, `visual_scenarios` | When nonempty, blocks unallowlisted checks or visual scenarios. |
-| Delegation/intake | `delegates.hints`, `commit_strategy`, `blocked_issue_creation` | Carries delegate hints; commits remain sequential/reviewed and blocked issue creation remains forbidden. |
+| Validation | `validation.check_mode`, `check_names`, `max_rechecks`, `wait_seconds`, `max_corrections`, `visual_scenarios` | Selects required/all check handling, bounded rechecks and corrections, and exact visual scenarios. |
+| Intake | `blocked_issue_creation` | Enables policy-authorized blocked-issue creation; commits remain sequential and reviewed as a nonconfigurable invariant. |
 
 ## Container note
 

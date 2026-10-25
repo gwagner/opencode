@@ -80,7 +80,7 @@ def main() -> int:
     add_policy_argument(parser)
     args = parser.parse_args()
     try:
-        policy = load_policy(args.policy)
+        policy = load_policy(args.policy, args.expected_policy_digest)
     except ValueError as exc:
         return result_emit("blocked", "blocked-unsafe", {}, str(exc))
     if args.base is None:

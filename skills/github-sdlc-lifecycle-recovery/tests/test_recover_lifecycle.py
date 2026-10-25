@@ -8,6 +8,10 @@ import unittest
 from contextlib import redirect_stdout
 from unittest import mock
 
+TEST_SUPPORT = pathlib.Path(__file__).resolve().parents[2] / "tests"
+sys.path.insert(0, str(TEST_SUPPORT))
+from lifecycle_policy_test_support import LifecycleSnapshotTestCase
+
 
 SCRIPT = pathlib.Path(__file__).parents[1] / "scripts" / "recover-lifecycle.py"
 SPEC = importlib.util.spec_from_file_location("recover_lifecycle", SCRIPT)
@@ -16,7 +20,7 @@ assert SPEC.loader
 SPEC.loader.exec_module(MODULE)
 
 
-class RecoveryTests(unittest.TestCase):
+class RecoveryTests(LifecycleSnapshotTestCase):
     ACTOR = "lifecycle-user"
 
     def test_fresh_start(self):
@@ -84,31 +88,46 @@ class RecoveryTests(unittest.TestCase):
             "![Before: account form](https://github.com/user-attachments/assets/before)",
             "![After: account form](https://github.com/user-attachments/assets/after)",
         ]
-        self.assertTrue(MODULE.visual_evidence_matches(lines))
+        self.assertTrue(MODULE.visual_evidence_matches(lines, ["account form"]))
+
+    def test_multiscenario_visual_evidence_requires_every_exact_uploaded_pair(self):
+        lines = [
+            "Visual evidence: passed",
+            "![Before: account](https://github.com/user-attachments/assets/account-before)",
+            "![After: account](https://github.com/user-attachments/assets/account-after)",
+            "![Before: billing](https://github.com/user-attachments/assets/billing-before)",
+            "![After: billing](https://github.com/user-attachments/assets/billing-after)",
+        ]
+        self.assertTrue(MODULE.visual_evidence_matches(lines, ["account", "billing"]))
+        self.assertFalse(MODULE.visual_evidence_matches(lines[:-1], ["account", "billing"]))
+        self.assertFalse(MODULE.visual_evidence_matches(lines + ["![After: extra](https://github.com/user-attachments/assets/extra)"], ["account", "billing"]))
+        self.assertFalse(MODULE.visual_evidence_matches([
+            "Visual evidence: not required",
+        ], ["account"]))
 
     def test_visual_evidence_rejects_local_or_missing_images(self):
         self.assertFalse(MODULE.visual_evidence_matches([
             "Visual evidence: passed",
             "![Before: account form](/tmp/before.png)",
             "![After: account form](https://github.com/user-attachments/assets/after)",
-        ]))
+        ], ["account form"]))
         self.assertFalse(MODULE.visual_evidence_matches([
             "Visual evidence: passed",
             "![Before: account form](https://evil.example/before.png)",
             "![After: account form](https://evil.example/after.png)",
-        ]))
+        ], ["account form"]))
         self.assertFalse(MODULE.visual_evidence_matches([
             "Visual evidence: passed",
             "![Before: account form](https://github.com/user-attachments/assets/before)",
             "![After: billing form](https://github.com/user-attachments/assets/after)",
-        ]))
-        self.assertFalse(MODULE.visual_evidence_matches(["Visual evidence: passed"]))
+        ], ["account form"]))
+        self.assertFalse(MODULE.visual_evidence_matches(["Visual evidence: passed"], ["account form"]))
         self.assertFalse(MODULE.visual_evidence_matches([
             "Visual evidence: passed",
             "![Before: account form](https://github.com/user-attachments/assets/before)",
             "![Before: duplicate](https://github.com/user-attachments/assets/duplicate)",
             "![After: account form](https://github.com/user-attachments/assets/after)",
-        ]))
+        ], ["account form"]))
 
     def test_exact_completion_evidence_resumes_close(self):
         pr = {"state": "MERGED", "url": "u", "headRefName": "feature/x", "headRefOid": "h", "mergeCommit": {"oid": "m"}}
@@ -254,7 +273,7 @@ class RecoveryTests(unittest.TestCase):
         if extra_args:
             argv.extend(extra_args)
         output = io.StringIO()
-        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         return return_code, json.loads(output.getvalue()), calls
 
@@ -279,7 +298,7 @@ class RecoveryTests(unittest.TestCase):
     def test_incomplete_completion_revalidation_identity_blocks_before_github_access(self):
         output = io.StringIO()
         argv = ["recover-lifecycle.py", "--issue", "7", "--completion-pr", "https://github.com/o/r/pull/33"]
-        with mock.patch.object(MODULE, "run") as run_mock, mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run") as run_mock, mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 2)
         self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
@@ -324,7 +343,7 @@ class RecoveryTests(unittest.TestCase):
 
         output = io.StringIO()
         argv = ["recover-lifecycle.py", "--issue", "https://github.com/other/r/issues/7"]
-        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 2)
         self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
@@ -355,7 +374,7 @@ class RecoveryTests(unittest.TestCase):
             raise AssertionError(args)
 
         output = io.StringIO()
-        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", ["recover-lifecycle.py", "--issue", "7"]), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", self.with_policy(["recover-lifecycle.py", "--issue", "7"])), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 2)
         self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
@@ -391,7 +410,7 @@ class RecoveryTests(unittest.TestCase):
             raise AssertionError(args)
 
         output = io.StringIO()
-        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", ["recover-lifecycle.py", "--issue", "7"]), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", self.with_policy(["recover-lifecycle.py", "--issue", "7"])), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 2)
         self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
@@ -424,7 +443,7 @@ class RecoveryTests(unittest.TestCase):
 
         output = io.StringIO()
         argv = ["recover-lifecycle.py", "--issue", "7", "--validated-head", "abc"]
-        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         result = json.loads(output.getvalue())
         self.assertEqual(return_code, 0)
@@ -460,7 +479,7 @@ class RecoveryTests(unittest.TestCase):
 
         output = io.StringIO()
         argv = ["recover-lifecycle.py", "--issue", "7", "--branch", "feature/real"]
-        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 2)
         self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")

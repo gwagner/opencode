@@ -46,17 +46,16 @@ def main() -> int:
     add_authorization_argument(parser, "ready")
     args = parser.parse_args()
     try:
-        policy = load_policy(args.policy)
+        policy = load_policy(args.policy, args.expected_policy_digest)
     except ValueError as exc:
         return result_emit("blocked", "blocked-unsafe", {}, str(exc))
     if args.expected_base is None:
         args.expected_base = policy["base_branch"]
+    if args.expected_base != policy["base_branch"]:
+        return result_emit("blocked", "blocked-unsafe", policy_evidence(policy), "ready base must equal the lifecycle policy base")
     evidence: dict[str, object] = policy_evidence(policy)
-    if policy["pull_request"]["ready_policy"] == "keep-draft":
-        return result_emit("passed", "kept-draft", evidence, next_stage="user-decision")
-    if policy["pull_request"]["ready_policy"] == "ask" and not authorized(policy, "ready", args.authorize_ready):
-        return result_emit("waiting", "waiting-user-authorization", evidence, "explicit ready authorization is required")
-
+    if not args.expected_branch.startswith(policy["feature_branch_prefix"]):
+        return result_emit("blocked", "blocked-unsafe", evidence, "ready branch must use the lifecycle feature prefix")
     auth = run(["gh", "auth", "status"])
     repo = run(["gh", "repo", "view", "--json", "nameWithOwner,url"])
     if auth.returncode != 0 or repo.returncode != 0:
@@ -88,6 +87,10 @@ def main() -> int:
         return result_emit("blocked", "blocked-unsafe", evidence, "pull request head repository does not match origin")
     if not identity_matches(before, args.expected_head, args.expected_base, args.expected_branch):
         return result_emit("blocked", "blocked-unsafe", evidence, "pull request is not open at the expected head and base")
+    if policy["pull_request"]["ready_policy"] == "keep-draft":
+        return result_emit("waiting", "kept-draft", evidence, "validated pull request remains draft by policy")
+    if policy["pull_request"]["ready_policy"] in ("ask", "auto") and not authorized(policy, "ready", args.authorize_ready):
+        return result_emit("waiting", "waiting-user-authorization", evidence, "explicit ready authorization is required")
 
     pr_number = str(before["number"])
     owner_repo = repository["nameWithOwner"]

@@ -48,16 +48,14 @@ def main() -> int:
     add_authorization_argument(parser, "cleanup")
     args = parser.parse_args()
     try:
-        policy = load_policy(args.policy)
+        policy = load_policy(args.policy, args.expected_policy_digest)
     except ValueError as exc:
         return result_emit("blocked", "blocked-unsafe", {}, str(exc))
     if args.expected_base is None:
         args.expected_base = policy["base_branch"]
+    if args.expected_base != policy["base_branch"]:
+        return result_emit("blocked", "blocked-unsafe", policy_evidence(policy), "cleanup base must equal the lifecycle policy base")
     evidence: dict[str, object] = policy_evidence(policy)
-    if policy["remote_cleanup"] == "retain":
-        return result_emit("passed", "retained", evidence, next_stage="completion")
-    if not authorized(policy, "cleanup", args.authorize_cleanup):
-        return result_emit("blocked", "blocked-unsafe", evidence, "explicit cleanup authorization is required")
     if args.provenance not in policy["provenance"]:
         return result_emit("blocked", "blocked-unsafe", evidence, "provenance is not permitted by policy")
     if (args.provenance == "github-issue") != bool(args.issue) or (args.issue and not args.issue.lstrip("#").isdigit()):
@@ -95,8 +93,12 @@ def main() -> int:
     if not merged_identity_matches(pull_request, args.expected_head, args.expected_base, args.provenance, args.issue):
         return result_emit("blocked", "blocked-unsafe", evidence, "pull request failed the merged-branch cleanup gate")
     branch = pull_request["headRefName"]
-    if branch == args.expected_base:
+    if not branch.startswith(policy["feature_branch_prefix"]) or branch == args.expected_base:
         return result_emit("blocked", "blocked-unsafe", evidence, "refusing to delete the base branch")
+    if policy["remote_cleanup"] == "retain":
+        return result_emit("passed", "retained", evidence, next_stage="completion")
+    if not authorized(policy, "cleanup", args.authorize_cleanup):
+        return result_emit("waiting", "waiting-user-authorization", evidence, "explicit cleanup authorization is required")
 
     before = run(["git", "ls-remote", "--heads", policy["remote"], branch])
     if before.returncode != 0:

@@ -91,7 +91,7 @@ def main() -> int:
     add_policy_argument(parser)
     args = parser.parse_args()
     try:
-        policy = load_policy(args.policy)
+        policy = load_policy(args.policy, args.expected_policy_digest)
     except ValueError as exc:
         return result_emit("blocked", "blocked-unsafe", {}, str(exc))
     evidence: dict[str, object] = {**policy_evidence(policy), "attempts": []}
@@ -132,6 +132,8 @@ def main() -> int:
     required_identity = ("number", "url", "baseRefName", "headRefName", "headRefOid")
     if not isinstance(identity, dict) or identity.get("state") != "OPEN" or identity.get("headRefOid") != args.expected_head or any(not identity.get(key) for key in required_identity):
         return result_emit("blocked", "blocked-unsafe", evidence, "pull request is not open at the expected head")
+    if identity.get("baseRefName") != policy["base_branch"]:
+        return result_emit("blocked", "blocked-unsafe", evidence, "check validation base must equal the lifecycle policy base")
     if not repository_matches(repository, identity):
         return result_emit("blocked", "blocked-unsafe", evidence, "pull request does not belong to the current repository")
     if not head_repository_matches(repository, identity):
@@ -148,8 +150,10 @@ def main() -> int:
         checked = run(command)
         disposition, records = classify(checked.returncode, checked.stdout, checked.stderr)
         allowed_checks = policy["validation"]["check_names"]
-        if allowed_checks and records is not None and any(record.get("name") not in allowed_checks for record in records):
-            return result_emit("blocked", "blocked-unsafe", evidence, "required-check output contains a check outside the policy allowlist")
+        if allowed_checks and records is not None:
+            names = [record.get("name") for record in records]
+            if sorted(names) != sorted(allowed_checks) or len(names) != len(set(names)):
+                return result_emit("blocked", "blocked-unsafe", evidence, "check names must match the policy exactly once")
         evidence["attempts"].append({"attempt": attempt + 1, "exit_code": checked.returncode, "stdout": checked.stdout, "stderr": checked.stderr, "classification": disposition, "records": records})
         current = run(["gh", "pr", "view", pr_number, "--repo", owner_repo, "--json", identity_fields])
         if current.returncode != 0:

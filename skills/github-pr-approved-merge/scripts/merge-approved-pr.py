@@ -46,12 +46,16 @@ def main() -> int:
     add_policy_argument(parser)
     args = parser.parse_args()
     try:
-        policy = load_policy(args.policy)
+        policy = load_policy(args.policy, args.expected_policy_digest)
     except ValueError as exc:
         return result_emit("blocked", "blocked-unsafe", {}, str(exc))
     if args.expected_base is None:
         args.expected_base = policy["base_branch"]
+    if args.expected_base != policy["base_branch"]:
+        return result_emit("blocked", "blocked-unsafe", policy_evidence(policy), "merge base must equal the lifecycle policy base")
     evidence: dict[str, object] = policy_evidence(policy)
+    if not args.expected_branch.startswith(policy["feature_branch_prefix"]):
+        return result_emit("blocked", "blocked-unsafe", evidence, "merge branch must use the lifecycle feature prefix")
     if args.confirmed_manual_method != policy["manual_merge"]["method"]:
         return result_emit("blocked", "blocked-unsafe", evidence, "fresh explicit attestation of the policy manual merge method is required")
     if args.max_rechecks < 0 or args.wait_seconds < 0:

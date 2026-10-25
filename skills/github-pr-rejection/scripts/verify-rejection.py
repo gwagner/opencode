@@ -21,12 +21,16 @@ def main() -> int:
     add_authorization_argument(parser, "rejection")
     args = parser.parse_args()
     try:
-        policy = load_policy(args.policy)
+        policy = load_policy(args.policy, args.expected_policy_digest)
     except ValueError as exc:
         return emit("blocked", "blocked-unsafe", {}, str(exc))
     if args.expected_base is None:
         args.expected_base = policy["base_branch"]
+    if args.expected_base != policy["base_branch"]:
+        return emit("blocked", "blocked-unsafe", policy_evidence(policy), "rejection base must equal the lifecycle policy base")
     evidence: dict[str, object] = policy_evidence(policy)
+    if not args.expected_branch.startswith(policy["feature_branch_prefix"]):
+        return emit("blocked", "blocked-unsafe", evidence, "rejection branch must use the lifecycle feature prefix")
     state, repository, blocker = verified_checkout(run, evidence)
     if state != "passed":
         return emit(state, "waiting-external" if state == "waiting" else "blocked-unsafe", evidence, blocker, "user-decision" if state == "waiting" else None)

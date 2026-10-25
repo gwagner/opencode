@@ -102,7 +102,7 @@ def main() -> int:
     add_policy_argument(parser)
     args = parser.parse_args()
     try:
-        policy = load_policy(args.policy)
+        policy = load_policy(args.policy, args.expected_policy_digest)
     except ValueError as exc:
         return result_emit("blocked", "blocked-unsafe", {}, str(exc))
     evidence: dict[str, object] = policy_evidence(policy)
@@ -213,6 +213,8 @@ def main() -> int:
         if derived_branch and derived_branch != policy["base_branch"]:
             branch = derived_branch
             evidence["branch_source"] = "current-linked-worktree"
+    if branch and not branch.startswith(policy["feature_branch_prefix"]):
+        return result_emit("blocked", "blocked-unsafe", evidence, "lifecycle branch must use the policy feature prefix", None)
     if branch:
         remote = run(["git", "ls-remote", "--heads", policy["remote"], branch])
         if remote.returncode != 0:

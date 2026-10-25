@@ -8,6 +8,10 @@ import unittest
 from contextlib import redirect_stdout
 from unittest import mock
 
+TEST_SUPPORT = pathlib.Path(__file__).resolve().parents[2] / "tests"
+sys.path.insert(0, str(TEST_SUPPORT))
+from lifecycle_policy_test_support import LifecycleSnapshotTestCase
+
 
 SCRIPT = pathlib.Path(__file__).parents[1] / "scripts" / "publish-pr.py"
 SPEC = importlib.util.spec_from_file_location("publish_pr", SCRIPT)
@@ -16,7 +20,7 @@ assert SPEC.loader
 SPEC.loader.exec_module(MODULE)
 
 
-class PublicationTests(unittest.TestCase):
+class PublicationTests(LifecycleSnapshotTestCase):
     REPOSITORY = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
 
     @staticmethod
@@ -86,7 +90,7 @@ class PublicationTests(unittest.TestCase):
     def test_validated_head_mismatch_blocks_before_external_commands(self):
         argv = ["publish-pr.py", "--provenance", "cli", "--expected-head", "h", "--validated-head", "other", "--title", "x", "--body", "x"]
         output = io.StringIO()
-        with mock.patch.object(MODULE, "run", side_effect=AssertionError("unexpected command")), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=AssertionError("unexpected command")), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 2)
         self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
@@ -94,7 +98,7 @@ class PublicationTests(unittest.TestCase):
     def test_publication_without_authorization_is_denied_before_external_commands(self):
         argv = ["publish-pr.py", "--provenance", "cli", "--expected-head", "h", "--validated-head", "h", "--title", "x", "--body", "x"]
         output = io.StringIO()
-        with mock.patch.object(MODULE, "run", side_effect=AssertionError("publication must remain local and committed")), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=AssertionError("publication must remain local and committed")), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         result = json.loads(output.getvalue())
         self.assertEqual(return_code, 2)
@@ -131,7 +135,7 @@ class PublicationTests(unittest.TestCase):
 
         argv = ["publish-pr.py", "--provenance", "cli", "--expected-head", "h", "--validated-head", "h", "--title", "x", "--body", "x", "--authorize-publication"]
         output = io.StringIO()
-        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 0)
         self.assertIn(["git", "push", "--set-upstream", "origin", "h:refs/heads/feature/x"], calls)
@@ -165,7 +169,7 @@ class PublicationTests(unittest.TestCase):
 
         argv = ["publish-pr.py", "--provenance", "cli", "--expected-head", "h", "--validated-head", "h", "--title", "x", "--body", "x", "--authorize-publication"]
         output = io.StringIO()
-        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         result = json.loads(output.getvalue())
         self.assertEqual(return_code, 0)
@@ -198,7 +202,7 @@ class PublicationTests(unittest.TestCase):
 
         argv = ["publish-pr.py", "--provenance", "cli", "--expected-head", "h", "--validated-head", "h", "--title", "x", "--body", "x", "--authorize-publication"]
         output = io.StringIO()
-        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         result = json.loads(output.getvalue())
         self.assertEqual(return_code, 0)

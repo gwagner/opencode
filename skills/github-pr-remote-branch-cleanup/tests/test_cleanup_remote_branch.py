@@ -8,6 +8,10 @@ import unittest
 from contextlib import redirect_stdout
 from unittest import mock
 
+TEST_SUPPORT = pathlib.Path(__file__).resolve().parents[2] / "tests"
+sys.path.insert(0, str(TEST_SUPPORT))
+from lifecycle_policy_test_support import LifecycleSnapshotTestCase
+
 
 SCRIPT = pathlib.Path(__file__).parents[1] / "scripts" / "cleanup-remote-branch.py"
 SPEC = importlib.util.spec_from_file_location("cleanup_remote_branch", SCRIPT)
@@ -16,7 +20,7 @@ assert SPEC.loader
 SPEC.loader.exec_module(MODULE)
 
 
-class CleanupTests(unittest.TestCase):
+class CleanupTests(LifecycleSnapshotTestCase):
     @staticmethod
     def completed(args, stdout="", stderr="", returncode=0):
         return subprocess.CompletedProcess(args, returncode, stdout, stderr)
@@ -114,7 +118,7 @@ class CleanupTests(unittest.TestCase):
 
         output = io.StringIO()
         argv = ["cleanup-remote-branch.py", "--pr", "1", "--expected-head", "h", "--provenance", "cli", "--authorize-cleanup"]
-        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 2)
         self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
@@ -151,7 +155,7 @@ class CleanupTests(unittest.TestCase):
 
         output = io.StringIO()
         argv = ["cleanup-remote-branch.py", "--pr", "1", "--expected-head", "h", "--provenance", "cli", "--authorize-cleanup"]
-        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 2)
         self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
@@ -195,7 +199,7 @@ class CleanupTests(unittest.TestCase):
             "cli",
             "--authorize-cleanup",
         ]
-        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 2)
         self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
@@ -237,7 +241,7 @@ class CleanupTests(unittest.TestCase):
 
         output = io.StringIO()
         argv = ["cleanup-remote-branch.py", "--pr", "1", "--expected-head", "h", "--provenance", "cli", "--authorize-cleanup"]
-        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 0)
         self.assertEqual(json.loads(output.getvalue())["disposition"], "deleted")
@@ -278,7 +282,7 @@ class CleanupTests(unittest.TestCase):
 
         output = io.StringIO()
         argv = ["cleanup-remote-branch.py", "--pr", "1", "--expected-head", "h", "--provenance", "cli", "--authorize-cleanup"]
-        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         result = json.loads(output.getvalue())
         self.assertEqual(return_code, 0)

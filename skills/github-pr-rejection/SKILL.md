@@ -7,11 +7,11 @@ opencode_permission:
     "python3 /code/skills/github-pr-rejection/scripts/verify-rejection.py *": allow
   external_directory:
     "/code/skills/github_lifecycle_policy.py": allow
-    "/tmp/opencode/lifecycle-policy.json": allow
+    "/tmp/opencode/lifecycle-policy.snapshot.json": allow
     "/code/skills/github_pr_lifecycle_common.py": allow
     "/code/skills/github-pr-rejection/scripts/verify-rejection.py": allow
 inputs:
-  - optional `/tmp/opencode/lifecycle-policy.json`
+  - resolved `/tmp/opencode/lifecycle-policy.snapshot.json` and its expected digest
   - exact pull request rejected by the user
   - exact rejected head branch, head commit, and base branch
   - expected GitHub repository from the current checkout
@@ -25,7 +25,7 @@ inputs:
 
 Require the exact pull request rejected by the user, its exact rejected head branch, head commit, and base branch, the expected GitHub repository from the current checkout, current-turn explicit rejection, and an authenticated GitHub CLI.
 
-A caller MAY provide `/tmp/opencode/lifecycle-policy.json`; every invocation passes it as `--policy /tmp/opencode/lifecycle-policy.json`. It may change only validated repository-local names, sources, evidence IDs, check/visual allowlists, and delegate hints; exact-head, authenticated-actor, validation, no-auto-merge, manual-method, and fail-closed disambiguation invariants remain mandatory.
+The orchestrator first resolves the caller source into `/tmp/opencode/lifecycle-policy.snapshot.json`; every invocation passes that snapshot as `--policy /tmp/opencode/lifecycle-policy.snapshot.json --expected-policy-digest <digest>` and never reuses the source. It may change only validated repository-local names, sources, evidence IDs, check/visual allowlists, and delegate hints; exact-head, authenticated-actor, validation, no-auto-merge, manual-method, and fail-closed disambiguation invariants remain mandatory.
 
 ## Procedure
 

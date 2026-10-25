@@ -78,12 +78,14 @@ def main() -> int:
     add_authorization_argument(parser, "publication")
     args = parser.parse_args()
     try:
-        policy = load_policy(args.policy)
+        policy = load_policy(args.policy, args.expected_policy_digest)
     except ValueError as exc:
         return result_emit("blocked", "blocked-unsafe", {}, str(exc))
 
     if args.base is None:
         args.base = policy["base_branch"]
+    if args.base != policy["base_branch"]:
+        return result_emit("blocked", "blocked-unsafe", policy_evidence(policy), "publication base must equal the lifecycle policy base")
     evidence: dict[str, object] = {**policy_evidence(policy), "provenance": args.provenance}
     if not authorized(policy, "publication", args.authorize_publication):
         return result_emit("blocked", "blocked-unsafe", evidence, "explicit publication authorization is required")
@@ -128,7 +130,7 @@ def main() -> int:
     branch = branch_result.stdout.strip()
     head = head_result.stdout.strip()
     evidence.update({"branch": branch, "head": head, "clean": status_result.stdout == ""})
-    if not branch or branch == args.base or head != args.expected_head or status_result.stdout:
+    if not branch or not branch.startswith(policy["feature_branch_prefix"]) or branch == args.base or head != args.expected_head or status_result.stdout:
         return result_emit("blocked", "blocked-unsafe", evidence, "branch, head, or clean-state invariant failed")
 
     owner_repo = repository["nameWithOwner"]

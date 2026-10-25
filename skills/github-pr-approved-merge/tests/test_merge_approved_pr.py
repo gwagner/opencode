@@ -8,6 +8,10 @@ import unittest
 from contextlib import redirect_stdout
 from unittest import mock
 
+TEST_SUPPORT = pathlib.Path(__file__).resolve().parents[2] / "tests"
+sys.path.insert(0, str(TEST_SUPPORT))
+from lifecycle_policy_test_support import LifecycleSnapshotTestCase
+
 
 SCRIPT = pathlib.Path(__file__).parents[1] / "scripts" / "merge-approved-pr.py"
 SPEC = importlib.util.spec_from_file_location("merge_approved_pr", SCRIPT)
@@ -16,7 +20,7 @@ assert SPEC.loader
 SPEC.loader.exec_module(MODULE)
 
 
-class MergeVerificationTests(unittest.TestCase):
+class MergeVerificationTests(LifecycleSnapshotTestCase):
     REPOSITORY = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
 
     @staticmethod
@@ -57,7 +61,7 @@ class MergeVerificationTests(unittest.TestCase):
 
         output = io.StringIO()
         argv = ["merge-approved-pr.py", "--pr", "1", "--expected-head", "h", "--expected-branch", "feature/x", "--confirmed-manual-method", "squash", "--wait-seconds", "0"]
-        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         return return_code, json.loads(output.getvalue()), calls
 
@@ -111,7 +115,7 @@ class MergeVerificationTests(unittest.TestCase):
     def test_missing_attestation_blocks_without_external_commands(self):
         output = io.StringIO()
         argv = ["merge-approved-pr.py", "--pr", "1", "--expected-head", "h", "--expected-branch", "feature/x"]
-        with mock.patch.object(MODULE, "run", side_effect=AssertionError("unexpected command")), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+        with mock.patch.object(MODULE, "run", side_effect=AssertionError("unexpected command")), mock.patch.object(sys, "argv", self.with_policy(argv)), redirect_stdout(output):
             return_code = MODULE.main()
         self.assertEqual(return_code, 2)
 

@@ -41,26 +41,53 @@ def attachment_parts(value: str) -> tuple[str, str] | None:
     return path, alt
 
 
-def local_visual_body_matches(body: str, attachments: list[str]) -> bool:
+def validate_visual_manifest(value: object, scenarios: list[str]) -> dict[str, dict[str, str]] | None:
+    """Validate the exact, real local evidence pair required per configured scenario."""
+    if not isinstance(value, dict) or set(value) != set(scenarios):
+        return None
+    manifest: dict[str, dict[str, str]] = {}
+    for scenario in scenarios:
+        pair = value.get(scenario)
+        if not isinstance(pair, dict) or set(pair) != {"before", "after"}:
+            return None
+        normalized: dict[str, str] = {}
+        for phase in ("before", "after"):
+            path = pair[phase]
+            if not isinstance(path, str) or not path or "#" in path:
+                return None
+            candidate = Path(path)
+            resolved = candidate.resolve()
+            if not candidate.is_absolute() or not resolved.is_relative_to("/tmp/opencode") or not resolved.is_file():
+                return None
+            normalized[phase] = path
+        # A pair cannot make a meaningful before/after claim from one artifact.
+        if Path(normalized["before"]).resolve() == Path(normalized["after"]).resolve():
+            return None
+        manifest[scenario] = normalized
+    return manifest
+
+
+def local_visual_body_matches(body: str, attachments: list[str], manifest: dict[str, dict[str, str]]) -> bool:
     parts = [attachment_parts(value) for value in attachments]
-    if len(parts) != 2 or any(part is None for part in parts):
+    expected_attachments = [
+        f"{manifest[scenario][phase]}#{phase.title()}: {scenario}"
+        for scenario in manifest
+        for phase in ("before", "after")
+    ]
+    if attachments != expected_attachments or any(part is None for part in parts):
         return False
     lines = body.splitlines()
     visual = [line for line in lines if line.startswith("Visual evidence:")]
     before = [line for line in lines if line.startswith("![Before:")]
     after = [line for line in lines if line.startswith("![After:")]
-    if visual != ["Visual evidence: passed"] or len(before) != 1 or len(after) != 1:
+    if visual != ["Visual evidence: passed"] or len(before) != len(manifest) or len(after) != len(manifest):
         return False
-    before_match = re.fullmatch(r"!\[Before: ([^\]]+)\]\(([^)]+)\)", before[0])
-    after_match = re.fullmatch(r"!\[After: ([^\]]+)\]\(([^)]+)\)", after[0])
-    assert parts[0] is not None and parts[1] is not None
-    return (
-        before_match is not None
-        and after_match is not None
-        and before_match.group(1) == after_match.group(1)
-        and (before_match.group(2), f"Before: {before_match.group(1)}") == parts[0]
-        and (after_match.group(2), f"After: {after_match.group(1)}") == parts[1]
-    )
+    expected_lines = {
+        f"![{phase.title()}: {scenario}]({manifest[scenario][phase]})"
+        for scenario in manifest
+        for phase in ("before", "after")
+    }
+    return set(before + after) == expected_lines and len(set(before + after)) == len(expected_lines)
 
 
 def lifecycle_candidate(comment: dict, kind: str, policy: dict | None = None) -> bool:
@@ -103,14 +130,15 @@ def local_attachment_body_matches(body: str, attachments: list[str]) -> bool:
     )
 
 
-def lifecycle_body_matches(body: str, kind: str, pr: str, head: str, attachments: list[str], policy: dict | None = None) -> bool:
+def lifecycle_body_matches(body: str, kind: str, pr: str, head: str, attachments: list[str], visual_manifest: dict[str, dict[str, str]] | None, policy: dict | None = None) -> bool:
     actor = "preflight"
     comment = {"author": {"login": actor}, "body": body}
     if kind == "completion":
         return not attachments and completion_comment_matches(comment, pr, head, actor, policy)
-    if "Visual evidence: not required" in body.splitlines():
-        return not attachments and current_comment_matches(comment, pr, head, actor, policy)
-    if not local_visual_body_matches(body, attachments):
+    scenarios = policy["validation"]["visual_scenarios"]
+    if not scenarios:
+        return visual_manifest is None and not attachments and current_comment_matches(comment, pr, head, actor, policy)
+    if visual_manifest is None or not local_visual_body_matches(body, attachments, visual_manifest):
         return False
     uploaded_body = re.sub(r"\]\([^)]+\)", "](https://github.com/user-attachments/assets/preflight)", body)
     return current_comment_matches({"author": {"login": actor}, "body": uploaded_body}, pr, head, actor, policy)
@@ -127,10 +155,7 @@ def exact_existing_match(comment: dict, kind: str, body: str, actor: str, pr: st
         return False
     if kind == "completion" or "Visual evidence: not required" in body.splitlines():
         return comment.get("body") == body
-    expected_alt = re.findall(r"!\[(Before|After): ([^\]]+)\]", body)
-    actual_alt = re.findall(r"!\[(Before|After): ([^\]]+)\]", comment.get("body") or "")
-    controlled = lambda value: [line for line in value.splitlines() if not line.startswith("![Before:") and not line.startswith("![After:")]
-    return controlled(comment.get("body") or "") == controlled(body) and actual_alt == expected_alt
+    return attached_body_matches(body, comment.get("body") or "", attachments)
 
 
 def main() -> int:
@@ -146,22 +171,22 @@ def main() -> int:
     add_authorization_argument(parser, "comment")
     args = parser.parse_args()
     try:
-        policy = load_policy(args.policy)
+        policy = load_policy(args.policy, args.expected_policy_digest)
     except ValueError as exc:
         return result_emit("blocked", "blocked-unsafe", {}, str(exc))
     evidence: dict[str, object] = {**policy_evidence(policy), "identity": args.identity, "kind": args.kind}
     if not authorized(policy, "comment", args.authorize_comment):
         return result_emit("blocked", "blocked-unsafe", evidence, "explicit comment authorization is required")
+    visual_manifest = None
     if args.visual_manifest:
         try:
             manifest = json.loads(Path(args.visual_manifest).read_text())
         except (OSError, json.JSONDecodeError) as exc:
             return result_emit("blocked", "blocked-unsafe", evidence, f"invalid visual manifest: {exc}")
-        if not isinstance(manifest, dict) or set(manifest) != set(policy["validation"]["visual_scenarios"]):
-            return result_emit("blocked", "blocked-unsafe", evidence, "visual manifest scenarios do not exactly match policy")
-        if any(not isinstance(pair, dict) or set(pair) != {"before", "after"} or any(not isinstance(path, str) or not Path(path).is_absolute() for path in pair.values()) for pair in manifest.values()):
-            return result_emit("blocked", "blocked-unsafe", evidence, "visual manifest must contain scenario-keyed before/after paths")
-        evidence["visual_manifest"] = manifest
+        visual_manifest = validate_visual_manifest(manifest, policy["validation"]["visual_scenarios"])
+        if visual_manifest is None:
+            return result_emit("blocked", "blocked-unsafe", evidence, "visual manifest must contain the exact configured scenarios and real distinct /tmp/opencode before/after paths")
+        evidence["visual_manifest"] = visual_manifest
     try:
         body = BODY_FILE.read_text()
         if not body:
@@ -174,7 +199,7 @@ def main() -> int:
                 return result_emit("blocked", "blocked-unsafe", evidence, "lifecycle-controlled markers require lifecycle comment validation")
             if args.attach and not local_attachment_body_matches(body, args.attach):
                 return result_emit("blocked", "blocked-unsafe", evidence, "generic attachment identity is invalid")
-        elif not args.pr or not args.head or args.identity != f"{args.kind}:{args.pr}:{args.head}" or not lifecycle_body_matches(body, args.kind, args.pr, args.head, args.attach, policy):
+        elif not args.pr or not args.head or args.identity != f"{args.kind}:{args.pr}:{args.head}" or not lifecycle_body_matches(body, args.kind, args.pr, args.head, args.attach, visual_manifest, policy):
             return result_emit("blocked", "blocked-unsafe", evidence, "lifecycle comment body, identity, or attachments are invalid")
 
         auth = run(["gh", "auth", "status"])

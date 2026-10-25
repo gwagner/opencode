@@ -9,6 +9,10 @@ import unittest
 from contextlib import redirect_stdout
 from unittest import mock
 
+TEST_SUPPORT = pathlib.Path(__file__).resolve().parents[2] / "tests"
+sys.path.insert(0, str(TEST_SUPPORT))
+from lifecycle_policy_test_support import LifecycleSnapshotTestCase
+
 
 SCRIPT = pathlib.Path(__file__).parents[1] / "scripts" / "post-comment.py"
 SPEC = importlib.util.spec_from_file_location("post_comment", SCRIPT)
@@ -17,7 +21,7 @@ assert SPEC.loader
 SPEC.loader.exec_module(MODULE)
 
 
-class PostCommentTests(unittest.TestCase):
+class PostCommentTests(LifecycleSnapshotTestCase):
     ACTOR = "lifecycle-user"
     BODY = "Update complete\nOpenCode-Comment-ID: update-7\n"
 
@@ -62,7 +66,7 @@ class PostCommentTests(unittest.TestCase):
             with (
                 mock.patch.object(MODULE, "BODY_FILE", body_file),
                 mock.patch.object(MODULE, "run", side_effect=fake_run),
-                mock.patch.object(sys, "argv", arguments),
+                mock.patch.object(sys, "argv", self.with_policy(arguments)),
                 redirect_stdout(output),
             ):
                 return_code = MODULE.main()
@@ -131,6 +135,47 @@ class PostCommentTests(unittest.TestCase):
         self.assertTrue(MODULE.local_attachment_body_matches(expected, [attachment]))
         self.assertTrue(MODULE.attached_body_matches(expected, actual, [attachment]))
         self.assertFalse(MODULE.attached_body_matches(expected, actual.replace("github.com", "example.com"), [attachment]))
+
+    def test_multiscenario_visual_manifest_binds_body_and_attachments(self):
+        with tempfile.TemporaryDirectory(dir="/tmp/opencode") as directory:
+            root = pathlib.Path(directory)
+            manifest = {
+                "account": {"before": str(root / "account-before.png"), "after": str(root / "account-after.png")},
+                "billing": {"before": str(root / "billing-before.png"), "after": str(root / "billing-after.png")},
+            }
+            for pair in manifest.values():
+                for path in pair.values():
+                    pathlib.Path(path).write_bytes(b"image")
+            validated = MODULE.validate_visual_manifest(manifest, ["account", "billing"])
+            self.assertEqual(validated, manifest)
+            attachments = [
+                f"{manifest[scenario][phase]}#{phase.title()}: {scenario}"
+                for scenario in manifest
+                for phase in ("before", "after")
+            ]
+            body = "\n".join([
+                "Visual evidence: passed",
+                *[
+                    f"![{phase.title()}: {scenario}]({manifest[scenario][phase]})"
+                    for scenario in manifest
+                    for phase in ("before", "after")
+                ],
+            ])
+            self.assertTrue(MODULE.local_visual_body_matches(body, attachments, validated))
+            self.assertFalse(MODULE.local_visual_body_matches(body.replace("After: billing", "After: account"), attachments, validated))
+            self.assertFalse(MODULE.local_visual_body_matches(body, attachments[:-1], validated))
+
+    def test_visual_manifest_rejects_missing_extra_unreal_and_noop_pairs(self):
+        with tempfile.TemporaryDirectory(dir="/tmp/opencode") as directory:
+            root = pathlib.Path(directory)
+            before = root / "before.png"
+            after = root / "after.png"
+            before.write_bytes(b"before")
+            after.write_bytes(b"after")
+            self.assertIsNone(MODULE.validate_visual_manifest({"account": {"before": str(before), "after": str(after)}}, ["account", "billing"]))
+            self.assertIsNone(MODULE.validate_visual_manifest({"account": {"before": str(before), "after": str(after)}, "extra": {"before": str(before), "after": str(after)}}, ["account"]))
+            self.assertIsNone(MODULE.validate_visual_manifest({"account": {"before": "/tmp/opencode/missing.png", "after": str(after)}}, ["account"]))
+            self.assertIsNone(MODULE.validate_visual_manifest({"account": {"before": str(before), "after": str(before)}}, ["account"]))
 
 
 if __name__ == "__main__":
