@@ -57,7 +57,7 @@ def classify(
     if pr.get("baseRefName") != base or not marker_matches(pr, provenance):
         return "blocked-unsafe", None, "current branch pull-request base or provenance is invalid"
     if pr.get("state") == "MERGED":
-        return "blocked-unsafe", None, "recovered merged pull request lacks durable lifecycle-owned approval and merge evidence"
+        return "recovered-merged-needs-reattest", "user-merge-reattest", None
     if pr.get("state") != "OPEN":
         return "blocked-unsafe", None, "current branch has a non-open pull request"
     if pr.get("headRefOid") != local_head or remote_head != local_head:

@@ -28,6 +28,12 @@ class ClassificationTests(unittest.TestCase):
         records = [{"name": "test", "bucket": "pass", "state": "PENDING"}]
         self.assertEqual(MODULE.classify(0, json.dumps(records), "")[0], "blocked-unsafe")
 
+    def test_transient_command_failure_waits(self):
+        self.assertEqual(MODULE.classify(1, "", "HTTP 502 from GitHub")[0], "waiting-external")
+
+    def test_malformed_success_blocks(self):
+        self.assertEqual(MODULE.classify(0, "not-json", "")[0], "blocked-unsafe")
+
     def test_empty_is_only_candidate(self):
         self.assertEqual(MODULE.classify(0, "[]", "")[0], "zero-candidate")
 

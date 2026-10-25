@@ -127,6 +127,74 @@ class PublicationTests(unittest.TestCase):
         self.assertIn(["git", "push", "--set-upstream", "origin", "h:refs/heads/feature/x"], calls)
         self.assertEqual(json.loads(output.getvalue())["disposition"], "created")
 
+    def test_failed_create_recovers_exact_created_pr(self):
+        calls = []
+        list_results = iter([[], [self.pull_request()]])
+
+        def fake_run(args, *, input_text=None):
+            calls.append(args)
+            if args[:3] == ["gh", "auth", "status"]:
+                return self.completed(args)
+            if args[:3] == ["gh", "repo", "view"]:
+                return self.completed(args, json.dumps(self.REPOSITORY))
+            if args[:3] == ["gh", "pr", "list"]:
+                return self.completed(args, json.dumps(next(list_results)))
+            if args[:3] == ["gh", "pr", "create"]:
+                return self.completed(args, stderr="connection lost", returncode=1)
+            if args == ["git", "branch", "--show-current"]:
+                return self.completed(args, "feature/x\n")
+            if args == ["git", "rev-parse", "HEAD"]:
+                return self.completed(args, "h\n")
+            if args == ["git", "status", "--porcelain=v1"] or args[:2] == ["git", "push"]:
+                return self.completed(args)
+            if args[:4] == ["git", "ls-remote", "--heads", "origin"]:
+                return self.completed(args, "h\trefs/heads/feature/x\n")
+            if args[:3] == ["git", "remote", "get-url"]:
+                return self.completed(args, "git@github.com:o/r.git\n")
+            raise AssertionError(args)
+
+        argv = ["publish-pr.py", "--provenance", "cli", "--expected-head", "h", "--validated-head", "h", "--title", "x", "--body", "x"]
+        output = io.StringIO()
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+            return_code = MODULE.main()
+        result = json.loads(output.getvalue())
+        self.assertEqual(return_code, 0)
+        self.assertEqual(result["disposition"], "created")
+        self.assertEqual(result["evidence"]["create_attribution"], "uncertain")
+
+    def test_failed_push_recovers_exact_remote_and_pr(self):
+        records = iter([[self.pull_request()], [self.pull_request()]])
+
+        def fake_run(args, *, input_text=None):
+            if args[:3] == ["gh", "auth", "status"]:
+                return self.completed(args)
+            if args[:3] == ["gh", "repo", "view"]:
+                return self.completed(args, json.dumps(self.REPOSITORY))
+            if args[:3] == ["gh", "pr", "list"]:
+                return self.completed(args, json.dumps(next(records)))
+            if args == ["git", "branch", "--show-current"]:
+                return self.completed(args, "feature/x\n")
+            if args == ["git", "rev-parse", "HEAD"]:
+                return self.completed(args, "h\n")
+            if args == ["git", "status", "--porcelain=v1"]:
+                return self.completed(args)
+            if args[:2] == ["git", "push"]:
+                return self.completed(args, stderr="transport reset", returncode=1)
+            if args[:4] == ["git", "ls-remote", "--heads", "origin"]:
+                return self.completed(args, "h\trefs/heads/feature/x\n")
+            if args[:3] == ["git", "remote", "get-url"]:
+                return self.completed(args, "git@github.com:o/r.git\n")
+            raise AssertionError(args)
+
+        argv = ["publish-pr.py", "--provenance", "cli", "--expected-head", "h", "--validated-head", "h", "--title", "x", "--body", "x"]
+        output = io.StringIO()
+        with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+            return_code = MODULE.main()
+        result = json.loads(output.getvalue())
+        self.assertEqual(return_code, 0)
+        self.assertEqual(result["disposition"], "reused")
+        self.assertEqual(result["evidence"]["push_attribution"], "uncertain")
+
 
 if __name__ == "__main__":
     unittest.main()

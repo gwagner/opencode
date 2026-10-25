@@ -28,7 +28,7 @@ All lifecycle scripts import `/code/skills/github_pr_lifecycle_common.py` for fa
 1. Require canonical passed required-check evidence for the expected head branch and head commit.
 2. Run `python3 /code/skills/github-pr-ready/scripts/ready-pr.py --pr <pr> --expected-head <head> --expected-branch <branch> --expected-base <base>`. The script re-reads the canonical checkout-repository pull request immediately before any ready mutation and blocks if its identity changed.
 3. Require one versioned JSON result. Accept `ready` or `already-ready` only after every configured `origin` fetch and effective push URL and the non-cross-repository PR head match the checkout repository, and the PR has open non-draft state with unchanged head, head branch, and base.
-4. Return `waiting-external` for authentication, network, GitHub availability, or an unconfirmed transition. Return `blocked-unsafe` for malformed output, changed repository identity, changed head or branch, changed base, or an externally completed transition after the ready command failed.
+4. Return `waiting-external` for authentication, network, GitHub availability, or an unconfirmed transition. Return `blocked-unsafe` for malformed output, changed repository identity, changed head or branch, or changed base. If the ready command fails but authoritative inspection proves the exact unchanged PR is ready, accept `ready` with mutation attribution `uncertain`.
 
 ## Boundaries
 

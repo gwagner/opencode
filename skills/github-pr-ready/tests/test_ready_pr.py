@@ -159,7 +159,7 @@ class ReadyTests(unittest.TestCase):
         self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
         self.assertFalse(any(call[:3] == ["gh", "pr", "ready"] for call in calls))
 
-    def test_failed_ready_command_followed_by_external_transition_blocks(self):
+    def test_failed_ready_command_followed_by_exact_ready_state_recovers(self):
         repository = {"nameWithOwner": "o/r", "url": "https://github.com/o/r"}
         before = {
             "number": 1,
@@ -192,8 +192,10 @@ class ReadyTests(unittest.TestCase):
         argv = ["ready-pr.py", "--pr", "1", "--expected-head", "h", "--expected-branch", "feature/x"]
         with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
             return_code = MODULE.main()
-        self.assertEqual(return_code, 2)
-        self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
+        self.assertEqual(return_code, 0)
+        result = json.loads(output.getvalue())
+        self.assertEqual(result["disposition"], "ready")
+        self.assertEqual(result["evidence"]["mutation_attribution"], "uncertain")
 
 
 if __name__ == "__main__":

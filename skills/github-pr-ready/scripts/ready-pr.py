@@ -116,7 +116,7 @@ def main() -> int:
         blocker = ready_result.stderr.strip() if ready_result and ready_result.stderr.strip() else "GitHub did not confirm the ready transition"
         return result_emit("waiting", "waiting-external", evidence, blocker)
     if mutated and ready_result and ready_result.returncode != 0:
-        return result_emit("blocked", "blocked-unsafe", evidence, "pull request became ready after the ready command failed")
+        evidence["mutation_attribution"] = "uncertain"
     return result_emit("passed", "ready" if mutated else "already-ready", evidence, next_stage="user-decision")
 
 

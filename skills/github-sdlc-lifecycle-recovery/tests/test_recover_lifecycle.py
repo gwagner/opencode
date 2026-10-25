@@ -44,14 +44,14 @@ class RecoveryTests(unittest.TestCase):
     def test_closed_issue_without_merged_pr_blocks(self):
         self.assertEqual(MODULE.classify("CLOSED", [], "not-applicable", [], self.ACTOR)[0], "blocked-unsafe")
 
-    def test_merged_pr_requires_current_evidence(self):
+    def test_merged_pr_without_current_evidence_requires_reattestation(self):
         pr = {"state": "MERGED", "url": "u", "headRefName": "feature/x", "headRefOid": "h", "mergeCommit": {"oid": "m"}}
-        self.assertEqual(MODULE.classify("OPEN", [pr], "already-absent", [], self.ACTOR)[0], "blocked-unsafe")
+        self.assertEqual(MODULE.classify("OPEN", [pr], "already-absent", [], self.ACTOR)[:2], ("recovered-merged-needs-reattest", "user-merge-reattest"))
 
-    def test_recovered_merged_pr_with_remote_branch_blocks(self):
+    def test_recovered_merged_pr_with_remote_branch_requires_reattestation(self):
         pr = {"state": "MERGED", "url": "u", "headRefName": "feature/x", "headRefOid": "h", "mergeCommit": {"oid": "m"}}
         result = MODULE.classify("OPEN", [pr], "present-exact", [], self.ACTOR)
-        self.assertEqual(result[0], "blocked-unsafe")
+        self.assertEqual(result[:2], ("recovered-merged-needs-reattest", "user-merge-reattest"))
 
     def test_duplicate_current_evidence_cannot_recover_merge_without_completion(self):
         pr = {"state": "MERGED", "url": "u", "headRefName": "feature/x", "headRefOid": "h", "mergeCommit": {"oid": "m"}}
@@ -59,7 +59,7 @@ class RecoveryTests(unittest.TestCase):
             "author": {"login": self.ACTOR},
             "body": "Lifecycle evidence: current\nDelivered outcome: fixed\nPull request: u\nHead commit: h\nDelegate project-validation: passed\nRequired checks: passed\nVisual evidence: not required",
         }
-        self.assertEqual(MODULE.classify("OPEN", [pr], "already-absent", [comment, comment], self.ACTOR)[0], "blocked-unsafe")
+        self.assertEqual(MODULE.classify("OPEN", [pr], "already-absent", [comment, comment], self.ACTOR)[0], "recovered-merged-needs-reattest")
 
     def test_conflicting_current_evidence_blocks(self):
         pr = {"state": "MERGED", "url": "u", "headRefName": "feature/x", "headRefOid": "h", "mergeCommit": {"oid": "m"}}
@@ -204,7 +204,7 @@ class RecoveryTests(unittest.TestCase):
     def completed(args, stdout="", stderr="", returncode=0):
         return subprocess.CompletedProcess(args, returncode, stdout, stderr)
 
-    def run_main(self, supplied_branch=None, remote_stdout=""):
+    def run_main(self, supplied_branch=None, remote_stdout="", extra_args=None):
         pr = {
             "number": 33,
             "state": "MERGED",
@@ -251,6 +251,8 @@ class RecoveryTests(unittest.TestCase):
         argv = ["recover-lifecycle.py", "--issue", "7"]
         if supplied_branch:
             argv.extend(["--branch", supplied_branch])
+        if extra_args:
+            argv.extend(extra_args)
         output = io.StringIO()
         with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
             return_code = MODULE.main()
@@ -258,8 +260,8 @@ class RecoveryTests(unittest.TestCase):
 
     def test_merged_pr_derives_present_canonical_branch_without_argument(self):
         return_code, result, calls = self.run_main(remote_stdout="abc\trefs/heads/feature/real\n")
-        self.assertEqual(return_code, 2)
-        self.assertEqual(result["disposition"], "blocked-unsafe")
+        self.assertEqual(return_code, 0)
+        self.assertEqual(result["disposition"], "recovered-merged-needs-reattest")
         self.assertIn(["git", "ls-remote", "--heads", "origin", "feature/real"], calls)
 
     def test_conflicting_supplied_branch_blocks_before_remote_lookup(self):
@@ -270,9 +272,29 @@ class RecoveryTests(unittest.TestCase):
 
     def test_absent_canonical_branch_carries_cleanup_evidence(self):
         return_code, result, _ = self.run_main(remote_stdout="")
+        self.assertEqual(return_code, 0)
+        self.assertEqual(result["disposition"], "recovered-merged-needs-reattest")
+        self.assertEqual(result["evidence"]["cleanup_disposition"], "already-absent")
+
+    def test_incomplete_completion_revalidation_identity_blocks_before_github_access(self):
+        output = io.StringIO()
+        argv = ["recover-lifecycle.py", "--issue", "7", "--completion-pr", "https://github.com/o/r/pull/33"]
+        with mock.patch.object(MODULE, "run") as run_mock, mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+            return_code = MODULE.main()
+        self.assertEqual(return_code, 2)
+        self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
+        run_mock.assert_not_called()
+
+    def test_changed_completion_revalidation_identity_blocks(self):
+        return_code, result, calls = self.run_main(extra_args=[
+            "--completion-pr", "https://github.com/o/r/pull/33",
+            "--completion-head", "changed",
+            "--completion-branch", "feature/real",
+            "--completion-merge-commit", "merge",
+        ])
         self.assertEqual(return_code, 2)
         self.assertEqual(result["disposition"], "blocked-unsafe")
-        self.assertEqual(result["evidence"]["cleanup_disposition"], "already-absent")
+        self.assertFalse(any(call[:2] == ["git", "ls-remote"] for call in calls))
 
     def test_foreign_issue_blocks_before_pull_request_search(self):
         calls = []
@@ -374,7 +396,7 @@ class RecoveryTests(unittest.TestCase):
         self.assertEqual(return_code, 2)
         self.assertEqual(json.loads(output.getvalue())["disposition"], "blocked-unsafe")
 
-    def test_remote_branch_without_pr_requires_retained_validated_head(self):
+    def test_remote_branch_without_pr_derives_branch_and_requires_retained_validated_head(self):
         issue = {"number": 7, "title": "x", "state": "OPEN", "url": "https://github.com/o/r/issues/7", "comments": []}
 
         def fake_run(args):
@@ -401,13 +423,14 @@ class RecoveryTests(unittest.TestCase):
             raise AssertionError(args)
 
         output = io.StringIO()
-        argv = ["recover-lifecycle.py", "--issue", "7", "--branch", "feature/real", "--validated-head", "abc"]
+        argv = ["recover-lifecycle.py", "--issue", "7", "--validated-head", "abc"]
         with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
             return_code = MODULE.main()
         result = json.loads(output.getvalue())
         self.assertEqual(return_code, 0)
         self.assertEqual(result["disposition"], "remote-branch-no-pr")
         self.assertEqual(result["next_stage"], "worktree-validation")
+        self.assertEqual(result["evidence"]["branch_source"], "current-linked-worktree")
 
     def test_remote_branch_without_pr_requires_current_branch(self):
         issue = {"number": 7, "title": "x", "state": "OPEN", "url": "https://github.com/o/r/issues/7", "comments": []}

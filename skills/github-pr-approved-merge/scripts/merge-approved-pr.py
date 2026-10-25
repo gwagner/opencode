@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -38,8 +39,17 @@ def main() -> int:
     parser.add_argument("--expected-head", required=True)
     parser.add_argument("--expected-branch", required=True)
     parser.add_argument("--expected-base", default="main")
+    parser.add_argument("--confirmed-manual-squash", action="store_true")
+    parser.add_argument("--max-rechecks", type=int, default=2)
+    parser.add_argument("--wait-seconds", type=int, default=2)
     args = parser.parse_args()
     evidence: dict[str, object] = {}
+    if not args.confirmed_manual_squash:
+        return result_emit("blocked", "blocked-unsafe", evidence, "fresh explicit manual-squash attestation is required")
+    if args.max_rechecks < 0 or args.wait_seconds < 0:
+        return result_emit("blocked", "blocked-unsafe", evidence, "recheck bounds must be nonnegative")
+    evidence["user_attestation"] = "claimed-manual-squash-of-exact-pr"
+    evidence["verification_scope"] = "exact pull-request merge state only; merge method and actor are not technically proven"
 
     auth = run(["gh", "auth", "status"])
     repo = run(["gh", "repo", "view", "--json", "nameWithOwner,url"])
@@ -59,25 +69,35 @@ def main() -> int:
     if not remote_urls_match(repository, origin.stdout) or not remote_urls_match(repository, push_origin.stdout):
         return result_emit("blocked", "blocked-unsafe", evidence, "origin does not match the verified GitHub repository")
 
-    viewed = run(["gh", "pr", "view", args.pr, "--repo", repository["nameWithOwner"], "--json", FIELDS])
-    if viewed.returncode != 0:
-        return result_emit("waiting", "waiting-external", evidence, viewed.stderr.strip())
-    pull_request = parse_object(viewed)
-    if pull_request is None:
-        return result_emit("blocked", "blocked-unsafe", evidence, "pull-request JSON is malformed")
-    evidence["pull_request"] = pull_request
-    if not repository_matches(repository, pull_request):
-        return result_emit("blocked", "blocked-unsafe", evidence, "pull request does not belong to the current repository")
-    if not head_repository_matches(repository, pull_request):
-        return result_emit("blocked", "blocked-unsafe", evidence, "pull request head repository does not match origin")
-    if not identity_matches(pull_request, args.expected_head, args.expected_base, args.expected_branch):
-        return result_emit("blocked", "blocked-unsafe", evidence, "pull-request identity does not match the approved manual merge")
-    if pull_request.get("isDraft") is not False:
-        return result_emit("blocked", "blocked-unsafe", evidence, "pull request is not ready")
+    pull_request = None
+    for attempt in range(args.max_rechecks + 1):
+        viewed = run(["gh", "pr", "view", args.pr, "--repo", repository["nameWithOwner"], "--json", FIELDS])
+        if viewed.returncode != 0:
+            return result_emit("waiting", "waiting-external", evidence, viewed.stderr.strip(), "manual-merge-verification")
+        pull_request = parse_object(viewed)
+        if pull_request is None:
+            return result_emit("blocked", "blocked-unsafe", evidence, "pull-request JSON is malformed")
+        evidence["pull_request"] = pull_request
+        evidence["recheck_attempts"] = attempt + 1
+        if not repository_matches(repository, pull_request):
+            return result_emit("blocked", "blocked-unsafe", evidence, "pull request does not belong to the current repository")
+        if not head_repository_matches(repository, pull_request):
+            return result_emit("blocked", "blocked-unsafe", evidence, "pull request head repository does not match origin")
+        if not identity_matches(pull_request, args.expected_head, args.expected_base, args.expected_branch):
+            return result_emit("blocked", "blocked-unsafe", evidence, "pull-request identity changed after confirmation")
+        if pull_request.get("isDraft") is not False:
+            return result_emit("blocked", "blocked-unsafe", evidence, "pull request is not ready")
+        if pull_request.get("state") != "OPEN" or pull_request.get("mergeable") != "UNKNOWN":
+            break
+        if attempt < args.max_rechecks:
+            time.sleep(args.wait_seconds)
+    assert pull_request is not None
     if pull_request.get("state") == "OPEN":
+        if pull_request.get("mergeable") == "UNKNOWN":
+            return result_emit("waiting", "waiting-external", evidence, "GitHub mergeability remains unknown after bounded rechecks", "manual-merge-verification")
         if pull_request.get("mergeable") != "MERGEABLE":
-            return result_emit("blocked", "blocked-unsafe", evidence, "open pull request is no longer mergeable")
-        return result_emit("waiting", "waiting-user-merge", evidence, "manually squash-merge the exact pull request in GitHub and confirm in the current turn")
+            return result_emit("blocked", "blocked-unsafe", evidence, "open pull request has a confirmed merge conflict or invalid mergeability state")
+        return result_emit("waiting", "waiting-user-merge", evidence, "the exact pull request remains open after attestation", "manual-merge-verification")
     if pull_request.get("state") != "MERGED":
         return result_emit("blocked", "blocked-unsafe", evidence, "pull request is neither open nor merged")
     merge_commit = pull_request.get("mergeCommit")

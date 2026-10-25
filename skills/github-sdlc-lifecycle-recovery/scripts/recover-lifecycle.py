@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -19,70 +18,12 @@ from github_pr_lifecycle_common import (
     repository_matches,
     run,
 )
+from github_issue_comment_common import current_comment_matches, completion_comment_matches, visual_evidence_matches
 from urllib.parse import urlparse
 
 
 VERSION = 1
 
-
-
-def comment_author_matches(comment: dict, actor: str) -> bool:
-    author = comment.get("author")
-    return isinstance(author, dict) and (author.get("login") or "").casefold() == actor.casefold()
-
-
-def exact_controlled_line(lines: list[str], prefix: str, expected: str) -> bool:
-    return [line for line in lines if line.startswith(prefix)] == [expected]
-
-
-def visual_evidence_matches(lines: list[str]) -> bool:
-    visual = [line for line in lines if line.startswith("Visual evidence:")]
-    if visual == ["Visual evidence: not required"]:
-        return not any(line.startswith("![Before:") or line.startswith("![After:") for line in lines)
-    if visual != ["Visual evidence: passed"]:
-        return False
-    before = [line for line in lines if line.startswith("![Before:")]
-    after = [line for line in lines if line.startswith("![After:")]
-    if len(before) != 1 or len(after) != 1:
-        return False
-    before_match = re.fullmatch(r"!\[Before: ([^\]]+)\]\((https://[^)]+)\)", before[0])
-    after_match = re.fullmatch(r"!\[After: ([^\]]+)\]\((https://[^)]+)\)", after[0])
-    if before_match is None or after_match is None or before_match.group(1) != after_match.group(1):
-        return False
-    urls = (urlparse(before_match.group(2)), urlparse(after_match.group(2)))
-    return all(url.hostname == "github.com" and url.path.startswith("/user-attachments/") for url in urls)
-
-
-def current_comment_matches(comment: dict, url: str, head: str, actor: str) -> bool:
-    lines = (comment.get("body") or "").splitlines()
-    delivered = [line for line in lines if line.startswith("Delivered outcome:")]
-    return (
-        comment_author_matches(comment, actor)
-        and exact_controlled_line(lines, "Lifecycle evidence:", "Lifecycle evidence: current")
-        and len(delivered) == 1
-        and bool(delivered[0].removeprefix("Delivered outcome:").strip())
-        and exact_controlled_line(lines, "Pull request:", f"Pull request: {url}")
-        and exact_controlled_line(lines, "Head commit:", f"Head commit: {head}")
-        and exact_controlled_line(lines, "Delegate project-validation:", "Delegate project-validation: passed")
-        and exact_controlled_line(lines, "Required checks:", "Required checks: passed")
-        and visual_evidence_matches(lines)
-    )
-
-
-def completion_comment_matches(comment: dict, url: str, head: str, actor: str) -> bool:
-    lines = (comment.get("body") or "").splitlines()
-    cleanup = {"Remote cleanup: deleted", "Remote cleanup: already-absent"}
-    return (
-        comment_author_matches(comment, actor)
-        and exact_controlled_line(lines, "Lifecycle completion:", "Lifecycle completion: merged-pr")
-        and exact_controlled_line(lines, "Pull request:", f"Pull request: {url}")
-        and exact_controlled_line(lines, "Head commit:", f"Head commit: {head}")
-        and exact_controlled_line(lines, "Merge result:", "Merge result: merged")
-        and exact_controlled_line(lines, "Delegate project-validation:", "Delegate project-validation: passed")
-        and exact_controlled_line(lines, "Required checks:", "Required checks: passed")
-        and sum(line in cleanup for line in lines) == 1
-        and len([line for line in lines if line.startswith("Remote cleanup:")]) == 1
-    )
 
 
 def issue_repository_matches(repository: dict, issue: dict) -> bool:
@@ -121,25 +62,29 @@ def classify(issue_state: str, prs: list[dict], remote_branch_state: str, commen
     merge_commit = pr.get("mergeCommit")
     if not isinstance(merge_commit, dict) or not merge_commit.get("oid"):
         return "blocked-unsafe", None, "merged pull-request merge commit is missing"
-    if remote_branch_state == "present-exact":
-        return "blocked-unsafe", None, "recovered merged pull request lacks durable lifecycle-owned approval and merge evidence"
-    if remote_branch_state != "already-absent":
+    if remote_branch_state not in ("present-exact", "already-absent"):
         return "blocked-unsafe", None, "merged pull-request remote branch is unverified"
     head = pr.get("headRefOid")
     url = pr.get("url")
+    controlled_current = [comment for comment in comments if any(line.startswith("Lifecycle evidence:") for line in (comment.get("body") or "").splitlines())]
+    controlled_completion = [comment for comment in comments if any(line.startswith("Lifecycle completion:") for line in (comment.get("body") or "").splitlines())]
+    if any(not current_comment_matches(comment, url, head, actor) for comment in controlled_current):
+        return "blocked-unsafe", None, "current lifecycle evidence is malformed or has the wrong actor"
+    if any(not completion_comment_matches(comment, url, head, actor) for comment in controlled_completion):
+        return "blocked-unsafe", None, "completion lifecycle evidence is malformed or has the wrong actor"
     current = [comment for comment in comments if current_comment_matches(comment, url, head, actor)]
     completion = [comment for comment in comments if completion_comment_matches(comment, url, head, actor)]
     if len({comment.get("body") or "" for comment in current}) > 1:
         return "blocked-unsafe", None, "current lifecycle evidence conflicts"
     if len({comment.get("body") or "" for comment in completion}) > 1:
         return "blocked-unsafe", None, "completion lifecycle evidence conflicts"
-    if not current:
-        return "blocked-unsafe", None, "merged lifecycle evidence is missing"
-    if not completion:
-        return "blocked-unsafe", None, "recovered merge lacks exact lifecycle completion evidence"
-    if issue_state == "CLOSED":
+    if current and completion and remote_branch_state == "already-absent" and issue_state == "CLOSED":
         return "closed", None, None
-    return "merged-needs-close", "issue-close", None
+    if current and completion and remote_branch_state == "already-absent":
+        return "merged-needs-close", "issue-close", None
+    if issue_state == "CLOSED":
+        return "blocked-unsafe", None, "closed issue lacks exact completed lifecycle evidence"
+    return "recovered-merged-needs-reattest", "user-merge-reattest", None
 
 
 
@@ -148,8 +93,15 @@ def main() -> int:
     parser.add_argument("--issue", required=True)
     parser.add_argument("--branch")
     parser.add_argument("--validated-head")
+    parser.add_argument("--completion-pr")
+    parser.add_argument("--completion-head")
+    parser.add_argument("--completion-branch")
+    parser.add_argument("--completion-merge-commit")
     args = parser.parse_args()
     evidence: dict[str, object] = {}
+    completion_identity = (args.completion_pr, args.completion_head, args.completion_branch, args.completion_merge_commit)
+    if any(completion_identity) and not all(completion_identity):
+        return result_emit("blocked", "blocked-unsafe", evidence, "completion revalidation identity is incomplete", None)
     auth = run(["gh", "auth", "status"])
     repo = run(["gh", "repo", "view", "--json", "nameWithOwner,url"])
     if auth.returncode != 0 or repo.returncode != 0:
@@ -218,6 +170,19 @@ def main() -> int:
     if any(not (repository_matches(repository, record) and head_repository_matches(repository, record)) for record in prs):
         evidence["pull_requests"] = prs
         return result_emit("blocked", "blocked-unsafe", evidence, "matching pull-request repository identity is invalid", None)
+    if all(completion_identity):
+        if len(prs) != 1:
+            return result_emit("blocked", "blocked-unsafe", evidence, "completion revalidation requires one matching pull request", None)
+        completion_pr = prs[0]
+        merge_commit = completion_pr.get("mergeCommit")
+        if (
+            completion_pr.get("url") != args.completion_pr
+            or completion_pr.get("headRefOid") != args.completion_head
+            or completion_pr.get("headRefName") != args.completion_branch
+            or not isinstance(merge_commit, dict)
+            or merge_commit.get("oid") != args.completion_merge_commit
+        ):
+            return result_emit("blocked", "blocked-unsafe", evidence, "completion pull-request identity or merge evidence changed", None)
     remote_branch_state = "not-applicable"
     branch = args.branch
     if len(prs) == 1 and prs[0].get("headRefName"):
@@ -228,6 +193,14 @@ def main() -> int:
             evidence["pull_request_branch"] = pull_request_branch
             return result_emit("blocked", "blocked-unsafe", evidence, "supplied branch conflicts with the matching pull request", None)
         branch = pull_request_branch
+    if not prs and not branch:
+        current_branch = run(["git", "branch", "--show-current"])
+        if current_branch.returncode != 0:
+            return result_emit("blocked", "blocked-unsafe", evidence, "cannot derive the linked worktree branch", None)
+        derived_branch = current_branch.stdout.strip()
+        if derived_branch and derived_branch != "main":
+            branch = derived_branch
+            evidence["branch_source"] = "current-linked-worktree"
     if branch:
         remote = run(["git", "ls-remote", "--heads", "origin", branch])
         if remote.returncode != 0:

@@ -27,7 +27,19 @@ def run(*args: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(args, text=True, capture_output=True, check=False)
 
 
-def classify(mode: str, clean: bool, head: str, base: str, expected_head: str | None) -> tuple[str, str | None]:
+def classify(
+    mode: str,
+    clean: bool,
+    head: str,
+    base: str,
+    expected_head: str | None,
+    *,
+    conflicts: bool = False,
+    base_is_ancestor: bool | None = None,
+    feature_commit_count: int | None = None,
+) -> tuple[str, str | None]:
+    if conflicts:
+        return "blocked-unsafe", "worktree contains unresolved merge conflicts"
     if not clean:
         return "waiting-user-cleanup", "worktree contains unowned or uncommitted changes"
     if mode in ("resume-publication", "resume-pull-request"):
@@ -41,6 +53,8 @@ def classify(mode: str, clean: bool, head: str, base: str, expected_head: str | 
             return "resume-publication", None
         return "resume-pull-request", None
     if mode == "fresh" and head != base:
+        if base_is_ancestor is True and feature_commit_count == 0:
+            return "passed", None
         return "blocked-unsafe", "fresh worktree contains commits not established as owned resume state"
     return "passed", None
 
@@ -76,6 +90,7 @@ def main() -> int:
         "branch": ("git", "branch", "--show-current"),
         "head": ("git", "rev-parse", "HEAD"),
         "status": ("git", "status", "--porcelain=v1"),
+        "conflicts": ("git", "diff", "--name-only", "--diff-filter=U"),
         "worktrees": ("git", "worktree", "list", "--porcelain"),
     }
     values: dict[str, str] = {}
@@ -120,6 +135,22 @@ def main() -> int:
         print(json.dumps(asdict(result), sort_keys=True))
         return 2
     evidence["base_revision"] = remote.stdout.strip()
+    ancestry = run("git", "merge-base", "--is-ancestor", values["head"], f"origin/{args.base}")
+    if ancestry.returncode not in (0, 1):
+        result = Result(evidence=evidence, blocker="cannot establish refreshed-base ancestry")
+        print(json.dumps(asdict(result), sort_keys=True))
+        return 2
+    feature_range = run("git", "rev-list", "--count", f"origin/{args.base}..{values['head']}")
+    try:
+        feature_commit_count = int(feature_range.stdout.strip()) if feature_range.returncode == 0 else -1
+    except ValueError:
+        feature_commit_count = -1
+    if feature_commit_count < 0:
+        result = Result(evidence=evidence, blocker="cannot establish refreshed-base feature range")
+        print(json.dumps(asdict(result), sort_keys=True))
+        return 2
+    evidence["head_is_ancestor_of_refreshed_base"] = ancestry.returncode == 0
+    evidence["feature_commit_count"] = feature_commit_count
 
     disposition, blocker = classify(
         args.mode,
@@ -127,6 +158,9 @@ def main() -> int:
         values["head"],
         remote.stdout.strip(),
         args.expected_head,
+        conflicts=bool(values["conflicts"]),
+        base_is_ancestor=ancestry.returncode == 0,
+        feature_commit_count=feature_commit_count,
     )
     status = "passed" if disposition in ("passed", "resume-publication", "resume-pull-request") else "waiting" if disposition == "waiting-user-cleanup" else "blocked"
     next_stage = "pr-publication" if disposition == "resume-publication" else "ownership-baseline" if disposition in ("passed", "resume-pull-request") else None

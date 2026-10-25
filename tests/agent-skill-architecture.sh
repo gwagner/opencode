@@ -52,6 +52,22 @@ done
 grep -Fq 'rejected-open-pr' "$orchestrator"
 grep -Fq 'waiting-external' "$orchestrator"
 grep -Fq 'Repeat a repair only after a material change' "$orchestrator"
+grep -Fq 'recovered-merged-needs-reattest' "$orchestrator"
+grep -Fq 'Approval and manual-merge confirmation are separate user acts.' "$orchestrator"
+grep -Fq 'no agent may run an automatic merge' "$orchestrator"
+
+grep -Fq 'stable comment IDs' "$root/skills/github-issue-comment/SKILL.md"
+grep -Fq 'post-comment.py --issue <issue>' "$root/skills/github-issue-comment/SKILL.md"
+grep -Fq 'including when that call reports failure' "$root/skills/github-issue-comment/SKILL.md"
+grep -Fq 'A final cleanup warning does not invalidate' "$root/skills/github-issue-comment/SKILL.md"
+grep -Fq -- '--completion-merge-commit <merge>' "$root/skills/github-issue-close/SKILL.md"
+grep -Fq '"/code/skills/github_issue_comment_common.py": allow' "$root/skills/github-issue-close/SKILL.md"
+grep -Fq 'python3 /code/skills/github-sdlc-lifecycle-recovery/scripts/recover-lifecycle.py *' "$root/skills/github-issue-close/SKILL.md"
+grep -Fq 'mutation attribution `uncertain`' "$root/skills/github-pr-publication/SKILL.md"
+grep -Fq 'mutation attribution `uncertain`' "$root/skills/github-pr-ready/SKILL.md"
+grep -Fq 'does not prove merge method or actor' "$root/skills/github-pr-approved-merge/SKILL.md"
+grep -Fq 'malformed successful output' "$root/skills/github-pr-check-validation/SKILL.md"
+grep -Fq 'older main ancestor with zero feature commits' "$root/skills/openchamber-worktree-validation/SKILL.md"
 
 issue_manager="$root/agents/github-issue-manager.md"
 issue_contract="$root/skills/github-work-issue-contract/SKILL.md"
@@ -72,6 +88,7 @@ for script in \
   "$root/skills/github-pr-check-validation/scripts/validate-checks.py" \
   "$root/skills/github-pr-ready/scripts/ready-pr.py" \
   "$root/skills/github-pr-approved-merge/scripts/merge-approved-pr.py" \
+  "$root/skills/github-issue-comment/scripts/post-comment.py" \
   "$root/skills/github-pr-remote-branch-cleanup/scripts/cleanup-remote-branch.py" \
   "$root/skills/github-sdlc-lifecycle-recovery/scripts/recover-lifecycle.py" \
   "$root/skills/github-pr-lifecycle-recovery/scripts/recover-pr.py" \
@@ -90,12 +107,18 @@ python3 -m unittest discover -s "$root/skills/github-pr-publication/tests" -p 't
 python3 -m unittest discover -s "$root/skills/github-pr-check-validation/tests" -p 'test_*.py'
 python3 -m unittest discover -s "$root/skills/github-pr-ready/tests" -p 'test_*.py'
 python3 -m unittest discover -s "$root/skills/github-pr-approved-merge/tests" -p 'test_*.py'
+python3 -m unittest discover -s "$root/skills/github-issue-comment/tests" -p 'test_*.py'
 python3 -m unittest discover -s "$root/skills/github-pr-remote-branch-cleanup/tests" -p 'test_*.py'
 python3 -m unittest discover -s "$root/skills/github-sdlc-lifecycle-recovery/tests" -p 'test_*.py'
 python3 -m unittest discover -s "$root/skills/github-pr-lifecycle-recovery/tests" -p 'test_*.py'
 python3 -m unittest discover -s "$root/skills/github-pr-rejection/tests" -p 'test_*.py'
 
 python3 "$root/tests/validate-agent-skill-architecture.py" "$root"
+
+if find "$root/agents" "$root/skills" "$root/tests" -type d -name __pycache__ -print -quit | grep -q .; then
+  printf '%s\n' 'python bytecode cache found in tracked definition or test scope' >&2
+  exit 1
+fi
 
 if grep -R -qE 'agent: github-sdlc|execution_route: github-sdlc|`github-sdlc`' "$root/agents" "$root/skills"; then
   printf '%s\n' 'obsolete github-sdlc routing remains' >&2

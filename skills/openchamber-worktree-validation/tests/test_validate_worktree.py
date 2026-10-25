@@ -17,9 +17,24 @@ class ClassifyTests(unittest.TestCase):
         self.assertEqual(MODULE.classify("fresh", True, "a", "a", None), ("passed", None))
 
     def test_fresh_unknown_commits_block(self):
-        disposition, blocker = MODULE.classify("fresh", True, "a", "b", None)
+        disposition, blocker = MODULE.classify("fresh", True, "a", "b", None, base_is_ancestor=False, feature_commit_count=1)
         self.assertEqual(disposition, "blocked-unsafe")
         self.assertTrue(blocker)
+
+    def test_clean_older_main_without_feature_commits_passes(self):
+        self.assertEqual(
+            MODULE.classify("fresh", True, "old", "new", None, base_is_ancestor=True, feature_commit_count=0),
+            ("passed", None),
+        )
+
+    def test_unestablished_feature_commits_block(self):
+        self.assertEqual(
+            MODULE.classify("fresh", True, "feature", "base", None, base_is_ancestor=False, feature_commit_count=2)[0],
+            "blocked-unsafe",
+        )
+
+    def test_conflicts_are_unsafe_not_ordinary_cleanup(self):
+        self.assertEqual(MODULE.classify("fresh", False, "a", "a", None, conflicts=True)[0], "blocked-unsafe")
 
     def test_resume_ahead_recovers_publication(self):
         self.assertEqual(MODULE.classify("resume-publication", True, "a", "b", "a"), ("resume-publication", None))

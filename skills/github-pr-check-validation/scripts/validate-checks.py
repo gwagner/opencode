@@ -32,15 +32,15 @@ def classify(exit_code: int, stdout: str, stderr: str) -> tuple[str, list[dict] 
         try:
             records = json.loads(stdout)
         except json.JSONDecodeError:
-            return "blocked-unsafe", None
+            return ("blocked-unsafe" if exit_code == 0 else "waiting-external"), None
         if not isinstance(records, list):
-            return "blocked-unsafe", None
+            return ("blocked-unsafe" if exit_code == 0 else "waiting-external"), None
         if not records:
             return "zero-candidate" if exit_code == 0 and not stderr else "blocked-unsafe", records
         kinds: list[str] = []
         for record in records:
             if not isinstance(record, dict) or not record.get("name"):
-                return "blocked-unsafe", records
+                return ("blocked-unsafe" if exit_code == 0 else "waiting-external"), records
             pair = (record.get("bucket"), record.get("state"))
             if pair in PASSING:
                 kinds.append("pass")
@@ -49,17 +49,17 @@ def classify(exit_code: int, stdout: str, stderr: str) -> tuple[str, list[dict] 
             elif pair in FAILED:
                 kinds.append("fail")
             else:
-                return "blocked-unsafe", records
+                return ("blocked-unsafe" if exit_code == 0 else "waiting-external"), records
         if exit_code == 0 and all(kind == "pass" for kind in kinds):
             return "passed", records
         if exit_code == 8 and "pending" in kinds and all(kind in ("pass", "pending") for kind in kinds):
             return "pending", records
         if exit_code == 1 and "fail" in kinds:
             return "repair-needed", records
-        return "blocked-unsafe", records
+        return ("blocked-unsafe" if exit_code == 0 else "waiting-external"), records
     if exit_code == 1 and stderr.startswith("no required checks reported on the '") and stderr.rstrip().endswith("' branch"):
         return "zero-candidate", []
-    return "blocked-unsafe", None
+    return ("blocked-unsafe" if exit_code == 0 else "waiting-external"), None
 
 
 
@@ -151,6 +151,8 @@ def main() -> int:
             return result_emit("repair", "repair-needed", evidence, "one or more required checks failed", "correction")
         if disposition == "blocked-unsafe":
             return result_emit("blocked", disposition, evidence, "required-check output was malformed or ambiguous")
+        if disposition == "waiting-external":
+            return result_emit("waiting", disposition, evidence, checked.stderr.strip() or "required-check transport failed")
         if disposition == "zero-candidate":
             expected_empty_error = f"no required checks reported on the '{identity['headRefName']}' branch"
             if not checked.stdout and checked.stderr.rstrip() != expected_empty_error:

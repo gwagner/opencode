@@ -136,9 +136,11 @@ def main() -> int:
 
     refspec = f"{args.expected_head}:refs/heads/{branch}"
     pushed = run(["git", "push", "--set-upstream", "origin", refspec])
+    push_failure_disposition = None
     if pushed.returncode != 0:
-        status, disposition = classify_push_failure(pushed.stderr)
-        return result_emit(status, disposition, evidence, pushed.stderr.strip())
+        _, push_failure_disposition = classify_push_failure(pushed.stderr)
+        evidence["push_attribution"] = "uncertain"
+        evidence["push_stderr"] = pushed.stderr.strip()
     post_branch = run(["git", "branch", "--show-current"])
     post_head = run(["git", "rev-parse", "HEAD"])
     post_status = run(["git", "status", "--porcelain=v1"])
@@ -149,8 +151,12 @@ def main() -> int:
         return result_emit("waiting", "waiting-external", evidence, remote.stderr.strip())
     remote_head, remote_valid = parse_remote_head(remote.stdout, branch)
     evidence["remote_head"] = remote_head
-    if not remote_valid or remote_head != args.expected_head:
+    if not remote_valid or remote_head not in (None, args.expected_head):
         return result_emit("blocked", "blocked-unsafe", evidence, "remote branch does not match the validated publication head")
+    if remote_head is None:
+        if push_failure_disposition == "blocked-unsafe":
+            return result_emit("blocked", "blocked-unsafe", evidence, pushed.stderr.strip() or "push was rejected and the remote ref is absent")
+        return result_emit("waiting", "waiting-external", evidence, pushed.stderr.strip() or "validated head is not visible on the remote", "pr-publication")
 
     if action == "create":
         body = canonical_body(args.provenance, args.body, args.issue)
@@ -160,8 +166,10 @@ def main() -> int:
         ], input_text=body)
         if created.returncode != 0:
             evidence["remote_branch_without_pr"] = True
-            return result_emit("waiting", "waiting-external", evidence, created.stderr.strip(), "pr-publication")
-        evidence["created_output"] = created.stdout.strip()
+            evidence["create_attribution"] = "uncertain"
+            evidence["create_stderr"] = created.stderr.strip()
+        else:
+            evidence["created_output"] = created.stdout.strip()
 
     verified = run(["gh", "pr", "list", "--repo", owner_repo, "--head", branch, "--state", "open", "--json", fields])
     if verified.returncode != 0:
@@ -170,9 +178,13 @@ def main() -> int:
         open_records = json.loads(verified.stdout)
     except json.JSONDecodeError as exc:
         return result_emit("blocked", "blocked-unsafe", evidence, f"invalid verification JSON: {exc}")
+    if not isinstance(open_records, list) or any(not isinstance(item, dict) for item in open_records):
+        evidence["verification"] = open_records
+        return result_emit("blocked", "blocked-unsafe", evidence, "pull-request verification shape is malformed")
+    if action == "create" and not open_records:
+        return result_emit("waiting", "waiting-external", evidence, evidence.get("create_stderr") or "pull request is not yet visible", "pr-publication")
     if (
-        not isinstance(open_records, list)
-        or len(open_records) != 1
+        len(open_records) != 1
         or not isinstance(open_records[0], dict)
         or not pull_request_identity_matches(repository, open_records[0], args.base, branch)
         or not marker_matches(open_records[0], args.provenance, args.issue)

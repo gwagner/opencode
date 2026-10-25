@@ -56,7 +56,7 @@ class MergeVerificationTests(unittest.TestCase):
             raise AssertionError(args)
 
         output = io.StringIO()
-        argv = ["merge-approved-pr.py", "--pr", "1", "--expected-head", "h", "--expected-branch", "feature/x"]
+        argv = ["merge-approved-pr.py", "--pr", "1", "--expected-head", "h", "--expected-branch", "feature/x", "--confirmed-manual-squash", "--wait-seconds", "0"]
         with mock.patch.object(MODULE, "run", side_effect=fake_run), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
             return_code = MODULE.main()
         return return_code, json.loads(output.getvalue()), calls
@@ -66,6 +66,7 @@ class MergeVerificationTests(unittest.TestCase):
         self.assertEqual(return_code, 0)
         self.assertEqual(result["disposition"], "user-merged")
         self.assertFalse(any(call[:3] == ["gh", "pr", "merge"] for call in calls))
+        self.assertIn("not technically proven", result["evidence"]["verification_scope"])
 
     def test_unchanged_open_pr_waits_for_user_merge(self):
         return_code, result, calls = self.run_main(self.record(state="OPEN"))
@@ -95,6 +96,24 @@ class MergeVerificationTests(unittest.TestCase):
         return_code, result, _ = self.run_main(record)
         self.assertEqual(return_code, 2)
         self.assertEqual(result["disposition"], "blocked-unsafe")
+
+    def test_unknown_mergeability_waits_after_bounded_rechecks(self):
+        return_code, result, _ = self.run_main(self.record(state="OPEN", mergeable="UNKNOWN"))
+        self.assertEqual(return_code, 3)
+        self.assertEqual(result["disposition"], "waiting-external")
+        self.assertEqual(result["next_stage"], "manual-merge-verification")
+
+    def test_confirmed_conflict_blocks(self):
+        return_code, result, _ = self.run_main(self.record(state="OPEN", mergeable="CONFLICTING"))
+        self.assertEqual(return_code, 2)
+        self.assertEqual(result["disposition"], "blocked-unsafe")
+
+    def test_missing_attestation_blocks_without_external_commands(self):
+        output = io.StringIO()
+        argv = ["merge-approved-pr.py", "--pr", "1", "--expected-head", "h", "--expected-branch", "feature/x"]
+        with mock.patch.object(MODULE, "run", side_effect=AssertionError("unexpected command")), mock.patch.object(sys, "argv", argv), redirect_stdout(output):
+            return_code = MODULE.main()
+        self.assertEqual(return_code, 2)
 
     def test_foreign_repository_blocks(self):
         record = self.record()

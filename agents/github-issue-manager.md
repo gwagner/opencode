@@ -31,14 +31,13 @@ permission:
     "gh issue edit * --remove-label *": allow
     "gh issue view * --json number,title,state,url": allow
     "gh issue view * --json number,title,state,url,comments": allow
-    "gh issue comment --help": allow
-    "gh issue comment * --body-file /tmp/opencode/github-issue-manager-comment.md": allow
-    "gh issue comment * --body-file /tmp/opencode/github-issue-manager-comment.md --attach *": allow
     "gh issue close *": allow
     "gh issue reopen *": allow
     "gh issue delete * --yes": allow
     "rm -f /tmp/opencode/github-issue-manager-issue.md": allow
     "rm -f /tmp/opencode/github-issue-manager-comment.md": allow
+    "python3 /code/skills/github-sdlc-lifecycle-recovery/scripts/recover-lifecycle.py *": allow
+    "python3 /code/skills/github-issue-comment/scripts/post-comment.py *": allow
     "graphify query *": allow
     "graphify explain *": allow
     "graphify path *": allow

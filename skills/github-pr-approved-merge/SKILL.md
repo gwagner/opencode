@@ -14,9 +14,9 @@ opencode_permission:
   skill:
     github-pr-check-validation: allow
 inputs:
-  - one open GitHub pull request targeting main
-  - explicit user approval for manual squash merge of the exact pull request, head branch, and head commit
-  - user available to perform and confirm that manual squash merge
+  - one open approved pull request or one recovered merged pull request targeting main
+  - explicit current-turn approval and separate confirmation, or recovered exact-identity manual-squash re-attestation
+  - user available to perform and confirm the manual squash when the pull request is open
   - expected GitHub repository from the current checkout
   - authenticated GitHub CLI
 ---
@@ -25,7 +25,7 @@ inputs:
 
 ## Inputs
 
-Require one open GitHub pull request targeting `main`, explicit user approval for manual squash merge of the exact pull request, head branch, and head commit, a user available to perform and confirm that manual squash merge, the expected GitHub repository from the current checkout, and an authenticated GitHub CLI.
+Require either one open GitHub pull request targeting `main` with explicit user approval and separate manual-merge confirmation, or one recovered merged pull request with fresh explicit re-attestation of the exact immutable PR URL, head branch, head commit, base, and claimed manual squash. Also require the expected checkout repository and authenticated GitHub CLI.
 
 ## Workflow
 
@@ -47,9 +47,9 @@ All lifecycle scripts import `/code/skills/github_pr_lifecycle_common.py` for fa
 1. Before asking the user to merge, require open state, base `main`, mergeable status, ready state, and an exact match between the current head branch, head commit, and current-turn user decision context.
 2. Invoke `github-pr-check-validation` immediately before requesting the manual squash merge, supplying this exact current head. Require its `passed` result.
 3. Ask the user to manually squash-merge that exact pull request in GitHub and confirm completion. Never treat silence, approval alone, or an ambiguous response as confirmation.
-4. Only after current-turn confirmation, run `python3 /code/skills/github-pr-approved-merge/scripts/merge-approved-pr.py --pr <pr> --expected-head <approved head> --expected-branch <approved branch> --expected-base main`.
+4. Only after current-turn confirmation or recovered-merge re-attestation, run `python3 /code/skills/github-pr-approved-merge/scripts/merge-approved-pr.py --pr <pr> --expected-head <approved head> --expected-branch <approved branch> --expected-base main --confirmed-manual-squash`. For recovered merged state, the pre-merge check stage is not replayable; require retained exact-head check evidence when applicable and treat re-attestation as a recovery act, never retroactive approval.
 5. Require one versioned JSON result. Require every configured `origin` fetch and effective push URL and the non-cross-repository pull-request head to match the checkout GitHub repository. The script performs no merge or other mutation.
-6. Return `waiting-user-merge` when confirmation was supplied but the exact pull request remains open and unchanged. Accept `user-merged` only when GitHub reports merged state, unchanged head, head branch, and base, plus a merged timestamp and merge commit.
+6. Boundedly re-read after confirmation. Return `waiting-external` when GitHub reports temporary or `UNKNOWN` mergeability through the bound, `blocked-unsafe` for a confirmed conflict or identity change, and `waiting-user-merge` with continuation `manual-merge-verification` when the exact pull request remains open and unchanged. Accept `user-merged` only when GitHub reports merged state, unchanged head, head branch, and base, plus a merged timestamp and merge commit.
 
 ## Boundaries
 
@@ -59,4 +59,4 @@ All lifecycle scripts import `/code/skills/github_pr_lifecycle_common.py` for fa
 
 ## Completion
 
-Report `user-merged`, `waiting-user-merge`, `waiting-external`, or `blocked-unsafe`; repository, pull-request URL, approved head and base branch, canonical required-check result, verified manual squash-merge evidence, and blocker.
+Report `user-merged`, `waiting-user-merge`, `waiting-external`, or `blocked-unsafe`; repository, pull-request URL, approved head and base branch, canonical required-check result, explicit user attestation, exact merged-state verification, and blocker. State that GitHub technically proves only the exact PR's merged state after attestation; it does not prove merge method or actor.

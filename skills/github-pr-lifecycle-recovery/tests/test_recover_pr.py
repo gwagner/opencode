@@ -84,12 +84,12 @@ class RecoveryTests(unittest.TestCase):
         pr["body"] = "OpenCode-Origin: cli\n"
         self.assertEqual(MODULE.classify([pr], "h", "h", "base", "openchamber")[0], "blocked-unsafe")
 
-    def test_recovered_merged_pr_blocks_without_owned_merge_evidence(self):
-        self.assertEqual(MODULE.classify([self.pr(state="MERGED")], None, "h", "base", "openchamber")[0], "blocked-unsafe")
+    def test_recovered_merged_pr_requires_fresh_reattestation(self):
+        self.assertEqual(MODULE.classify([self.pr(state="MERGED")], None, "h", "base", "openchamber")[:2], ("recovered-merged-needs-reattest", "user-merge-reattest"))
 
-    def test_recovered_merged_pr_with_remote_branch_still_blocks(self):
+    def test_recovered_merged_pr_with_remote_branch_requires_reattestation(self):
         result = MODULE.classify([self.pr(state="MERGED")], "h", "h", "base", "openchamber")
-        self.assertEqual(result[0], "blocked-unsafe")
+        self.assertEqual(result[:2], ("recovered-merged-needs-reattest", "user-merge-reattest"))
 
     def test_conflicting_provenance_or_issue_marker_blocks(self):
         conflicting = self.pr(provenance="cli")
