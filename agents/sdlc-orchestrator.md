@@ -18,7 +18,7 @@ permission:
     frontend-reference-builder: allow
     spec-gap-detector: allow
   read: allow
-  shell:
+  bash:
     "git status --porcelain=v1 -z": allow
     "git diff -- *": allow
     "git add -- *": allow

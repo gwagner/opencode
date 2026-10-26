@@ -3,7 +3,7 @@ name: feature-branch-setup
 description: Creates one clean local feature branch before a bounded coding change.
 classification: technical
 opencode_permission:
-  shell:
+  bash:
     "python3 /code/skills/feature-branch-setup/scripts/setup-feature-branch.py *": allow
   external_directory:
     "/code/skills/feature-branch-setup/scripts/setup-feature-branch.py": allow

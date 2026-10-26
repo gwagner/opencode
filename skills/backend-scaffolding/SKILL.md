@@ -7,7 +7,7 @@ opencode_permission:
   glob: allow
   grep: allow
   edit: allow
-  shell:
+  bash:
     "go test *": allow
     python3 /project/.opencode/scripts/retrieve-knowledge.py *: allow
     go build *: allow
@@ -27,6 +27,8 @@ opencode_permission:
     python -m pytest *: allow
     make test*: allow
     make build*: allow
+  external_directory:
+    /project/.opencode/scripts/retrieve-knowledge.py: allow
   skill:
     okf-reader: allow
     interface-boundaries: allow

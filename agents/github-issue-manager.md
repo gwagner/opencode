@@ -14,7 +14,7 @@ permission:
   edit:
     "/tmp/opencode/github-issue-manager-issue.md": allow
     "/tmp/opencode/github-issue-manager-comment.md": allow
-  shell:
+  bash:
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
     "gh issue list --state open --limit 1000 --json number,title,body,labels,url": allow
@@ -33,6 +33,7 @@ permission:
     "rm -f /tmp/opencode/github-issue-manager-comment.md": allow
   external_directory:
     "/tmp/opencode/github-issue-manager-issue.md": allow
+    "/tmp/opencode/github-issue-manager-comment.md": allow
   skill:
     github-issue-capture: allow
     github-issue-update: allow

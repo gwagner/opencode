@@ -3,7 +3,7 @@ name: github-pr-publication
 description: Pushes one validated committed branch and creates a draft GitHub pull request on explicit request.
 classification: technical
 opencode_permission:
-  shell:
+  bash:
     "python3 /code/skills/github-pr-publication/scripts/publish-pr.py *": allow
   external_directory:
     "/code/skills/github-pr-publication/scripts/publish-pr.py": allow

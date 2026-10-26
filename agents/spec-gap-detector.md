@@ -9,15 +9,15 @@ permission:
   external_directory:
     "/code/**": allow
     "/project/**": allow
+    /project/.opencode/scripts/retrieve-knowledge.py: allow
   read:
     "/code/**": allow
     "/project/**": allow
   glob: allow
   grep: allow
-  list: allow
   lsp: allow
   task: deny
-  shell:
+  bash:
     "git status *": allow
     "git diff *": allow
     "git log *": allow

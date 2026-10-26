@@ -12,7 +12,7 @@ opencode_permission:
   skill:
     browser-visual-capture: allow
     browser-visual-compare: allow
-  shell:
+  bash:
     node /code/skills/browser-visual-capture/scripts/capture-screenshots.mjs *: allow
     node /code/skills/browser-visual-compare/scripts/compare-screenshots.mjs *: allow
 inputs:

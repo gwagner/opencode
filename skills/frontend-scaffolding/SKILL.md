@@ -15,7 +15,7 @@ opencode_permission:
     frontend-reference-examples: allow
     htmx: allow
     tailwind: allow
-  shell:
+  bash:
     tailwindcss *: allow
     go build *: allow
     go test *: allow

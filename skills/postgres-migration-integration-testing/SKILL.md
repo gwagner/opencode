@@ -8,7 +8,7 @@ opencode_permission:
   grep: allow
   skill:
     non-production-database-fixture: allow
-  shell:
+  bash:
     go build *: allow
     go test *: allow
     go fmt *: allow

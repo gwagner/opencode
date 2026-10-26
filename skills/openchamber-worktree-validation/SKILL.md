@@ -3,7 +3,7 @@ name: openchamber-worktree-validation
 description: Verifies that one existing OpenChamber-linked worktree is clean and ready for bounded work.
 classification: technical
 opencode_permission:
-  shell:
+  bash:
     "python3 /code/skills/openchamber-worktree-validation/scripts/validate-worktree.py *": allow
   external_directory:
     "/code/skills/openchamber-worktree-validation/scripts/validate-worktree.py": allow

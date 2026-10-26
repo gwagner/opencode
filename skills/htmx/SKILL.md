@@ -5,7 +5,7 @@ classification: technical
 opencode_permission:
   read: allow
   edit: allow
-  shell:
+  bash:
     go build *: allow
     go test *: allow
     go fmt *: allow

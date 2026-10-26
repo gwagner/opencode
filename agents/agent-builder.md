@@ -15,16 +15,13 @@ permission:
   grep:
     "/code/**": allow
     "/code/.opencode/**": deny
-  list:
-    "/code/**": allow
-    "/code/.opencode/**": deny
   edit:
     "/code/agents/**": allow
     "/code/skills/**": allow
     "/code/README.md": allow
     "/code/tests/**": allow
     "/code/.opencode/**": deny
-  shell:
+  bash:
     "go build *": allow
     "go test *": allow
     "go fmt *": allow
@@ -119,8 +116,8 @@ When directly invoked, audit and propose only; require `sdlc-orchestrator` deleg
     - Do not add trace-only keys such as `authoritative`, `call`, `callers`, `source`, or `status`.
     - Each agent that loads the skill must explicitly allow it under `permission.skill` and cover every permission in the skill contract.
     - Agent frontmatter is runtime-authoritative; skill contracts specify the minimum agent permissions required to execute the skill.
-    - Derive every contract entry from the documented procedure. Declare exact `shell` command patterns; exact `external_directory`, `read`, and `edit` paths when the procedure uses fixed paths; and every required tool permission, including `task`, network, or other native permissions. A scalar `read` or `edit` is permitted only when the skill's declared inputs explicitly make the path caller-provided; the caller remains the runtime path restrictor. Include all documented input, output, temporary, and script paths.
-    - Use the narrowest native pattern or path map. Broad `shell: allow` or broad directory access is invalid when bounded command patterns or paths can execute the procedure.
+    - Derive every contract entry from the documented procedure. Declare exact `bash` command patterns; exact `external_directory`, `read`, and `edit` paths when the procedure uses fixed paths; and every required tool permission, including `task`, network, or other native permissions. A scalar `read` or `edit` is permitted only when the skill's declared inputs explicitly make the path caller-provided; the caller remains the runtime path restrictor. Include all documented input, output, temporary, and script paths.
+    - Use the narrowest native pattern or path map. Broad `bash: allow` or broad directory access is invalid when bounded command patterns or paths can execute the procedure.
     - Verify callers cover each exact fixed contract pattern and path, not merely the top-level permission name. For a permitted dynamic caller-provided `read` or `edit` input, verify the caller's runtime path map covers the supplied path.
     - Available permissions are found under: https://opencode.ai/docs/permissions/#available-permissions
 2. Skills should be considered functions.  A function performs one job given the correct inputs.  

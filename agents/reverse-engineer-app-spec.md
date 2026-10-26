@@ -13,6 +13,7 @@ permission:
     "/project/specification/**": allow
     "/project/context.md": allow
     "/project/handoff.md": allow
+    /project/.opencode/scripts/retrieve-knowledge.py: allow
   read:
     "/code/**": allow
     "/root/go/**": allow
@@ -22,9 +23,8 @@ permission:
     "/project/handoff.md": allow
   glob: allow
   grep: allow
-  list: allow
   lsp: allow
-  shell:
+  bash:
     "git status *": allow
     "git log *": allow
     "git show *": allow

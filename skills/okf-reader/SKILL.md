@@ -6,8 +6,10 @@ opencode_permission:
   read: allow
   glob: allow
   grep: allow
-  shell:
+  bash:
     "python3 /project/.opencode/scripts/retrieve-knowledge.py *": allow
+  external_directory:
+    /project/.opencode/scripts/retrieve-knowledge.py: allow
 inputs:
   - caller-provided permitted read paths
   - question

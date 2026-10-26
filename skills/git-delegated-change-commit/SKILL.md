@@ -4,7 +4,7 @@ description: Reviews and commits one validated delegate-owned change batch from 
 classification: technical
 opencode_permission:
   read: allow
-  shell:
+  bash:
     "git status --porcelain=v1 -z": allow
     "git diff -- *": allow
     "git add -- *": allow

@@ -10,8 +10,10 @@ opencode_permission:
     frontmatter-fixer: allow
   glob: allow
   grep: allow
-  shell:
+  bash:
     python3 /project/.opencode/scripts/retrieve-knowledge.py *: allow
+  external_directory:
+    /project/.opencode/scripts/retrieve-knowledge.py: allow
   edit: allow
 inputs:
   - caller-provided permitted read and edit paths

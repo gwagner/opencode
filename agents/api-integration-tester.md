@@ -28,7 +28,7 @@ permission:
     "/project/**": allow
     "/code/**": allow
     "/root/go/**": allow
-  shell:
+  bash:
     "go build *": allow
     "go test *": allow
     "go fmt *": allow

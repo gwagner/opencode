@@ -3,7 +3,7 @@ name: git-change-baseline
 description: Records a safe ownership baseline before task-owned editing begins.
 classification: technical
 opencode_permission:
-  shell:
+  bash:
     "git status --porcelain=v1 -z": allow
 inputs:
   - task-change ownership context

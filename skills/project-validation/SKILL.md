@@ -13,7 +13,7 @@ opencode_permission:
     "/code/.github/**": allow
     "/code/compose*.yml": allow
     "/code/docker-compose*.yml": allow
-  shell:
+  bash:
     "go build *": allow
     "go test *": allow
     "go fmt *": allow

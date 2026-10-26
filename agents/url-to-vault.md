@@ -4,7 +4,7 @@ description: Ingests a web page into an Obsidian or OKF vault as a structured, d
 classification: non-technical
 mode: all
 permission:
-  shell:
+  bash:
     "go build *": allow
     "go test *": allow
     "go fmt *": allow
@@ -27,7 +27,6 @@ permission:
   webfetch: allow
   glob: allow
   grep: allow
-  list: allow
   external_directory:
     "/code/validation.md": allow
     "/code/AGENTS.md": allow

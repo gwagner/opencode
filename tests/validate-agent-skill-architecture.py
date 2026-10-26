@@ -4,10 +4,31 @@ from __future__ import annotations
 
 import fnmatch
 import re
+import shlex
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+
+NATIVE_PERMISSION_KEYS = {
+    "*",
+    "read",
+    "edit",
+    "glob",
+    "grep",
+    "bash",
+    "task",
+    "todowrite",
+    "skill",
+    "lsp",
+    "question",
+    "webfetch",
+    "websearch",
+    "external_directory",
+    "doom_loop",
+}
+PERMISSION_ACTIONS = {"allow", "ask", "deny"}
 
 import yaml
 
@@ -139,6 +160,51 @@ def workflow_edges(workflow: list[Any]) -> list[tuple[str, str]]:
     return edges
 
 
+def permission_findings(permission: Any) -> list[str]:
+    """Validate native OpenCode permission names and actions."""
+    if isinstance(permission, str):
+        return [] if permission in PERMISSION_ACTIONS else ["permission scalar must be allow, ask, or deny"]
+    if not isinstance(permission, dict):
+        return ["permission must be an allow, ask, deny scalar or a mapping"]
+
+    findings: list[str] = []
+    for permission_name, rule in permission.items():
+        if permission_name not in NATIVE_PERMISSION_KEYS:
+            findings.append(f"invalid native permission key {permission_name!r}")
+        if isinstance(rule, str):
+            if rule not in PERMISSION_ACTIONS:
+                findings.append(f"{permission_name}: action must be allow, ask, or deny")
+        elif isinstance(rule, dict):
+            for pattern, action in rule.items():
+                if not isinstance(pattern, str) or not isinstance(action, str) or action not in PERMISSION_ACTIONS:
+                    findings.append(f"{permission_name}: pattern-map actions must be allow, ask, or deny")
+        else:
+            findings.append(f"{permission_name}: rule must be an action or pattern map")
+    return findings
+
+
+def fixed_absolute_bash_paths(permission: dict[str, Any]) -> list[str]:
+    """Return literal absolute paths used by allowed bash command patterns."""
+    bash = permission.get("bash")
+    if not isinstance(bash, dict):
+        return []
+    paths: list[str] = []
+    for command, action in bash.items():
+        if action != "allow" or not isinstance(command, str):
+            continue
+        try:
+            tokens = shlex.split(command)
+        except ValueError:
+            continue
+        paths.extend(token for token in tokens if token.startswith("/"))
+    return paths
+
+
+def external_path_is_covered(permission: dict[str, Any], path: str) -> bool:
+    external = permission.get("external_directory")
+    return isinstance(external, dict) and external.get(path) == "allow"
+
+
 def covers(actual: Any, required: Any) -> bool:
     """Whether a caller's native permission covers a direct skill contract."""
     if required == "allow":
@@ -209,9 +275,16 @@ def main() -> None:
         edges[key] = []
         permission_key = "permission" if definition.kind == "agent" else "opencode_permission"
         permission = definition.data.get(permission_key) or {}
+        permission_errors = permission_findings(permission)
+        findings.extend(f"{definition.path.relative_to(root)}: {item}" for item in permission_errors)
         if not isinstance(permission, dict):
-            findings.append(f"{definition.path.relative_to(root)}: {permission_key} must be a mapping")
             continue
+        for fixed_path in fixed_absolute_bash_paths(permission):
+            if not external_path_is_covered(permission, fixed_path):
+                findings.append(
+                    f"{definition.path.relative_to(root)}: bash fixed external path {fixed_path} "
+                    "lacks exact external_directory permission coverage"
+                )
         for workflow in workflows:
             for edge_kind, target in workflow_edges(workflow["workflow"]):
                 target_key = (edge_kind, target)

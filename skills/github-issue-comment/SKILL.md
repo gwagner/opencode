@@ -3,8 +3,10 @@ name: github-issue-comment
 description: Posts one user-requested comment to an existing GitHub issue.
 classification: technical
 opencode_permission:
-  shell:
+  bash:
     "gh issue comment * --body-file /tmp/opencode/github-issue-manager-comment.md": allow
+  external_directory:
+    /tmp/opencode/github-issue-manager-comment.md: allow
   read:
     "/tmp/opencode/github-issue-manager-comment.md": allow
   edit:

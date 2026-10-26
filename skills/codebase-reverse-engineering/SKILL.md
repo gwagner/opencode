@@ -6,7 +6,7 @@ opencode_permission:
   read: allow
   glob: allow
   grep: allow
-  shell:
+  bash:
     "go test *": allow
 inputs:
   - caller-provided permitted read paths

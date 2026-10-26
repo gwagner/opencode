@@ -6,7 +6,7 @@ opencode_permission:
   read: allow
   glob: allow
   edit: allow
-  shell:
+  bash:
     "tailwindcss *": allow
     go build *: allow
     go test *: allow

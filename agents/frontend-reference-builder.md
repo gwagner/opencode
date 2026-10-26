@@ -8,9 +8,8 @@ temperature: 0.1
 permission:
   glob: allow
   grep: allow
-  list: allow
   question: allow
-  shell:
+  bash:
     "go build *": allow
     "go test *": allow
     "go fmt *": allow

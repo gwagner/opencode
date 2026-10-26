@@ -3,7 +3,7 @@ name: github-issue-close
 description: Closes one user-selected GitHub issue.
 classification: technical
 opencode_permission:
-  shell:
+  bash:
     "gh issue close *": allow
 inputs:
   - exact existing issue identity

@@ -7,7 +7,7 @@ opencode_permission:
   glob: allow
   grep: allow
   edit: allow
-  shell:
+  bash:
     go build *: allow
     go test *: allow
     go fmt *: allow

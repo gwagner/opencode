@@ -11,8 +11,10 @@ opencode_permission:
     okf-reader: allow
     okf-formatter: allow
     frontmatter-fixer: allow
-  shell:
+  bash:
     python3 /project/.opencode/scripts/retrieve-knowledge.py *: allow
+  external_directory:
+    /project/.opencode/scripts/retrieve-knowledge.py: allow
 inputs:
   - caller-provided permitted read and edit paths
   - requirements

@@ -3,12 +3,14 @@ name: github-issue-capture
 description: Creates or deduplicates one complete GitHub work issue in the current checkout's repository.
 classification: technical
 opencode_permission:
-  shell:
+  bash:
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
     "gh issue list --state open --limit 1000 --json number,title,body,labels,url": allow
     "gh issue create --title * --body-file /tmp/opencode/github-issue-manager-issue.md": allow
     "rm -f /tmp/opencode/github-issue-manager-issue.md": allow
+  external_directory:
+    /tmp/opencode/github-issue-manager-issue.md: allow
   edit:
     "/tmp/opencode/github-issue-manager-issue.md": allow
 inputs:
