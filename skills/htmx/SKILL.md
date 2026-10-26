@@ -5,8 +5,6 @@ classification: technical
 opencode_permission:
   read: allow
   edit: allow
-  skill:
-    project-validation: allow
   shell:
     go build *: allow
     go test *: allow
@@ -47,14 +45,6 @@ Within the approved affected source and test scope, remove unused functions and 
 ```yaml
 request: "HTMX server-rendered interaction with safe swap ownership"
 workflow:
-  - id: "validate-project"
-    when: "After all selected post-change stages."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 Use for HTMX server-rendered HTML interactions only after the caller establishes any required independently server-driven component contract. This skill does not own SSE contracts.

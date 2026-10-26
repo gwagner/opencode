@@ -7,8 +7,6 @@ opencode_permission:
   glob: allow
   grep: allow
   edit: allow
-  skill:
-    project-validation: allow
   shell:
     go build *: allow
     go test *: allow
@@ -53,14 +51,6 @@ Within the approved affected source and test scope, remove unused functions and 
 ```yaml
 request: "One correctly implemented state-changing backend workflow"
 workflow:
-  - id: validate-project
-    when: "After implementation and every selected post-change check."
-    skill: project-validation
-    report:
-      - passed
-      - failed
-      - skipped
-      - blocked
 ```
 
 ## Procedure

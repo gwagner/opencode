@@ -5,6 +5,7 @@ classification: technical
 opencode_permission:
   read: allow
 inputs:
+  - caller-provided permitted read paths
   - one caller-permitted target agent or skill Markdown path
   - approved change scope
   - applicable authoritative sources and their precedence
@@ -18,6 +19,8 @@ inputs:
 Apply one shared behavioral-authoring contract to one target definition during the specified authoring phase.
 
 ## Inputs
+
+Require caller-provided permitted read paths.
 
 Require one caller-permitted target agent or skill Markdown path, approved change scope, applicable authoritative sources and their precedence, and an authoring phase of `pre-change` or `final-review`.
 

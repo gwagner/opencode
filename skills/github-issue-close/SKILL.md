@@ -4,9 +4,7 @@ description: Closes one user-selected GitHub issue.
 classification: technical
 opencode_permission:
   shell:
-    "python3 /code/skills/github-issue-close/scripts/close-issue.py *": allow
-  external_directory:
-    "/code/skills/github-issue-close/scripts/close-issue.py": allow
+    "gh issue close *": allow
 inputs:
   - exact existing issue identity
   - explicit user request to close it
@@ -20,7 +18,7 @@ Require an exact existing issue identity and an explicit user request to close i
 
 ## Procedure
 
-Run `python3 /code/skills/github-issue-close/scripts/close-issue.py --issue <issue>`. The script performs one GitHub closure request. It does not infer closure from a pull request or other workflow state.
+Run `gh issue close <issue>`. It performs one GitHub closure request and does not infer closure from a pull request or other workflow state.
 
 ## Completion
 

@@ -30,8 +30,8 @@ opencode_permission:
   skill:
     okf-reader: allow
     interface-boundaries: allow
-    project-validation: allow
 inputs:
+  - caller-provided permitted read and edit paths
   - approved backend contract
   - bounded implementation scope
 ---
@@ -39,6 +39,8 @@ inputs:
 # Backend scaffolding
 
 ## Inputs
+
+Require caller-provided permitted read and edit paths.
 
 Require an approved backend contract and bounded implementation scope.
 
@@ -57,14 +59,6 @@ workflow:
   - id: "define-boundaries"
     when: "Before defining or changing a route, use case, persistence, integration, or job dependency."
     skill: "interface-boundaries"
-  - id: "validate-project"
-    when: "After all selected post-change stages."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 1. Inspect existing language, framework, structure, conventions, and validation commands.

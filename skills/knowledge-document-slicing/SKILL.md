@@ -5,6 +5,7 @@ classification: non-technical
 opencode_permission:
   read: allow
 inputs:
+  - caller-provided permitted read paths
   - bounded writing scope
   - existing relevant indexes and concepts
   - permitted OKF destination
@@ -14,6 +15,8 @@ inputs:
 # Knowledge document slicing
 
 ## Inputs
+
+Require caller-provided permitted read paths.
 
 Require a bounded writing scope, relevant existing indexes and concepts, a permitted OKF destination, and the 800-word default concept body limit. Do not begin drafting until every input is available or its absence is explicitly reported as a blocker.
 

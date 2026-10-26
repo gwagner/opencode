@@ -6,6 +6,7 @@ opencode_permission:
   read: allow
   edit: allow
 inputs:
+  - caller-provided permitted read and edit paths
   - Markdown paths
   - applicable frontmatter contract
 ---
@@ -13,6 +14,8 @@ inputs:
 # Frontmatter validation
 
 ## Inputs
+
+Require caller-provided permitted read and edit paths.
 
 Require Markdown paths and the applicable frontmatter contract.
 

@@ -6,8 +6,6 @@ opencode_permission:
   read: allow
   glob: allow
   edit: allow
-  skill:
-    project-validation: allow
   shell:
     go build *: allow
     go test *: allow
@@ -52,19 +50,11 @@ Keep each new migration limited to active schema behavior: do not add commented-
 ```yaml
 request: "Validated forward-only PostgreSQL migration"
 workflow:
-  - id: "validate-project"
-    when: "After migration-specific checks and every selected post-change check."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 Create PostgreSQL schema migrations as immutable, forward-only SQL files only in the caller-provided permitted migration directory.
 
-Use `project-validation` for migration-specific formatting, linting, and non-destructive test commands.
+The calling code-editing agent owns final `project-validation`; report the need for migration-specific formatting, linting, and non-destructive test commands.
 
 ## Non-negotiable rules
 

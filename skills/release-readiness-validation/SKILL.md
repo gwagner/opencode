@@ -6,8 +6,6 @@ opencode_permission:
   read: allow
   glob: allow
   grep: allow
-  skill:
-    project-validation: allow
   shell:
     go build *: allow
     go test *: allow
@@ -48,21 +46,13 @@ Require caller-provided permitted delivery, runtime, source, and test paths, app
 ```yaml
 request: "Release-readiness evidence and validation result"
 workflow:
-  - id: "validate-project"
-    when: "After release-readiness checks and every selected post-change check."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 ## Procedure
 
 1. Inventory changed delivery artifacts and approved operational requirements: build manifest, container definition, deployment descriptor, environment schema, startup/shutdown wiring, migration execution, health/readiness endpoint, log/metric/trace configuration, and scheduled-job configuration.
 2. Build an applicability matrix. Every changed artifact must map to one repository-supported local validation command or an explicit `skipped`/`blocked` reason. Do not invent environment values, deployment tooling, or remote targets.
-3. Use `project-validation` to run the narrowest project-native build, manifest syntax, configuration, and container validation commands. Keep credentials absent from command output and artifacts.
+3. The calling code-editing agent owns final `project-validation`; report the need to run the narrowest project-native build, manifest syntax, configuration, and container validation commands. Keep credentials absent from command output and artifacts.
 4. For changed startup or runtime wiring, verify mandatory migration and initialization barriers complete before serving or worker execution; initial failure exits nonzero; readiness remains false through recovery barriers; and liveness may remain independent when authority permits it.
 5. For public probes, verify fixed minimal no-store responses from in-memory snapshots and zero database, migration, listener, retry, recovery, or provider work per request.
 6. Inspect production composition roots, route tables, artifacts, images, and startup commands for structural absence of test or development registries, brokers, seeders, bootstrap identities, unrestricted error-ingest routes, destructive helpers, and fixture capabilities. An approved production interaction-log endpoint is permitted only when its bounded business-event default and controlled diagnostic override satisfy the operational contract.

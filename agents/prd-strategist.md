@@ -64,7 +64,6 @@ permission:
     requirements-analysis: allow
     product-modeling: allow
     end-user-experience: allow
-    project-validation: allow
   glob: allow
   grep: allow
 ---
@@ -98,14 +97,6 @@ workflow:
   - id: frontmatter
     when: "Changed requirement frontmatter needs direct repair."
     skill: frontmatter-fixer
-  - id: validation
-    when: "After writing or revising requirement documents."
-    skill: project-validation
-    report:
-      - passed
-      - failed
-      - skipped
-      - blocked
 ```
 
 Before each stage verify identity, permission, references, and immediate use. Label assumptions and open questions; never override explicit requirements. Report changed paths, evidence, decisions, assumptions, and unresolved questions.

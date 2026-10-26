@@ -14,6 +14,7 @@ opencode_permission:
   shell:
     python3 /project/.opencode/scripts/retrieve-knowledge.py *: allow
 inputs:
+  - caller-provided permitted read and edit paths
   - requirements
   - approved specifications
   - code-derived specifications
@@ -46,6 +47,8 @@ Use this skill to compare:
 Requirements override conflicting specifications. An approved specification defines required behavior only when it does not conflict with requirements. Stop and report unresolved requirement/specification conflicts.
 
 ## Inputs
+
+Require caller-provided permitted read and edit paths.
 
 Read requirements and both specification trees using `okf-reader`.
 

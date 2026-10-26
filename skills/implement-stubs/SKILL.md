@@ -7,8 +7,6 @@ opencode_permission:
   glob: allow
   grep: allow
   edit: allow
-  skill:
-    project-validation: allow
   shell:
     go build *: allow
     go test *: allow
@@ -51,14 +49,6 @@ Within the selected function's source and directly affected tests, remove unused
 ```yaml
 request: "One safely implemented unfinished function"
 workflow:
-  - id: "validate-project"
-    when: "After all selected post-change stages."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 Work on exactly one unfinished function per invocation.
@@ -121,7 +111,7 @@ Do not implement behavior that is materially ambiguous.
 
 After editing:
 
-1. Use `project-validation` to run the appropriate formatter.
+1. The calling code-editing agent owns final `project-validation`; report the need to run the appropriate formatter.
 2. Use it to run the narrowest relevant tests.
 3. Use it to run the package or repository build.
 4. Use it to run the broader test suite when practical.

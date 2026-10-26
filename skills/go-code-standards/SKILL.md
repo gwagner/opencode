@@ -26,8 +26,8 @@ opencode_permission:
     make build*: allow
   skill:
     interface-boundaries: allow
-    project-validation: allow
 inputs:
+  - caller-provided permitted read and edit paths
   - bounded Go change
   - repository Go conventions
 ---
@@ -35,6 +35,8 @@ inputs:
 # Go Code Standards
 
 ## Inputs
+
+Require caller-provided permitted read and edit paths.
 
 Require a bounded Go change and repository Go conventions.
 
@@ -54,14 +56,6 @@ workflow:
   - id: "define-dependency-boundaries"
     when: "When adding dependency interfaces or test seams."
     skill: "interface-boundaries"
-  - id: "validate-project"
-    when: "After all selected post-change stages."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 - Format changed Go with `gofmt`; do not manually preserve a competing layout.

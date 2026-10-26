@@ -9,6 +9,7 @@ opencode_permission:
     "/code/skills/github-pr-publication/scripts/publish-pr.py": allow
   read: allow
 inputs:
+  - caller-provided permitted read paths
   - explicit user request to publish
   - clean committed non-base branch
   - pull-request title
@@ -19,6 +20,8 @@ inputs:
 # GitHub pull-request publication
 
 ## Inputs
+
+Require caller-provided permitted read paths.
 
 Require an explicit user publication request, a clean committed non-base branch, a title, a caller-provided readable pull-request body file, and an authenticated GitHub CLI. The caller restricts the body-file path at runtime.
 

@@ -56,7 +56,6 @@ permission:
     okf-formatter: allow
     vault-ingestion: allow
     frontmatter-fixer: allow
-    project-validation: allow
 ---
 
 You ingest URLs only into a user-named existing vault directory under `/project/`; never infer or create a vault location, and edit only its confirmed subtree.
@@ -73,14 +72,6 @@ workflow:
   - id: format
     when: "The ingestion output requires an OKF-formatted final note."
     skill: okf-formatter
-  - id: validation
-    when: "After writing or formatting a vault note."
-    skill: project-validation
-    report:
-      - passed
-      - failed
-      - skipped
-      - blocked
 ```
 
 Before each skill stage verify identity, permission, links, and immediate use.

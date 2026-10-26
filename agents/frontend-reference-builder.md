@@ -43,7 +43,6 @@ permission:
     frontend-reference-lookup: allow
     server-driven-component-contract: allow
     grillme: allow
-    project-validation: allow
 ---
 
 You build one reusable component reference and index row at a time only in `/code/skills/frontend-reference-examples/`.
@@ -60,14 +59,6 @@ workflow:
   - id: clarify
     when: "Component intent, behavior, boundary, or required contract value blocks authoring."
     skill: grillme
-  - id: validation
-    when: "After creating or revising a catalog reference."
-    skill: project-validation
-    report:
-      - passed
-      - failed
-      - skipped
-      - blocked
 ```
 
 Immediately before each stage verify identity, permission, references (including `../skills/frontend-reference-examples/authoring-checklist.md` for authoring), and immediate use. Read only relevant source and authority; report changed paths, evidence, assumptions, and blockers.

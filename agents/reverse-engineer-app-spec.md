@@ -74,7 +74,6 @@ permission:
     graphify: allow
     end-user-experience: allow
     grillme: allow
-    project-validation: allow
     okf-reader: allow
 ---
 
@@ -131,14 +130,6 @@ workflow:
   - id: quality
     when: "The draft is complete."
     skill: specification-quality-gate
-  - id: validation
-    when: "After writing code-derived specification documents."
-    skill: project-validation
-    report:
-      - passed
-      - failed
-      - skipped
-      - blocked
 ```
 
 Before each stage verify identity, permission, references, recursive edge, and immediate use. Cite stable paths and symbols; classify every finding as implemented, partially implemented, declared, inferred, expected-but-absent, unknown, or conflicting. State bounded uncertainty and queue missing authority for `spec-gap-detector`.

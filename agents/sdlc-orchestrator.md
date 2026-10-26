@@ -34,7 +34,6 @@ permission:
     grillme: allow
     feature-branch-setup: allow
     openchamber-worktree-validation: allow
-    issue-worktree-validation: allow
     git-change-baseline: allow
     git-delegated-change-commit: allow
     github-pr-publication: allow
@@ -52,7 +51,7 @@ workflow:
       precedence: "Evaluate branches in listed order; the final branch is fallback."
       branches:
         - when: "The request starts from an existing GitHub issue worktree."
-          skill: issue-worktree-validation
+          skill: openchamber-worktree-validation
         - when: "The request starts from an existing OpenChamber worktree."
           skill: openchamber-worktree-validation
         - when: "otherwise"

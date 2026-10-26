@@ -17,23 +17,21 @@ permission:
   shell:
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
-    "gh label list --limit 1000 --json name": allow
-    "gh label create openchamber:ready --description Ready-for-manual-OpenChamber-pickup --color 0E8A16": allow
     "gh issue list --state open --limit 1000 --json number,title,body,labels,url": allow
     "gh issue create --title * --body-file /tmp/opencode/github-issue-manager-issue.md": allow
     "gh issue view * --json number,title,state,url": allow
     "gh issue view * --json number,title,body,labels,state,url": allow
-    "gh issue edit *": allow
+    "gh issue edit * --title *": allow
+    "gh issue edit * --body-file /tmp/opencode/github-issue-manager-issue.md": allow
+    "gh issue edit * --add-label *": allow
+    "gh issue edit * --remove-label *": allow
+    "gh issue comment * --body-file /tmp/opencode/github-issue-manager-comment.md": allow
     "gh issue close *": allow
     "gh issue reopen *": allow
     "gh issue delete * --yes": allow
-    "python3 /code/skills/github-issue-comment/scripts/post-comment.py *": allow
-    "python3 /code/skills/github-issue-close/scripts/close-issue.py *": allow
     "rm -f /tmp/opencode/github-issue-manager-issue.md": allow
     "rm -f /tmp/opencode/github-issue-manager-comment.md": allow
   external_directory:
-    "/code/skills/github-issue-comment/scripts/post-comment.py": allow
-    "/code/skills/github-issue-close/scripts/close-issue.py": allow
     "/tmp/opencode/github-issue-manager-issue.md": allow
   skill:
     github-issue-capture: allow

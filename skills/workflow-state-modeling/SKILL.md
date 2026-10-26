@@ -5,6 +5,7 @@ classification: non-technical
 opencode_permission:
   read: allow
 inputs:
+  - caller-provided permitted read paths
   - workflow authority or code evidence
   - affected actors and lifecycle
 compatibility: opencode
@@ -15,6 +16,8 @@ metadata:
 # Workflow and state modeling
 
 ## Inputs
+
+Require caller-provided permitted read paths.
 
 Require workflow authority or code evidence and affected actors and lifecycle.
 

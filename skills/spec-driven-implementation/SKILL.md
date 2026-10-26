@@ -9,7 +9,6 @@ opencode_permission:
   edit: allow
   skill:
     specification-reconciliation: allow
-    project-validation: allow
     okf-reader: allow
     okf-formatter: allow
     frontmatter-fixer: allow
@@ -66,14 +65,6 @@ workflow:
   - id: "verify-resolved-gap"
     when: "After code-derived specification is regenerated."
     skill: "specification-reconciliation"
-  - id: "validate-project"
-    when: "After all selected post-change stages."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 Use this skill after `specification-reconciliation` has identified confirmed gaps.
@@ -99,7 +90,7 @@ For each gap:
 5. Update persistence and migrations when needed.
 6. Update API, integration, and frontend layers.
 7. Add or update tests.
-8. Use `project-validation` for focused validation.
+8. The calling code-editing agent owns final `project-validation`; report the focused validation needed.
 9. Use it for broader regression validation when safe.
 10. Regenerate `/code/specification/`.
 11. Re-run reconciliation.

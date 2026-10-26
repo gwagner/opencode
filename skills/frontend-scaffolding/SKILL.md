@@ -15,7 +15,6 @@ opencode_permission:
     frontend-reference-examples: allow
     htmx: allow
     tailwind: allow
-    project-validation: allow
   shell:
     tailwindcss *: allow
     go build *: allow
@@ -71,14 +70,6 @@ workflow:
   - id: "configure-tailwind"
     when: "When Tailwind configuration or generation changes."
     skill: "tailwind"
-  - id: "validate-project"
-    when: "After all selected post-change stages."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 Use only for approved rendered frontend implementation. Work only in caller-permitted handwritten source, template, generated-output, packaging, and test paths.

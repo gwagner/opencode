@@ -9,7 +9,6 @@ opencode_permission:
   edit: allow
   skill:
     non-production-database-fixture: allow
-    project-validation: allow
   shell:
     go build *: allow
     go test *: allow
@@ -59,14 +58,6 @@ workflow:
   - id: "database-fixture"
     when: "After resilience tests are implemented when execution requires deterministic application database state."
     skill: "non-production-database-fixture"
-  - id: "validate-project"
-    when: "After API resilience tests and every selected post-change check."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 ## Procedure
@@ -79,7 +70,7 @@ workflow:
 6. For webhooks, use test-only payloads and signatures. Assert valid acceptance, invalid/missing signature rejection, duplicate delivery behavior, ordering behavior only when specified, and no side effect before required verification.
 7. For external credentials, assert the adapter receives only explicitly authorized configuration and rejects prohibited ambient environment, profile, role, metadata, or transport fallback.
 8. For upstream failures, assert stable mapping, bounded redacted diagnostics, no credential leakage, and the documented recovery or retry signal. Never assert arbitrary implementation timing.
-9. Use `project-validation` to run focused tests and the relevant existing integration suite when safe. Classify failures as implementation defect, contract mismatch, test-double defect, unsafe dependency blocker, infrastructure blocker, or pre-existing failure.
+9. The calling code-editing agent owns final `project-validation`; report the need to run focused tests and the relevant existing integration suite when safe. Classify failures as implementation defect, contract mismatch, test-double defect, unsafe dependency blocker, infrastructure blocker, or pre-existing failure.
 
 ## Required report
 

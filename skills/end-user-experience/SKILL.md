@@ -5,6 +5,7 @@ classification: non-technical
 opencode_permission:
   read: allow
 inputs:
+  - caller-provided permitted read paths
   - affected actor
   - task
   - authority or observed evidence
@@ -13,6 +14,8 @@ inputs:
 # End-user experience
 
 ## Inputs
+
+Require caller-provided permitted read paths.
 
 Require an affected actor, task, and authority or observed evidence.
 

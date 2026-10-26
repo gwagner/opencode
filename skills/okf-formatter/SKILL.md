@@ -8,6 +8,7 @@ opencode_permission:
   skill:
     frontmatter-fixer: allow
 inputs:
+  - caller-provided permitted read and edit paths
   - OKF bundle root
   - bounded knowledge content
   - permitted write destination
@@ -16,6 +17,8 @@ inputs:
 # OKF formatter
 
 ## Inputs
+
+Require caller-provided permitted read and edit paths.
 
 Require an OKF bundle root, bounded knowledge content, and a permitted write destination.
 

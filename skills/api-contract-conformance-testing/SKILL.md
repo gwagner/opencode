@@ -9,7 +9,6 @@ opencode_permission:
   edit: allow
   skill:
     non-production-database-fixture: allow
-    project-validation: allow
   shell:
     go build *: allow
     go test *: allow
@@ -59,14 +58,6 @@ workflow:
   - id: "database-fixture"
     when: "After contract tests are implemented when execution requires deterministic application database state."
     skill: "non-production-database-fixture"
-  - id: "validate-project"
-    when: "After API contract conformance tests and every selected post-change check."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 ## Procedure
@@ -78,7 +69,7 @@ workflow:
 5. Add negative leakage assertions for persistence-only, provider, credential, secret-adjacent, and internal diagnostic fields. Preserve approved semantic distinctions among absent, unavailable, zero, empty, accepted, delivered, and failed.
 6. For changed compatibility-sensitive contracts, exercise both permitted existing-client payloads and the changed contract when fixtures establish them. Test removal, requiredness, type, enum, and response-field changes only where the compatibility policy defines an expectation.
 7. Keep endpoint setup isolated. Use stable values, avoid volatile timestamps/identifiers unless the contract defines them, and never test against production or a shared mutable target.
-8. Use `project-validation` to run focused endpoint tests, then the relevant contract suite when safe. Classify findings as contract mismatch, implementation defect, test defect, safe-target blocker, authority blocker, or pre-existing failure. Do not alter application behavior solely to pass a test.
+8. The calling code-editing agent owns final `project-validation`; report the need to run focused endpoint tests, then the relevant contract suite when safe. Classify findings as contract mismatch, implementation defect, test defect, safe-target blocker, authority blocker, or pre-existing failure. Do not alter application behavior solely to pass a test.
 
 ## Required report
 

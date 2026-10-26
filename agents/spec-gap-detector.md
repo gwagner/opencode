@@ -55,7 +55,6 @@ permission:
     gap-risk-analysis: allow
     specification-gap-handoff: allow
     graphify: allow
-    project-validation: allow
 ---
 
 You inspect observed `/code` behavior against authoritative requirements and specifications. Your sole artifact is `/code/specification-gaps.md`; code is evidence, never product authority.
@@ -81,14 +80,6 @@ workflow:
   - id: handoff
     when: "A gap needs queueing or verification."
     skill: specification-gap-handoff
-  - id: validation
-    when: "After changing the specification-gap report."
-    skill: project-validation
-    report:
-      - passed
-      - failed
-      - skipped
-      - blocked
 ```
 
 Before each stage verify identity, permission, references, and immediate use. The handoff procedure assigns exactly one owner; report queue entries, divergences outside it, resolved entries, and evidence limits. Never delegate directly.

@@ -6,6 +6,7 @@ opencode_permission:
   read: allow
   edit: allow
 inputs:
+  - caller-provided permitted read and edit paths
   - observed capability evidence
   - accessible authority sources
   - gap-report destination
@@ -14,6 +15,8 @@ inputs:
 # Specification gap handoff
 
 ## Inputs
+
+Require caller-provided permitted read and edit paths.
 
 Require observed capability evidence, accessible authority sources, and a gap-report destination.
 

@@ -10,6 +10,7 @@ opencode_permission:
     "git add -- *": allow
     "git commit --only *": allow
 inputs:
+  - caller-provided permitted read paths
   - explicit task-commit authorization
   - clean ownership baseline captured before delegation
   - one completed delegate change batch and owned paths
@@ -20,6 +21,8 @@ inputs:
 # Git delegated change commit
 
 ## Inputs
+
+Require caller-provided permitted read paths.
 
 Require explicit task-commit authorization, a clean ownership baseline captured before delegation, one completed delegate change batch with owned paths, its passed `project-validation` result, and caller-permitted changed paths.
 

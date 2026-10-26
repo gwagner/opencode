@@ -25,8 +25,6 @@ opencode_permission:
     python -m pytest *: allow
     make test*: allow
     make build*: allow
-  skill:
-    project-validation: allow
 inputs:
   - approved frontend build scope
   - caller-provided permitted source and output paths
@@ -47,14 +45,6 @@ Within the approved affected handwritten source and test scope, remove unused mo
 ```yaml
 request: "Validated Tailwind standalone configuration"
 workflow:
-  - id: "validate-project"
-    when: "After configuration, generation, and every selected post-change check."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 Use when a TypeScript or server-rendered frontend needs generated Tailwind CSS without a bundler.

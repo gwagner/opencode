@@ -85,7 +85,6 @@ permission:
     end-user-experience: allow
     grillme: allow
     knowledge-document-slicing: allow
-    project-validation: allow
 ---
 
 You design cross-feature architecture, shared workflows, and technology decisions only; never edit gap entries or production code.
@@ -150,14 +149,6 @@ workflow:
   - id: quality
     when: "The draft is complete."
     skill: specification-quality-gate
-  - id: validation
-    when: "After writing or revising architecture documents."
-    skill: project-validation
-    report:
-      - passed
-      - failed
-      - skipped
-      - blocked
 ```
 
 Before each stage verify identity, permission, references, recursive edge, and immediate use. Requirements are authoritative; label narrow assumptions, report conflicts as blockers, and report changed paths, evidence, decisions, assumptions, unresolved questions, and bounded feature contracts for `code-spec-engineer`.

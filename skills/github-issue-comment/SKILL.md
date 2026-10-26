@@ -4,13 +4,11 @@ description: Posts one user-requested comment to an existing GitHub issue.
 classification: technical
 opencode_permission:
   shell:
-    "python3 /code/skills/github-issue-comment/scripts/post-comment.py *": allow
+    "gh issue comment * --body-file /tmp/opencode/github-issue-manager-comment.md": allow
   read:
     "/tmp/opencode/github-issue-manager-comment.md": allow
   edit:
     "/tmp/opencode/github-issue-manager-comment.md": allow
-  external_directory:
-    "/code/skills/github-issue-comment/scripts/post-comment.py": allow
 inputs:
   - exact existing issue identity
   - caller-provided comment body
@@ -25,7 +23,7 @@ Require an exact existing issue identity, a caller-provided comment body, and an
 
 ## Procedure
 
-Write the body to `/tmp/opencode/github-issue-manager-comment.md`, then run `python3 /code/skills/github-issue-comment/scripts/post-comment.py --issue <issue>`. The script posts the body as data.
+Write the body to `/tmp/opencode/github-issue-manager-comment.md`, then run `gh issue comment <issue> --body-file /tmp/opencode/github-issue-manager-comment.md`. The command posts the body as data.
 
 ## Completion
 

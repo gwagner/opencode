@@ -9,6 +9,7 @@ opencode_permission:
   shell:
     "go test *": allow
 inputs:
+  - caller-provided permitted read paths
   - repository scope
   - accessible code and runtime evidence
 compatibility: opencode
@@ -19,6 +20,8 @@ metadata:
 # Codebase reverse engineering
 
 ## Inputs
+
+Require caller-provided permitted read paths.
 
 Require repository scope and accessible code and runtime evidence.
 
