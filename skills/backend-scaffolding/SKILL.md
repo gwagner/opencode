@@ -9,6 +9,24 @@ opencode_permission:
   edit: allow
   shell:
     "go test *": allow
+    python3 /project/.opencode/scripts/retrieve-knowledge.py *: allow
+    go build *: allow
+    go fmt *: allow
+    gofmt *: allow
+    go vet *: allow
+    go list *: allow
+    go env *: allow
+    go version *: allow
+    npm test *: allow
+    npm run test *: allow
+    npm run build *: allow
+    npm run lint *: allow
+    tsc *: allow
+    tailwindcss *: allow
+    pytest *: allow
+    python -m pytest *: allow
+    make test*: allow
+    make build*: allow
   skill:
     okf-reader: allow
     interface-boundaries: allow

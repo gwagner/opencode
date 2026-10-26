@@ -1,7 +1,7 @@
 ---
 name: github-issue-deletion
 description: Permanently deletes one GitHub issue only after explicit issue-specific confirmation.
-classification: non-technical
+classification: technical
 opencode_permission:
   question: allow
   shell:

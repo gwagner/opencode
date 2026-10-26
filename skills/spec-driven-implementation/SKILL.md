@@ -10,6 +10,29 @@ opencode_permission:
   skill:
     specification-reconciliation: allow
     project-validation: allow
+    okf-reader: allow
+    okf-formatter: allow
+    frontmatter-fixer: allow
+  shell:
+    go build *: allow
+    go test *: allow
+    go fmt *: allow
+    gofmt *: allow
+    go vet *: allow
+    go list *: allow
+    go env *: allow
+    go version *: allow
+    npm test *: allow
+    npm run test *: allow
+    npm run build *: allow
+    npm run lint *: allow
+    tsc *: allow
+    tailwindcss *: allow
+    pytest *: allow
+    python -m pytest *: allow
+    make test*: allow
+    make build*: allow
+    python3 /project/.opencode/scripts/retrieve-knowledge.py *: allow
 inputs:
   - confirmed reconciliation gap
   - consistent approved authority

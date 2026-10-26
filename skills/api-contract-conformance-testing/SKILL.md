@@ -10,6 +10,25 @@ opencode_permission:
   skill:
     non-production-database-fixture: allow
     project-validation: allow
+  shell:
+    go build *: allow
+    go test *: allow
+    go fmt *: allow
+    gofmt *: allow
+    go vet *: allow
+    go list *: allow
+    go env *: allow
+    go version *: allow
+    npm test *: allow
+    npm run test *: allow
+    npm run build *: allow
+    npm run lint *: allow
+    tsc *: allow
+    tailwindcss *: allow
+    pytest *: allow
+    python -m pytest *: allow
+    make test*: allow
+    make build*: allow
 inputs:
   - approved API contract
   - selected endpoint inventory

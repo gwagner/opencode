@@ -8,6 +8,25 @@ opencode_permission:
   grep: allow
   skill:
     project-validation: allow
+  shell:
+    go build *: allow
+    go test *: allow
+    go fmt *: allow
+    gofmt *: allow
+    go vet *: allow
+    go list *: allow
+    go env *: allow
+    go version *: allow
+    npm test *: allow
+    npm run test *: allow
+    npm run build *: allow
+    npm run lint *: allow
+    tsc *: allow
+    tailwindcss *: allow
+    pytest *: allow
+    python -m pytest *: allow
+    make test*: allow
+    make build*: allow
 inputs:
   - approved deterministic database-state contract
   - caller-provided permitted fixture configuration source and test paths

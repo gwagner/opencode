@@ -1,35 +1,27 @@
 ---
 name: openchamber-worktree-validation
-description: Classifies and safely prepares one existing OpenChamber-linked worktree for fresh or resumed SDLC execution.
+description: Verifies that one existing OpenChamber-linked worktree is clean and ready for bounded work.
 classification: technical
 opencode_permission:
   shell:
     "python3 /code/skills/openchamber-worktree-validation/scripts/validate-worktree.py *": allow
   external_directory:
-    "/code/skills/github_lifecycle_policy.py": allow
-    "/tmp/opencode/lifecycle-policy.*.snapshot.json": allow
     "/code/skills/openchamber-worktree-validation/scripts/validate-worktree.py": allow
 inputs:
-  - resolved `/tmp/opencode/lifecycle-policy.<repository-hash>.<lifecycle-run>.snapshot.json` and its expected digest
-  - execution mode: fresh, resume-publication, or resume-pull-request
   - current OpenChamber-linked Git worktree
   - expected base branch
-  - expected task head when resuming
 ---
 
 # OpenChamber worktree validation
 
 ## Inputs
 
-Require execution mode `fresh`, `resume-publication`, or `resume-pull-request`, the current OpenChamber-linked Git worktree, an resolved `/tmp/opencode/lifecycle-policy.<repository-hash>.<lifecycle-run>.snapshot.json` and its expected digest, the expected policy base branch, and the expected task head in either resume mode.
+Require the current OpenChamber-linked Git worktree and its expected base branch.
 
 ## Procedure
 
-1. Run `python3 /code/skills/openchamber-worktree-validation/scripts/validate-worktree.py --mode <mode> [--base <policy-base>] [--expected-head <head>] --policy /tmp/opencode/lifecycle-policy.<repository-hash>.<lifecycle-run>.snapshot.json --expected-policy-digest <digest> --repository <owner/name> --lifecycle-run <run-id>` from the current worktree.
-2. Require one versioned JSON result.
-3. In fresh mode, use refreshed policy-remote/policy-base ancestry and range evidence: a clean feature branch at an older main ancestor with zero feature commits is eligible under the default policy (or an older policy-base ancestor under an override), while any unestablished feature commit is `blocked-unsafe`. Continue to ownership baseline on `passed` or `resume-pull-request`. Continue only to PR publication on `resume-publication`. Classify unresolved conflicts separately as `blocked-unsafe`; return `waiting-user-cleanup` for ordinary unrelated dirt. Stop on other `blocked-unsafe` identity, topology, detached-head, or ownership ambiguity.
-4. Preserve all observed work. Never reset, restore, clean, stash, create, remove, prune, move, or switch a worktree or branch.
+Run `python3 /code/skills/openchamber-worktree-validation/scripts/validate-worktree.py --base <base>`. It verifies only current worktree identity, an attached non-base branch, conflicts, and uncommitted changes. It does not fetch, merge, recover, or alter a worktree.
 
 ## Completion
 
-Report the disposition, root, branch, head, base revision, clean state, linked-worktree evidence, and blocker.
+Report `passed`, `waiting-user-cleanup`, or `blocked-unsafe` with branch and blocker.

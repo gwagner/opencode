@@ -80,6 +80,8 @@ permission:
     knowledge-document-slicing: allow
     grillme: allow
     project-validation: allow
+  glob: allow
+  grep: allow
 ---
 
 You translate approved authority into one focused feature contract in `/project/specification/`; never alter gap entries, strategy, shared architecture, or production code.

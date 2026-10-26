@@ -9,6 +9,7 @@ opencode_permission:
   edit: allow
   skill:
     okf-formatter: allow
+    frontmatter-fixer: allow
 inputs:
   - OKF bundle root
   - bounded structural problem

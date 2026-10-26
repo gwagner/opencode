@@ -1,7 +1,7 @@
 ---
 name: github-issue-update
 description: Applies one requested reversible title, body, or label update to an existing GitHub issue.
-classification: non-technical
+classification: technical
 opencode_permission:
   shell:
     "gh auth status": allow

@@ -8,6 +8,22 @@ opencode_permission:
   shell:
     "gofmt *": allow
     "go test *": allow
+    go build *: allow
+    go fmt *: allow
+    go vet *: allow
+    go list *: allow
+    go env *: allow
+    go version *: allow
+    npm test *: allow
+    npm run test *: allow
+    npm run build *: allow
+    npm run lint *: allow
+    tsc *: allow
+    tailwindcss *: allow
+    pytest *: allow
+    python -m pytest *: allow
+    make test*: allow
+    make build*: allow
   skill:
     interface-boundaries: allow
     project-validation: allow

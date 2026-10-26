@@ -65,6 +65,8 @@ permission:
     product-modeling: allow
     end-user-experience: allow
     project-validation: allow
+  glob: allow
+  grep: allow
 ---
 
 You create focused, testable requirements only. Never edit or close specification-gap entries or run downstream phases.

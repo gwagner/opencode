@@ -8,6 +8,8 @@ opencode_permission:
   grep: allow
   skill:
     okf-reader: allow
+  shell:
+    python3 /project/.opencode/scripts/retrieve-knowledge.py *: allow
 inputs:
   - requirements scope
   - accessible requirements bundle

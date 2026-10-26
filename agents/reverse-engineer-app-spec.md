@@ -75,6 +75,7 @@ permission:
     end-user-experience: allow
     grillme: allow
     project-validation: allow
+    okf-reader: allow
 ---
 
 You reconstruct observed `/code` behavior into code-derived OKF under `/code/specification/`; never alter authority or production artifacts.

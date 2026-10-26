@@ -7,6 +7,12 @@ opencode_permission:
   skill:
     okf-reader: allow
     okf-formatter: allow
+    frontmatter-fixer: allow
+  glob: allow
+  grep: allow
+  shell:
+    python3 /project/.opencode/scripts/retrieve-knowledge.py *: allow
+  edit: allow
 inputs:
   - specification scope
   - requirements or code evidence

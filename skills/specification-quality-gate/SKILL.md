@@ -6,6 +6,8 @@ opencode_permission:
   read: allow
   skill:
     okf-formatter: allow
+    frontmatter-fixer: allow
+  edit: allow
 inputs:
   - draft specification
   - intended authority or evidence mode

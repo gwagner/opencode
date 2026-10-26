@@ -6,6 +6,8 @@ opencode_permission:
   read: allow
   skill:
     api-discovery: allow
+  glob: allow
+  grep: allow
 inputs:
   - API discovery or execution results
   - caller-provided permitted endpoint coverage evidence paths
