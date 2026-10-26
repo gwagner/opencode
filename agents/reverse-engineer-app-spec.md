@@ -13,6 +13,7 @@ permission:
     "/project/specification/**": allow
     "/project/context.md": allow
     "/project/handoff.md": allow
+    /project/.opencode/scripts/retrieve-knowledge.py: allow
   read:
     "/code/**": allow
     "/root/go/**": allow
@@ -22,9 +23,8 @@ permission:
     "/project/handoff.md": allow
   glob: allow
   grep: allow
-  list: allow
   lsp: allow
-  shell:
+  bash:
     "git status *": allow
     "git log *": allow
     "git show *": allow
@@ -74,7 +74,7 @@ permission:
     graphify: allow
     end-user-experience: allow
     grillme: allow
-    project-validation: allow
+    okf-reader: allow
 ---
 
 You reconstruct observed `/code` behavior into code-derived OKF under `/code/specification/`; never alter authority or production artifacts.
@@ -130,14 +130,6 @@ workflow:
   - id: quality
     when: "The draft is complete."
     skill: specification-quality-gate
-  - id: validation
-    when: "After writing code-derived specification documents."
-    skill: project-validation
-    report:
-      - passed
-      - failed
-      - skipped
-      - blocked
 ```
 
 Before each stage verify identity, permission, references, recursive edge, and immediate use. Cite stable paths and symbols; classify every finding as implemented, partially implemented, declared, inferred, expected-but-absent, unknown, or conflicting. State bounded uncertainty and queue missing authority for `spec-gap-detector`.

@@ -1,123 +1,30 @@
-# OpenCode configuration
+# OpenCode agent and skill bundle
 
-## Asset tree model
+This repository defines focused AI coding agents and reusable skills. Its primary product is a clear, deterministic path from an approved request to a validated change.
 
-`/code` is the source of truth for this OpenCode configuration bundle.
+## Core model
 
-| Path | Role |
-| --- | --- |
-| `/code` | Canonical, editable asset tree for agents, skills, scripts, plugins, docs, and tests. |
-| `/project/.opencode` | Active runtime tree that OpenCode reads. It mirrors `/code` through shared links. |
+- **Agents** own a user-facing role, boundaries, delegation, and completion.
+- **Skills** perform one reusable procedure with explicit inputs and minimum permissions.
+- **`sdlc-orchestrator`** selects authority and an implementation specialist, then returns validation evidence.
+- **`project-validation`** is required after code-editing work.
 
-Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect those files through links, so runtime behavior stays aligned with the canonical copy. After changing agents, skills, plugins, commands, or config-time files, restart OpenCode so the running process reloads the mirrored configuration.
+The default flow is:
 
-## Agents
+1. Clarify a blocking ambiguity.
+2. Establish missing authority.
+3. Select one specialist.
+4. Implement and validate.
+5. Report changed paths and evidence.
 
-| Agent | Purpose |
-| --- | --- |
-| agent-builder | Audits and creates deterministic agents and skills; directly invoked, explicitly authorized changes may be committed and pushed after validation. |
-| api-integration-tester | Builds API integration tests. |
-| app-spec-architect | Defines cross-feature architecture and shared workflows from requirements. |
-| bug-fixer | Reproduces, diagnoses, and fixes defects with regression coverage. |
-| code-implementor | Implements approved, focused code changes. |
-| code-spec-engineer | Produces bounded implementation-ready feature contracts. |
-| github-issue-manager | Researches and manages GitHub issues through creation, updates, comments, state changes, and explicitly confirmed permanent deletion. |
-| github-sdlc | Orchestrates issue-originated work through delegated implementation, commits, pull-request checks, approved squash merge, completion comment, and issue closure. |
-| prd-strategist | Creates and refines OKF requirements. |
-| reverse-engineer-app-spec | Recovers an evidence-backed specification from code. |
-| sdlc-orchestrator | Orchestrates manually initiated CLI work through local delegated-change commits without remote lifecycle operations. |
-| spec-gap-detector | Finds implemented capabilities missing authoritative documentation and queues evidence-backed owner handoffs. |
-| url-to-vault | Ingests URLs into an OKF or Obsidian vault. |
+## Optional GitHub adapter
 
-## Skills
+GitHub issue and pull-request actions are available only when explicitly requested. They support issue creation, updates, comments, closure, and draft pull-request publication. They do not control the normal coding workflow and never automatically merge, delete branches, recover interrupted hosted state, or close issues.
 
-| Skill | Purpose |
-| --- | --- |
-| api-auth-testing | Tests API authentication and authorization. |
-| api-discovery | Discovers API contracts and implementation. |
-| api-integration-modeling | Models HTTP APIs and integrations. |
-| api-integration-testing | Implements API integration tests. |
-| api-test-reporting | Reports API test coverage and findings. |
-| application-specification | Defines specification conventions. |
-| backend-scaffolding | Scaffolds reachable backend layers. |
-| browser-visual-capture | Captures baseline/post-change Chromium screenshots for URL-based UI validation. |
-| code-comments | Adds code comments. |
-| codebase-reverse-engineering | Recovers behavior and architecture from code. |
-| data-persistence-modeling | Models data persistence and PostgreSQL schemas. |
-| evidence-traceability | Adds evidence and traceability to specifications. |
-| frontmatter-fixer | Repairs Markdown frontmatter. |
-| frontend-reference-examples | Progressively loads matching HTML, CSS, JavaScript, accessibility, and illustrative data references for frontend components. |
-| htmx | Implements server-fragment requests and safe swap ownership. |
-| gap-risk-analysis | Identifies gaps, risks, and assumptions. |
-| git-agent-skill-change-publication | Commits and pushes one validated directly owned agent or skill change batch without creating a pull request. |
-| git-change-baseline | Records a safe ownership baseline before task-owned editing begins. |
-| git-delegated-change-commit | Reviews and commits one validated delegate-owned change batch. |
-| go-code-standards | Applies focused Go standards. |
-| graphify | Efficiently queries and updates an existing code knowledge graph. |
-| grillme | Clarifies open design questions. |
-| github-issue-close | Closes one GitHub issue and verifies its closed state. |
-| github-issue-comment | Posts and verifies one GitHub issue comment. |
-| github-issue-deletion | Permanently deletes one GitHub issue after issue-specific confirmation. |
-| github-issue-reopen | Reopens one GitHub issue and verifies its open state. |
-| github-issue-update | Updates and verifies one GitHub issue's title, body, or labels. |
-| github-pr-approved-merge | Head-matches and squash-merges an approved pull request, then verifies deletion of only its remote branch. |
-| github-pr-check-validation | Validates required checks for an unchanged pull-request head. |
-| github-pr-publication | Pushes committed issue work and creates or returns its pull request. |
-| implement-stubs | Safely implements unfinished functions. |
-| okf-formatter | Formats content as OKF. |
-| okf-reader | Reads OKF knowledge bundles. |
-| okf-reorganizer | Reorganizes an OKF bundle. |
-| postgres-migration | Creates forward-only PostgreSQL migrations. |
-| postgres-schema-designer | Designs PostgreSQL schema specification documents. |
-| project-validation | Discovers and runs focused project-native validation. |
-| product-modeling | Models product objectives and workflows. |
-| requirements-analysis | Analyzes product requirements. |
-| safe-code-change | Performs focused, collaborative-safe code changes. |
-| security-operations | Reviews security and operational behavior. |
-| tailwind | Configures standalone Tailwind CLI builds and static output. |
-| spec-driven-implementation | Implements authoritative specifications. |
-| specification-quality-gate | Reviews specification readiness. |
-| specification-gap-handoff | Classifies code-to-authority documentation gaps and defines durable owner handoffs. |
-| specification-reconciliation | Compares code-derived and authoritative specifications. |
-| vault-ingestion | Ingests web content into a vault. |
-| workflow-state-modeling | Models workflow states and transitions. |
+## Layout
 
-## Graphify
+- `agents/` — user-facing roles and ordered workflows.
+- `skills/` — focused procedures and any small supporting scripts.
+- `tests/` — structural checks for identities, workflow edges, permissions, links, and YAML style.
 
-Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exists. The skill selects focused graph queries before broad reports or raw source search, and updates the graph after relevant code changes.
-
-## Workflow ownership
-
-- Requirements route to `prd-strategist`, shared architecture and cross-feature decisions to `app-spec-architect`, bounded feature contracts to `code-spec-engineer`, defects to `bug-fixer`, and other implementation to `code-implementor`.
-- Every ready GitHub issue routes and hands off to `github-sdlc`. It selects `agent-builder` for any agent or skill edit, `bug-fixer` for defects, and otherwise `code-implementor`; dedicated API integration tests may be delegated separately.
-- Implementation delegates edit and validate only. `github-sdlc` owns issue-worktree validation, ownership baselines, delegated-change commits, pull-request publication, required checks, head-specific merge approval, squash merge, remote-branch deletion, completion comments, and issue closure.
-- `sdlc-orchestrator` serves manually initiated CLI work and owns only reviewed local delegated-change commits; it never publishes or merges remotely or mutates GitHub issues.
-- `github-issue-manager` uses shared issue skills for creation, blocked-state reconciliation, updates, comments, closure or reopening, and explicitly confirmed permanent deletion.
-- A directly invoked `agent-builder` may commit and push only its validated agent or skill change batch after an ownership baseline and explicit user authorization. When delegated, it returns changes to the orchestrator without staging, committing, or pushing.
-- `spec-gap-detector` compares implemented capabilities with requirements and approved specifications, writes only `/code/specification-gaps.md`, and queues one-owner documentation handoffs. Documentation owners report their changes; the detector alone verifies and closes gaps.
-- Code-writing agents load `safe-code-change` before edits and `project-validation` before validation. Unsupported project-native validation commands require confirmation instead of being silently unavailable.
-- Browser-capture commands and comparison behavior live in `browser-visual-capture`; agents only decide when the skill applies.
-- Frontend component examples live behind `frontend-reference-examples`: agents read its catalog, then only a matching component document. References never override approved requirements, specifications, or repository conventions.
-
-## Container note
-
-`/code/containers/golang/Dockerfile` pre-installs Playwright's bundled `ffmpeg` into `PLAYWRIGHT_BROWSERS_PATH=/ms-playwright` so container runs do not need to fetch it at runtime.
-
-## Container runner
-
-`run` sources its sibling `project-mounts.sh`; the selected project is the single source of truth for host documentation/code mounts and container image.
-
-| Item | Behavior |
-| --- | --- |
-| Project environment | A project may set newline-delimited `CONTAINER_ENV` entries in `project-mounts.sh`. Use `NAME` to inherit an exported host value (recommended for secrets) or `NAME=value` for a literal value; `run` forwards each entry with `docker run --env`. |
-| Partner containers | A project may set `CONTAINER_NETWORK` and override `start_project_partners`. Call `ensure_container <name> <image> [docker options...]` there to create a missing named partner, start an existing stopped partner, or restart an existing running partner. `run` creates the network when needed and attaches its primary container. |
-
-## Read-only knowledge retrieval
-
-Search Markdown sections without returning full documents or modifying the bundle:
-
-```sh
-python3 scripts/retrieve-knowledge.py --root /path/to/bundle [--max-sections 10] [--json] <query...>
-```
-
-Results contain relative paths, line ranges, heading context, deterministic scores, and bounded excerpts. Navigation indexes influence ranking but are not returned; `log.md` and `.reorganization/` content are excluded.
+Edit `/code` assets directly. Restart OpenCode after configuration changes so it reloads the active configuration.

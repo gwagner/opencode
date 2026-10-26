@@ -3,7 +3,7 @@ name: browser-visual-compare
 description: Compares caller-supplied deterministic baseline/post-change screenshot pairs as diagnostic evidence against structured visual expectations.
 classification: technical
 opencode_permission:
-  shell:
+  bash:
     "node /code/skills/browser-visual-compare/scripts/compare-screenshots.mjs *": allow
   external_directory:
     "/code/skills/browser-visual-compare/scripts/compare-screenshots.mjs": allow

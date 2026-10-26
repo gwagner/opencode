@@ -1,4 +1,5 @@
 node_modules
+__pycache__/
 package.json
 package-lock.json
 bun.lock
@@ -8,6 +9,7 @@ log/log.log
 /specification-gaps.md
 /tests/*
 !/tests/agent-skill-architecture.sh
+!/tests/validate-agent-skill-architecture.py
 /project-mounts.sh
 /start.sh
 /important-paths.md

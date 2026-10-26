@@ -9,7 +9,25 @@ opencode_permission:
   edit: allow
   skill:
     non-production-database-fixture: allow
-    project-validation: allow
+  bash:
+    go build *: allow
+    go test *: allow
+    go fmt *: allow
+    gofmt *: allow
+    go vet *: allow
+    go list *: allow
+    go env *: allow
+    go version *: allow
+    npm test *: allow
+    npm run test *: allow
+    npm run build *: allow
+    npm run lint *: allow
+    tsc *: allow
+    tailwindcss *: allow
+    pytest *: allow
+    python -m pytest *: allow
+    make test*: allow
+    make build*: allow
 inputs:
   - api-discovery output
   - established endpoint contract
@@ -40,14 +58,6 @@ workflow:
   - id: "database-fixture"
     when: "After selected API tests are implemented when execution requires deterministic application database state."
     skill: "non-production-database-fixture"
-  - id: "validate-project"
-    when: "After all selected post-change stages."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 Use only after the caller supplies `api-discovery` output establishing the endpoint contract and authentication model.
@@ -71,4 +81,4 @@ Use only after the caller supplies `api-discovery` output establishing the endpo
 
 Never truncate arbitrary data, drop schemas, delete unrelated records, modify production configuration, run destructive migrations, or mutate a production endpoint. If a safe target cannot be established, write useful tests, skip unsafe execution, and report the blocker.
 
-Use `project-validation` to format and run the narrowest relevant tests, then broader integration checks when safe. Classify failures as test defect, implementation defect, contract mismatch, or environment blocker. Fix test defects; preserve meaningful failures and never change application behavior solely to make tests pass unless explicitly requested.
+The calling code-editing agent owns final `project-validation`; report the need to format and run the narrowest relevant tests, then broader integration checks when safe. Classify failures as test defect, implementation defect, contract mismatch, or environment blocker. Fix test defects; preserve meaningful failures and never change application behavior solely to make tests pass unless explicitly requested.

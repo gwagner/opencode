@@ -11,6 +11,7 @@ opencode_permission:
     agent-skill-authoring-contract: allow
     deterministic-skill-tree-authoring: allow
 inputs:
+  - caller-provided permitted read and edit paths
   - one caller-permitted target agent or skill Markdown path
   - target primary output and domain boundary
   - authoritative inputs, output destination, and evidence rules
@@ -20,6 +21,8 @@ inputs:
 # Non-technical agent and skill builder
 
 ## Inputs
+
+Require caller-provided permitted read and edit paths.
 
 Require one caller-permitted target agent or skill Markdown path, target primary output and domain boundary, authoritative inputs, output destination and evidence rules, and approved change scope.
 

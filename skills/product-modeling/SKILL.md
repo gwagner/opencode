@@ -5,6 +5,7 @@ classification: non-technical
 opencode_permission:
   read: allow
 inputs:
+  - caller-provided permitted read paths
   - requirements or code evidence
   - product scope
 compatibility: opencode
@@ -15,6 +16,8 @@ metadata:
 # Product modeling
 
 ## Inputs
+
+Require caller-provided permitted read paths.
 
 Require requirements or code evidence and product scope.
 

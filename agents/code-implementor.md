@@ -2,13 +2,13 @@
 name: code-implementor
 description: Implements one approved, bounded code change in an existing feature worktree.
 classification: technical
-mode: all
+mode: subagent
 model: "openai/gpt-5.6-sol"
 permission:
   question: allow
   glob: allow
   grep: allow
-  shell:
+  bash:
     "go build *": allow
     "go test *": allow
     "go fmt *": allow
@@ -40,10 +40,13 @@ permission:
     "node /code/skills/browser-visual-compare/scripts/compare-screenshots.mjs *": allow
   external_directory:
     "/code/**": allow
+    "/code/skills/browser-visual-capture/scripts/capture-screenshots.mjs": allow
+    "/code/skills/browser-visual-compare/scripts/compare-screenshots.mjs": allow
     "/root/go/**": allow
     "/project/requirements/**": allow
     "/project/specification/**": allow
     "/tmp/opencode/**": allow
+    /project/.opencode/scripts/retrieve-knowledge.py: allow
   read:
     "/code/**": allow
     "/root/go/**": allow

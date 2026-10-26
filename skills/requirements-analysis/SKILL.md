@@ -8,7 +8,12 @@ opencode_permission:
   grep: allow
   skill:
     okf-reader: allow
+  bash:
+    python3 /project/.opencode/scripts/retrieve-knowledge.py *: allow
+  external_directory:
+    /project/.opencode/scripts/retrieve-knowledge.py: allow
 inputs:
+  - caller-provided permitted read paths
   - requirements scope
   - accessible requirements bundle
 compatibility: opencode
@@ -19,6 +24,8 @@ metadata:
 # Requirements analysis
 
 ## Inputs
+
+Require caller-provided permitted read paths.
 
 Require requirements scope and an accessible requirements bundle.
 

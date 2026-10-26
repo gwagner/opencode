@@ -9,6 +9,7 @@ opencode_permission:
   edit: allow
   webfetch: allow
 inputs:
+  - caller-provided permitted read and edit paths
   - URL
   - existing confirmed vault destination
   - capture depth
@@ -17,6 +18,8 @@ inputs:
 # Vault ingestion
 
 ## Inputs
+
+Require caller-provided permitted read and edit paths.
 
 Require a URL, an existing confirmed vault destination, and capture depth.
 

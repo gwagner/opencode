@@ -2,7 +2,7 @@
 name: api-integration-tester
 description: Builds API integration tests from specifications and application code, including authentication and authorization behavior.
 classification: technical
-mode: all
+mode: subagent
 model: "openai/gpt-5.6-sol"
 permission:
   skill:
@@ -28,7 +28,7 @@ permission:
     "/project/**": allow
     "/code/**": allow
     "/root/go/**": allow
-  shell:
+  bash:
     "go build *": allow
     "go test *": allow
     "go fmt *": allow

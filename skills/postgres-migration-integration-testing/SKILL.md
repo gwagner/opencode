@@ -8,7 +8,25 @@ opencode_permission:
   grep: allow
   skill:
     non-production-database-fixture: allow
-    project-validation: allow
+  bash:
+    go build *: allow
+    go test *: allow
+    go fmt *: allow
+    gofmt *: allow
+    go vet *: allow
+    go list *: allow
+    go env *: allow
+    go version *: allow
+    npm test *: allow
+    npm run test *: allow
+    npm run build *: allow
+    npm run lint *: allow
+    tsc *: allow
+    tailwindcss *: allow
+    pytest *: allow
+    python -m pytest *: allow
+    make test*: allow
+    make build*: allow
 inputs:
   - caller-provided permitted migration source and test paths
   - migration history
@@ -27,7 +45,7 @@ metadata:
 
 Require caller-provided permitted migration, source, and test paths, migration history, an isolated project-native PostgreSQL test target, and a caller-provided permitted database fixture contract path when composed feature state is required. Never create or infer connection settings; report blocked when isolation is unproven.
 
-Execute the migration test plan only through the final `project-validation` stage and its caller-permitted project-native command set.
+Execute the migration test plan through caller-permitted project-native commands; the calling code-editing agent owns final `project-validation`.
 
 ## Deterministic workflow
 
@@ -37,14 +55,6 @@ workflow:
   - id: "database-fixture"
     when: "After migration checks are prepared when execution requires deterministic composed feature state rather than a migration-only target."
     skill: "non-production-database-fixture"
-  - id: "validate-project"
-    when: "After migration integration checks and every selected post-change check."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 ## Procedure

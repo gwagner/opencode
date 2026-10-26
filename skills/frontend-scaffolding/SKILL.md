@@ -15,7 +15,25 @@ opencode_permission:
     frontend-reference-examples: allow
     htmx: allow
     tailwind: allow
-    project-validation: allow
+  bash:
+    tailwindcss *: allow
+    go build *: allow
+    go test *: allow
+    go fmt *: allow
+    gofmt *: allow
+    go vet *: allow
+    go list *: allow
+    go env *: allow
+    go version *: allow
+    npm test *: allow
+    npm run test *: allow
+    npm run build *: allow
+    npm run lint *: allow
+    tsc *: allow
+    pytest *: allow
+    python -m pytest *: allow
+    make test*: allow
+    make build*: allow
 inputs:
   - approved frontend contract
   - affected component route and caller-provided permitted paths
@@ -52,14 +70,6 @@ workflow:
   - id: "configure-tailwind"
     when: "When Tailwind configuration or generation changes."
     skill: "tailwind"
-  - id: "validate-project"
-    when: "After all selected post-change stages."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 Use only for approved rendered frontend implementation. Work only in caller-permitted handwritten source, template, generated-output, packaging, and test paths.

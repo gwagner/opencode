@@ -3,7 +3,7 @@ name: git-change-baseline
 description: Records a safe ownership baseline before task-owned editing begins.
 classification: technical
 opencode_permission:
-  shell:
+  bash:
     "git status --porcelain=v1 -z": allow
 inputs:
   - task-change ownership context
@@ -20,4 +20,4 @@ Use only when the caller or its orchestrator owns the task change and may later 
 
 1. Record `git status --porcelain=v1 -z` and require an empty index.
 2. Record every pre-existing worktree path. Preserve and exclude those paths from the later task commit.
-3. Report the baseline result for a later `git-delegated-change-commit` or `git-agent-skill-change-publication` invocation.
+3. Report the baseline result for a later `git-delegated-change-commit` invocation.

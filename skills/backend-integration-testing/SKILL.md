@@ -9,7 +9,25 @@ opencode_permission:
   edit: allow
   skill:
     non-production-database-fixture: allow
-    project-validation: allow
+  bash:
+    go build *: allow
+    go test *: allow
+    go fmt *: allow
+    gofmt *: allow
+    go vet *: allow
+    go list *: allow
+    go env *: allow
+    go version *: allow
+    npm test *: allow
+    npm run test *: allow
+    npm run build *: allow
+    npm run lint *: allow
+    tsc *: allow
+    tailwindcss *: allow
+    pytest *: allow
+    python -m pytest *: allow
+    make test*: allow
+    make build*: allow
 inputs:
   - approved backend contract
   - caller-provided permitted backend authority source and test paths
@@ -39,14 +57,6 @@ workflow:
   - id: "database-fixture"
     when: "After affected tests are implemented when execution requires deterministic application database state."
     skill: "non-production-database-fixture"
-  - id: "validate-project"
-    when: "After backend integration tests and every selected post-change check."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 ## Procedure
@@ -62,7 +72,7 @@ workflow:
 9. For changed diagnostics, assert approved fields, stable outcomes, bounded samples, explicit truncation, low-cardinality labels, expected-no-work classification, redaction, and non-recursive recorder failure where applicable.
 10. For a frontend interaction-log ingestion command, test authentication, authorization, request protection, content type, schema version, event and field allowlists, request and batch bounds, field limits, timestamp handling, rate limits, duplicate behavior, and no-store non-reflective responses. Assert client-selected trusted context is discarded, prohibited data is rejected or removed before emission, server-owned context is added only when permitted, accepted events reach the structured application logger exactly as specified, logger failure is non-recursive, and rejected telemetry cannot alter domain state or the originating user workflow.
 11. Verify cleanup: test-owned records, files, queues, and fakes must not leak into later tests. Do not delete records outside the attested test scope.
-12. Use `project-validation` to run focused tests, then the relevant existing integration suite when safe. Classify failures as test defect, implementation defect, authority mismatch, dependency/infrastructure blocker, or pre-existing failure.
+12. The calling code-editing agent owns final `project-validation`; report the need to run focused tests, then the relevant existing integration suite when safe. Classify failures as test defect, implementation defect, authority mismatch, dependency/infrastructure blocker, or pre-existing failure.
 
 ## Required report
 

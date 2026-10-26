@@ -9,7 +9,25 @@ opencode_permission:
   edit: allow
   skill:
     non-production-database-fixture: allow
-    project-validation: allow
+  bash:
+    go build *: allow
+    go test *: allow
+    go fmt *: allow
+    gofmt *: allow
+    go vet *: allow
+    go list *: allow
+    go env *: allow
+    go version *: allow
+    npm test *: allow
+    npm run test *: allow
+    npm run build *: allow
+    npm run lint *: allow
+    tsc *: allow
+    tailwindcss *: allow
+    pytest *: allow
+    python -m pytest *: allow
+    make test*: allow
+    make build*: allow
 inputs:
   - approved security requirements
   - caller-provided permitted security authority source and test paths
@@ -35,14 +53,6 @@ workflow:
   - id: "database-fixture"
     when: "After security tests are implemented when execution requires deterministic application database state."
     skill: "non-production-database-fixture"
-  - id: "validate-project"
-    when: "After security verification and every selected post-change check."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 ## Procedure
@@ -55,7 +65,7 @@ workflow:
 6. For external adapters, verify approved credential provenance and rejection of prohibited ambient environment, profile, role, metadata, or transport fallback. For queued or retried work, prove later configuration changes do not alter the immutable event-time snapshot.
 7. For request protections, assert only approved origin, CSRF, input, and webhook rules. Do not weaken production configuration or bypass middleware to make a test pass.
 8. When startup, probe, or packaging behavior changes, verify public probes disclose only approved minimal state and test or development capabilities are absent from production composition, routes, artifacts, and startup commands.
-9. Request existing static or dependency scans through `project-validation` only when supported locally and without sending source or secrets to an unapproved service. Record scanner version/configuration when available.
+9. Request existing static or dependency scans from the calling code-editing agent only when supported locally and without sending source or secrets to an unapproved service; that agent owns final `project-validation`. Record scanner version/configuration when available.
 10. Classify each finding as implementation defect, configuration defect, test defect, approved exception, tool limitation, infrastructure blocker, or pre-existing failure. An exception requires authoritative evidence; otherwise preserve the finding.
 
 ## Required report

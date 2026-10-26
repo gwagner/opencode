@@ -9,7 +9,9 @@ opencode_permission:
   edit: allow
   skill:
     okf-formatter: allow
+    frontmatter-fixer: allow
 inputs:
+  - caller-provided permitted read and edit paths
   - OKF bundle root
   - bounded structural problem
   - permitted write destination
@@ -18,6 +20,8 @@ inputs:
 # What I Do
 
 ## Inputs
+
+Require caller-provided permitted read and edit paths.
 
 Require an OKF bundle root, a bounded structural problem, and a permitted write destination.
 

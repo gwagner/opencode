@@ -5,8 +5,25 @@ classification: technical
 opencode_permission:
   read: allow
   edit: allow
-  skill:
-    project-validation: allow
+  bash:
+    go build *: allow
+    go test *: allow
+    go fmt *: allow
+    gofmt *: allow
+    go vet *: allow
+    go list *: allow
+    go env *: allow
+    go version *: allow
+    npm test *: allow
+    npm run test *: allow
+    npm run build *: allow
+    npm run lint *: allow
+    tsc *: allow
+    tailwindcss *: allow
+    pytest *: allow
+    python -m pytest *: allow
+    make test*: allow
+    make build*: allow
 inputs:
   - approved HTMX interaction contract
   - affected route and fragment
@@ -28,14 +45,6 @@ Within the approved affected source and test scope, remove unused functions and 
 ```yaml
 request: "HTMX server-rendered interaction with safe swap ownership"
 workflow:
-  - id: "validate-project"
-    when: "After all selected post-change stages."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 Use for HTMX server-rendered HTML interactions only after the caller establishes any required independently server-driven component contract. This skill does not own SSE contracts.

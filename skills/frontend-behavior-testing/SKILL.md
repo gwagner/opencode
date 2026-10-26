@@ -7,8 +7,25 @@ opencode_permission:
   glob: allow
   grep: allow
   edit: allow
-  skill:
-    project-validation: allow
+  bash:
+    go build *: allow
+    go test *: allow
+    go fmt *: allow
+    gofmt *: allow
+    go vet *: allow
+    go list *: allow
+    go env *: allow
+    go version *: allow
+    npm test *: allow
+    npm run test *: allow
+    npm run build *: allow
+    npm run lint *: allow
+    tsc *: allow
+    tailwindcss *: allow
+    pytest *: allow
+    python -m pytest *: allow
+    make test*: allow
+    make build*: allow
 inputs:
   - approved frontend acceptance criteria
   - affected routes or components
@@ -35,14 +52,6 @@ Within the approved affected test scope, remove unused test helpers and modules,
 ```yaml
 request: "Focused frontend behavior tests and validation result"
 workflow:
-  - id: "validate-project"
-    when: "After frontend behavior tests and every selected post-change check."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 ## Procedure
@@ -55,7 +64,7 @@ workflow:
 6. Implement one test per behavior and preservation row. Assert visible content, native semantics, stable behavior hooks, enabled/disabled state, navigation, submitted data, error presentation, status announcement, focus behavior, loading completion, and recovery only when specified. Do not assert framework implementation details, generated class names, or timing guesses.
 7. When an interaction logging contract applies, test each affected trigger and outcome against the approved event code, schema version, allowlisted fields, effective environment mode, batching boundary, and drop behavior. Assert prohibited fields are absent, the browser cannot select a more permissive mode or trusted context, duplicate handlers do not double-emit, and unavailable or rejected telemetry does not change visible success, failure, focus, navigation, or recovery behavior.
 8. For asynchronous behavior, wait on an observable completed state supplied by the existing harness. Never use arbitrary sleep-based success criteria.
-9. Use `project-validation` to run the narrowest affected test file or command before broader checks. Classify failures as test defect, implementation defect, contract mismatch, infrastructure blocker, or pre-existing failure. Change application behavior only when the approved contract requires it.
+9. The calling code-editing agent owns final `project-validation`; report the need to run the narrowest affected test file or command before broader checks. Classify failures as test defect, implementation defect, contract mismatch, infrastructure blocker, or pre-existing failure. Change application behavior only when the approved contract requires it.
 
 ## Required report
 

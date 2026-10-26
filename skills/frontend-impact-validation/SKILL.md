@@ -7,9 +7,14 @@ opencode_permission:
     "/tmp/opencode/**": allow
   external_directory:
     "/tmp/opencode/**": allow
+    /code/skills/browser-visual-capture/scripts/capture-screenshots.mjs: allow
+    /code/skills/browser-visual-compare/scripts/compare-screenshots.mjs: allow
   skill:
     browser-visual-capture: allow
     browser-visual-compare: allow
+  bash:
+    node /code/skills/browser-visual-capture/scripts/capture-screenshots.mjs *: allow
+    node /code/skills/browser-visual-compare/scripts/compare-screenshots.mjs *: allow
 inputs:
   - approved browser-impact contract and dependency-closure evidence
   - caller-provided permitted baseline capture paths under /tmp/opencode

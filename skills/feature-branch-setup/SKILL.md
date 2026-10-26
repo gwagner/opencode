@@ -1,30 +1,27 @@
 ---
 name: feature-branch-setup
-description: Creates one clean local feature branch from local main before a bounded SDLC change.
+description: Creates one clean local feature branch before a bounded coding change.
 classification: technical
 opencode_permission:
-  read: allow
-  shell:
-    "git status --porcelain=v1*": allow
-    "git rev-parse *": allow
-    "git branch --show-current": allow
-    "git branch --list *": allow
-    "git switch -c feature/* main": allow
+  bash:
+    "python3 /code/skills/feature-branch-setup/scripts/setup-feature-branch.py *": allow
+  external_directory:
+    "/code/skills/feature-branch-setup/scripts/setup-feature-branch.py": allow
 inputs:
   - bounded requested outcome
-  - clean local-main Git worktree
+  - clean Git worktree on the caller-selected base branch
 ---
 
 # Feature branch setup
 
 ## Inputs
 
-Require a bounded requested outcome and a clean local-main Git worktree.
+Require a bounded requested outcome and a clean Git worktree on the caller-selected base branch.
 
-Use once, before specification or implementation work that will change `/code/`. This skill owns only safe local branch creation; it does not implement, validate, commit task changes, merge, delete branches, or contact remotes.
+## Procedure
 
-1. Confirm `/code/` is a Git worktree, `HEAD` is attached to local `main`, local `main` exists, and both the worktree and index are clean. If any condition fails, report the exact blocker and stop. Never checkpoint, stash, reset, restore, clean, or reuse pre-existing work.
-2. Derive one Git-valid `feature/<task-slug>` name from the requested user outcome. The slug must be concise and deterministic.
-3. Confirm the branch does not already exist. If it exists, report the name and stop; never reuse, delete, or rename it.
-4. Create and switch to that branch directly from local `main`. Never fetch, pull, push, use a remote, or alter local `main`.
-5. Report the new feature branch and its local-main base revision.
+Run `python3 /code/skills/feature-branch-setup/scripts/setup-feature-branch.py --outcome <outcome> --base <base>`. It creates one unused `feature/<slug>` branch. It does not fetch, push, reuse a branch, or change unrelated work.
+
+## Completion
+
+Report the branch and base revision, or the exact blocker.

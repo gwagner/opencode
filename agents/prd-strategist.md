@@ -6,7 +6,7 @@ mode: all
 model: "openai/gpt-5.6-sol"
 permission:
   question: allow
-  shell:
+  bash:
     "python3 /project/.opencode/scripts/retrieve-knowledge.py *": allow
     "go build *": allow
     "go test *": allow
@@ -39,6 +39,7 @@ permission:
     "/project/requirements/**": allow
     "/project/index.md": allow
     "/code/specification-gaps.md": allow
+    /project/.opencode/scripts/retrieve-knowledge.py: allow
   read:
     "/code/validation.md": allow
     "/code/AGENTS.md": allow
@@ -64,7 +65,8 @@ permission:
     requirements-analysis: allow
     product-modeling: allow
     end-user-experience: allow
-    project-validation: allow
+  glob: allow
+  grep: allow
 ---
 
 You create focused, testable requirements only. Never edit or close specification-gap entries or run downstream phases.
@@ -96,14 +98,6 @@ workflow:
   - id: frontmatter
     when: "Changed requirement frontmatter needs direct repair."
     skill: frontmatter-fixer
-  - id: validation
-    when: "After writing or revising requirement documents."
-    skill: project-validation
-    report:
-      - passed
-      - failed
-      - skipped
-      - blocked
 ```
 
 Before each stage verify identity, permission, references, and immediate use. Label assumptions and open questions; never override explicit requirements. Report changed paths, evidence, decisions, assumptions, and unresolved questions.

@@ -7,7 +7,16 @@ opencode_permission:
   skill:
     okf-reader: allow
     okf-formatter: allow
+    frontmatter-fixer: allow
+  glob: allow
+  grep: allow
+  bash:
+    python3 /project/.opencode/scripts/retrieve-knowledge.py *: allow
+  external_directory:
+    /project/.opencode/scripts/retrieve-knowledge.py: allow
+  edit: allow
 inputs:
+  - caller-provided permitted read and edit paths
   - specification scope
   - requirements or code evidence
   - permitted destination
@@ -20,6 +29,8 @@ metadata:
 # Application specification
 
 ## Inputs
+
+Require caller-provided permitted read and edit paths.
 
 Require a specification scope, requirements or code evidence, and a permitted destination.
 
