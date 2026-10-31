@@ -2,7 +2,6 @@
 """Validate deterministic agent/skill definitions and their direct contracts."""
 from __future__ import annotations
 
-import fnmatch
 import re
 import shlex
 import sys
@@ -29,6 +28,7 @@ NATIVE_PERMISSION_KEYS = {
     "doom_loop",
 }
 PERMISSION_ACTIONS = {"allow", "ask", "deny"}
+AGENT_MODES = {"all", "primary", "subagent"}
 
 import yaml
 
@@ -161,7 +161,7 @@ def workflow_edges(workflow: list[Any]) -> list[tuple[str, str]]:
 
 
 def permission_findings(permission: Any) -> list[str]:
-    """Validate native OpenCode permission names and actions."""
+    """Validate the native OpenCode permission schema."""
     if isinstance(permission, str):
         return [] if permission in PERMISSION_ACTIONS else ["permission scalar must be allow, ask, or deny"]
     if not isinstance(permission, dict):
@@ -181,6 +181,45 @@ def permission_findings(permission: Any) -> list[str]:
         else:
             findings.append(f"{permission_name}: rule must be an action or pattern map")
     return findings
+
+
+def permission_rules(permission: Any) -> list[tuple[str, str, str]]:
+    """Normalize native permission maps without reordering their rules."""
+    if isinstance(permission, str):
+        return [("*", "*", permission)] if permission in PERMISSION_ACTIONS else []
+    if not isinstance(permission, dict):
+        return []
+    rules: list[tuple[str, str, str]] = []
+    for action, value in permission.items():
+        if isinstance(value, str) and value in PERMISSION_ACTIONS:
+            rules.append((action, "*", value))
+        elif isinstance(value, dict):
+            for resource, effect in value.items():
+                if isinstance(resource, str) and effect in PERMISSION_ACTIONS:
+                    rules.append((action, resource, effect))
+    return rules
+
+
+def matches(pattern: str, value: str) -> bool:
+    """Match OpenCode's whole-value wildcard semantics."""
+    normalized = value.replace("\\", "/")
+    normalized_pattern = pattern.replace("\\", "/")
+    expression = "".join(
+        ".*" if character == "*" else "." if character == "?" else re.escape(character)
+        for character in normalized_pattern
+    )
+    if expression.endswith(r"\ \.\*"):
+        expression = expression[:-6] + r"(?:\ .*)?"
+    return re.fullmatch(expression, normalized, flags=re.DOTALL) is not None
+
+
+def permission_effect(permission: Any, action: str, resource: str) -> str:
+    """Return the last matching OpenCode permission effect, or its ask default."""
+    effect = "ask"
+    for rule_action, rule_resource, rule_effect in permission_rules(permission):
+        if matches(rule_action, action) and matches(rule_resource, resource):
+            effect = rule_effect
+    return effect
 
 
 def fixed_absolute_bash_paths(permission: dict[str, Any]) -> list[str]:
@@ -206,23 +245,35 @@ def external_path_is_covered(permission: dict[str, Any], path: str) -> bool:
 
 
 def covers(actual: Any, required: Any) -> bool:
-    """Whether a caller's native permission covers a direct skill contract."""
-    if required == "allow":
-        return actual == "allow" or (
-            isinstance(actual, dict) and any(action == "allow" for action in actual.values())
-        )
-    if actual == "allow":
-        return True
-    if not isinstance(actual, dict) or not isinstance(required, dict):
-        return False
+    """Whether every fixed contract rule resolves to its exact required effect."""
+    # Legacy scalar contracts describe caller-provided paths. They deliberately
+    # cannot name a static resource to evaluate; retain their historical
+    # compatibility rule while fixed pattern contracts use exact ordered evaluation.
+    if isinstance(required, dict):
+        for action, effect in required.items():
+            if isinstance(effect, str) and effect in PERMISSION_ACTIONS:
+                if not any(
+                    rule_action == action and rule_effect == effect
+                    for rule_action, _resource, rule_effect in permission_rules(actual)
+                ):
+                    return False
+        required_rules = [
+            rule
+            for action, value in required.items()
+            if isinstance(value, dict)
+            for rule in permission_rules({action: value})
+        ]
+    else:
+        required_rules = permission_rules(required)
     return all(
-        action != "allow"
-        or any(
-            granted == "allow" and fnmatch.fnmatchcase(pattern, allowed_pattern)
-            for allowed_pattern, granted in actual.items()
-        )
-        for pattern, action in required.items()
+        permission_effect(actual, action, resource) == effect
+        for action, resource, effect in required_rules
     )
+
+
+def permission_for(definition: Definition) -> Any:
+    """Select the agent runtime permission or skill minimum contract."""
+    return definition.data.get("permission" if definition.kind == "agent" else "opencode_permission", {}) or {}
 
 
 def main() -> None:
@@ -268,13 +319,16 @@ def main() -> None:
                         f"{path.relative_to(root)}: scalar read or edit permission requires ## Inputs wording "
                         "declaring caller-provided permitted paths"
                     )
+        elif data.get("mode", "all") not in AGENT_MODES:
+            findings.append(
+                f"{path.relative_to(root)}: mode must be all, primary, or subagent"
+            )
 
     for key, definition in definitions.items():
         workflows, workflow_findings = yaml_workflows(definition.path, definition.text)
         findings.extend(f"{definition.path.relative_to(root)}: {item}" for item in workflow_findings)
         edges[key] = []
-        permission_key = "permission" if definition.kind == "agent" else "opencode_permission"
-        permission = definition.data.get(permission_key) or {}
+        permission = permission_for(definition)
         permission_errors = permission_findings(permission)
         findings.extend(f"{definition.path.relative_to(root)}: {item}" for item in permission_errors)
         if not isinstance(permission, dict):
@@ -293,18 +347,19 @@ def main() -> None:
                     continue
                 edges[key].append(target_key)
                 grant_key = "skill" if edge_kind == "skill" else "task"
-                if not covers(permission.get(grant_key), {target: "allow"}):
-                    findings.append(f"{definition.path.relative_to(root)}: missing {grant_key} permission for {target}")
+                if permission_effect(permission, grant_key, target) != "allow":
+                    findings.append(f"{definition.path.relative_to(root)}: missing {grant_key} allow permission for {target}")
                 if edge_kind == "skill":
-                    contract = definitions[target_key].data.get("opencode_permission") or {}
+                    contract = permission_for(definitions[target_key])
                     if not isinstance(contract, dict):
                         findings.append(f"{definition.path.relative_to(root)} -> {target}: invalid opencode_permission")
                         continue
-                    for permission_name, requirement in contract.items():
-                        if not covers(permission.get(permission_name), requirement):
-                            findings.append(
-                                f"{definition.path.relative_to(root)} -> {target}: missing {permission_name} permission coverage"
-                            )
+                    if not covers(permission, contract):
+                        for action, resource, effect in permission_rules(contract):
+                            if permission_effect(permission, action, resource) != effect:
+                                findings.append(
+                                    f"{definition.path.relative_to(root)} -> {target}: missing {action} {effect} permission coverage for {resource}"
+                                )
 
     # Direct self-delegation and indirect recursive edges are unsafe.
     visiting: set[tuple[str, str]] = set()

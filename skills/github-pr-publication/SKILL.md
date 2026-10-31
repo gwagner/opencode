@@ -4,9 +4,7 @@ description: Pushes one validated committed branch and creates a draft GitHub pu
 classification: technical
 opencode_permission:
   bash:
-    "python3 /code/skills/github-pr-publication/scripts/publish-pr.py *": allow
-  external_directory:
-    "/code/skills/github-pr-publication/scripts/publish-pr.py": allow
+    "python3 /code/skills/github-pr-publication/scripts/publish-pr.py *": ask
   read: allow
 inputs:
   - caller-provided permitted read paths
@@ -27,7 +25,7 @@ Require an explicit user publication request, a clean committed non-base branch,
 
 ## Procedure
 
-Run `python3 /code/skills/github-pr-publication/scripts/publish-pr.py --title <title> --body-file <caller-permitted-path> --base <base>`. The script pushes the current branch and creates one draft pull request. If GitHub reports an existing pull request, report that result rather than recovering or changing it.
+Run `python3 /code/skills/github-pr-publication/scripts/publish-pr.py --title <title> --body-file <caller-permitted-path> --base <base>`. OpenCode must present its native `ask` approval for that publication command before it runs. The script verifies that `origin` matches the GitHub repository, binds pull-request queries and creation to that repository, pushes the current branch, and creates one draft pull request. If GitHub reports an existing pull request, report that result rather than recovering or changing it. If the push succeeds but creation fails, report `branch-pushed; pull-request-not-created` as a partial publication and do not retry or recover it.
 
 ## Boundaries
 

@@ -2,12 +2,13 @@
 name: sdlc-orchestrator
 description: Routes one bounded coding request to the right authority or implementation specialist and returns validated change evidence.
 classification: technical
-mode: all
+mode: primary
 model: "openai/gpt-5.6-terra"
 temperature: 0.1
 permission:
   question: allow
   task:
+    "*": deny
     prd-strategist: allow
     app-spec-architect: allow
     code-spec-engineer: allow
@@ -19,18 +20,21 @@ permission:
     spec-gap-detector: allow
   read: allow
   bash:
+    "*": deny
     "git status --porcelain=v1 -z": allow
+    "git branch --show-current": allow
+    "git rev-parse --verify HEAD": allow
     "git diff -- *": allow
-    "git add -- *": allow
-    "git commit --only *": allow
+    "git add -- *": ask
+    "git commit --only *": ask
     "python3 /code/skills/feature-branch-setup/scripts/setup-feature-branch.py *": allow
     "python3 /code/skills/openchamber-worktree-validation/scripts/validate-worktree.py *": allow
-    "python3 /code/skills/github-pr-publication/scripts/publish-pr.py *": allow
+    "python3 /code/skills/github-pr-publication/scripts/publish-pr.py *": ask
   external_directory:
     "/code/skills/feature-branch-setup/scripts/setup-feature-branch.py": allow
     "/code/skills/openchamber-worktree-validation/scripts/validate-worktree.py": allow
-    "/code/skills/github-pr-publication/scripts/publish-pr.py": allow
   skill:
+    "*": deny
     grillme: allow
     feature-branch-setup: allow
     openchamber-worktree-validation: allow
@@ -39,7 +43,7 @@ permission:
     github-pr-publication: allow
 ---
 
-Own one sequential coding request. Specialists own implementation; you own selection, handoff, and the final report. GitHub issue and pull-request actions are optional adapters: use them only when the user explicitly asks. Do not infer a publication, recovery, merge, cleanup, or issue-closure request from implementation work.
+Own one sequential coding request. Select this primary agent from the CLI or OpenChamber entry point; do not launch it as a specialist. Specialists own implementation; you own selection, handoff, and the final report. GitHub issue and pull-request actions are optional adapters: use them only when the user explicitly asks. Do not infer a publication, recovery, merge, cleanup, or issue-closure request from implementation work. If the entry point cannot select this primary agent or cannot invoke its configured specialist subagents, stop before delegation and report that unsupported launch mode; do not select another agent or attempt nested delegation.
 
 ```yaml
 request: "One bounded coding request returned with validated change evidence."

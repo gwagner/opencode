@@ -24,4 +24,4 @@ Run `python3 /code/skills/feature-branch-setup/scripts/setup-feature-branch.py -
 
 ## Completion
 
-Report the branch and base revision, or the exact blocker.
+Report the branch, base branch, immutable base revision, or the exact blocker.

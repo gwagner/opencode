@@ -21,17 +21,23 @@ def main():
     if not slug:
         print("outcome cannot produce a branch slug", file=sys.stderr)
         return 2
-    if run("git", "status", "--porcelain=v1").stdout or run("git", "branch", "--show-current").stdout.strip() != args.base:
+    status = run("git", "status", "--porcelain=v1")
+    current_branch = run("git", "branch", "--show-current")
+    base_revision = run("git", "rev-parse", "--verify", args.base)
+    if status.returncode or current_branch.returncode or base_revision.returncode:
+        print("worktree or base branch cannot be inspected", file=sys.stderr)
+        return 2
+    if status.stdout or current_branch.stdout.strip() != args.base:
         print("worktree must be clean and attached to the base branch", file=sys.stderr)
         return 2
     if run("git", "branch", "--list", branch).stdout.strip():
         print(f"branch exists: {branch}", file=sys.stderr)
         return 2
-    result = run("git", "switch", "-c", branch, args.base)
+    result = run("git", "switch", "-c", branch, base_revision.stdout.strip())
     if result.returncode:
         print(result.stderr, file=sys.stderr)
         return 1
-    print(json.dumps({"branch": branch, "base": args.base}, sort_keys=True))
+    print(json.dumps({"base": args.base, "base_revision": base_revision.stdout.strip(), "branch": branch}, sort_keys=True))
     return 0
 
 

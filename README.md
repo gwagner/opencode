@@ -19,7 +19,7 @@ The default flow is:
 
 ## Optional GitHub adapter
 
-GitHub issue and pull-request actions are available only when explicitly requested. They support issue creation, updates, comments, closure, and draft pull-request publication. They do not control the normal coding workflow and never automatically merge, delete branches, recover interrupted hosted state, or close issues.
+GitHub issue and pull-request actions are available only when explicitly requested. They support issue creation, updates, comments, closure, and draft pull-request publication. OpenCode's native approval gate prompts before a delegated commit or publication command runs. Publication reports `branch-pushed; pull-request-not-created` when a push succeeds but draft-PR creation fails; it does not retry or recover that partial state. These adapters do not control the normal coding workflow and never automatically merge, delete branches, recover interrupted hosted state, or close issues. The ordered-rule behavior follows the [OpenCode v2.1.2 permission evaluator](https://github.com/anomalyco/opencode/blob/a517687fde98a7329ada3ae644a01a9fc6c4e99e/packages/core/src/permission.ts).
 
 ## Layout
 

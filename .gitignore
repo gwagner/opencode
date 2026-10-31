@@ -10,6 +10,7 @@ log/log.log
 /tests/*
 !/tests/agent-skill-architecture.sh
 !/tests/validate-agent-skill-architecture.py
+!/tests/test_pr_lifecycle_remediation.py
 /project-mounts.sh
 /start.sh
 /important-paths.md
