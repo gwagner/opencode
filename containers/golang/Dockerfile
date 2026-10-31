@@ -1,6 +1,5 @@
-FROM ghcr.io/anomalyco/opencode:2.0.18
+FROM ghcr.io/anomalyco/opencode:2.1.2
 
-ENV PATH="$PATH:/root/.local/bin/"
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 ENV PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
@@ -29,9 +28,9 @@ RUN apk update && apk add --no-cache go git curl uv python3 ripgrep \
   yq yamllint jq github-cli@community
 
 # Install Graphify
-RUN uv tool install graphifyy@${GRAPHIFY_VERSION}
-RUN uv tool install "graphifyy[sql]"
-RUN /root/.local/bin/graphify opencode install
+ENV UV_TOOL_BIN_DIR=/usr/local/bin
+ENV UV_TOOL_DIR=/opt/uv-tools
+RUN uv tool install "graphifyy[sql]==${GRAPHIFY_VERSION}"
 
 # Setup hostkey for github.com
 RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts

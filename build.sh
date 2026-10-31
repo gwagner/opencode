@@ -1,5 +1,9 @@
-#!/bin/bash
+#!/bin/sh
+set -eu
 
-podman build -t opencode_golang ./containers/golang/
-podman build -t openchamber ./containers/openchamber/
-podman build -t obsidian ./containers/obsidian/
+engine=${CONTAINER_ENGINE:-docker}
+root=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+
+"$engine" build -t opencode_golang "$root/containers/golang/"
+"$engine" build -t openchamber "$root/containers/openchamber/"
+"$engine" build -t obsidian "$root/containers/obsidian/"

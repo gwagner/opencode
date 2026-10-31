@@ -56,11 +56,38 @@ def main():
     branch_name = branch.stdout.strip()
     head = run("git", "rev-parse", "--verify", "HEAD")
     base = run("git", "rev-parse", "--verify", f"refs/heads/{args.base}")
-    origin = run("git", "remote", "get-url", "origin")
+    ahead = run("git", "rev-list", "--count", f"refs/heads/{args.base}..HEAD")
+    if any(command.returncode for command in (head, base, ahead)):
+        print("publication prerequisites could not establish base or head state", file=sys.stderr)
+        report("blocked", reason="publication-prerequisite")
+        return 2
+    try:
+        ahead_count = int(ahead.stdout.strip())
+    except ValueError:
+        ahead_count = 0
+    if ahead_count < 1:
+        print("publication requires at least one commit not contained in the base branch", file=sys.stderr)
+        report("blocked", reason="no-committed-change")
+        return 2
+    push_urls = run("git", "remote", "get-url", "--push", "--all", "origin")
+    if push_urls.returncode:
+        print("publication prerequisites could not establish the origin push target", file=sys.stderr)
+        report("blocked", reason="publication-prerequisite")
+        return 2
+    configured_push_urls = [url for url in push_urls.stdout.splitlines() if url.strip()]
+    if len(configured_push_urls) != 1:
+        print("publication requires exactly one configured origin push URL", file=sys.stderr)
+        report("blocked", reason="push-target-ambiguous")
+        return 2
+    origin_identity = remote_identity(configured_push_urls[0])
+    if origin_identity is None:
+        print("origin push URL does not identify one repository", file=sys.stderr)
+        report("blocked", reason="push-target-invalid")
+        return 2
     auth = run("gh", "auth", "status")
     repository = run("gh", "repo", "view", "--json", "nameWithOwner,url")
-    if any(command.returncode for command in (head, base, origin, auth, repository)):
-        print("publication prerequisites could not establish repository, base, head, origin, or authentication", file=sys.stderr)
+    if any(command.returncode for command in (auth, repository)):
+        print("publication prerequisites could not establish repository, push target, or authentication", file=sys.stderr)
         report("blocked", reason="publication-prerequisite")
         return 2
     try:
@@ -76,7 +103,6 @@ def main():
         print("GitHub repository evidence was incomplete", file=sys.stderr)
         report("blocked", reason="repository-evidence-invalid")
         return 2
-    origin_identity = remote_identity(origin.stdout)
     repository_identity = remote_identity(repository_evidence["url"])
     if origin_identity is None or origin_identity != repository_identity or origin_identity[1] != repository_evidence["nameWithOwner"].casefold():
         print("origin does not match the verified GitHub repository", file=sys.stderr)
@@ -101,15 +127,23 @@ def main():
     evidence = {
         "base": args.base,
         "base_head": base.stdout.strip(),
+        "commits_ahead": ahead_count,
         "branch": branch_name,
         "head": head.stdout.strip(),
-        "origin": origin.stdout.strip(),
+        "push_target": {"host": origin_identity[0], "repository": origin_identity[1]},
         "repository": repository_evidence,
     }
     if len(pull_requests) != 0:
         report("blocked", reason="existing-pull-request", pull_requests=pull_requests, **evidence)
         return 2
-    pushed = run("git", "push", "--set-upstream", "origin", branch_name)
+    pushed = run(
+        "git",
+        "push",
+        "--no-tags",
+        "--no-follow-tags",
+        "origin",
+        f"HEAD:refs/heads/{branch_name}",
+    )
     if pushed.returncode:
         print("publication status: not-published; branch-push-failed", file=sys.stderr)
         print(pushed.stderr, file=sys.stderr)

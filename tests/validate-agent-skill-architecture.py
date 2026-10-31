@@ -160,6 +160,28 @@ def workflow_edges(workflow: list[Any]) -> list[tuple[str, str]]:
     return edges
 
 
+def workflow_invocations(workflow: list[Any]) -> list[tuple[str, str, str]]:
+    """Return workflow targets with the nearest condition governing invocation."""
+    invocations: list[tuple[str, str, str]] = []
+
+    def walk(value: Any, condition: str = "") -> None:
+        if isinstance(value, dict):
+            local_condition = value.get("when", condition)
+            if not isinstance(local_condition, str):
+                local_condition = condition
+            for key, child in value.items():
+                if key in {"skill", "agent"} and isinstance(child, str):
+                    invocations.append((key, child, local_condition))
+                elif key != "when":
+                    walk(child, local_condition)
+        elif isinstance(value, list):
+            for child in value:
+                walk(child, condition)
+
+    walk(workflow)
+    return invocations
+
+
 def permission_findings(permission: Any) -> list[str]:
     """Validate the native OpenCode permission schema."""
     if isinstance(permission, str):
@@ -201,15 +223,15 @@ def permission_rules(permission: Any) -> list[tuple[str, str, str]]:
 
 
 def matches(pattern: str, value: str) -> bool:
-    """Match OpenCode's whole-value wildcard semantics."""
+    """Match the OpenCode 2.1.2 Wildcard.match implementation."""
     normalized = value.replace("\\", "/")
-    normalized_pattern = pattern.replace("\\", "/")
-    expression = "".join(
-        ".*" if character == "*" else "." if character == "?" else re.escape(character)
-        for character in normalized_pattern
-    )
-    if expression.endswith(r"\ \.\*"):
-        expression = expression[:-6] + r"(?:\ .*)?"
+    expression = re.sub(
+        r"([.+^${}()|\[\]\\])",
+        r"\\\1",
+        pattern.replace("\\", "/"),
+    ).replace("*", ".*").replace("?", ".")
+    if expression.endswith(" .*"):
+        expression = expression[:-3] + "( .*)?"
     return re.fullmatch(expression, normalized, flags=re.DOTALL) is not None
 
 
@@ -223,13 +245,13 @@ def permission_effect(permission: Any, action: str, resource: str) -> str:
 
 
 def fixed_absolute_bash_paths(permission: dict[str, Any]) -> list[str]:
-    """Return literal absolute paths used by allowed bash command patterns."""
+    """Return literal absolute paths used by executable bash command patterns."""
     bash = permission.get("bash")
     if not isinstance(bash, dict):
         return []
     paths: list[str] = []
     for command, action in bash.items():
-        if action != "allow" or not isinstance(command, str):
+        if action not in {"allow", "ask"} or not isinstance(command, str):
             continue
         try:
             tokens = shlex.split(command)
@@ -282,6 +304,7 @@ def main() -> None:
     definitions: dict[tuple[str, str], Definition] = {}
     findings: list[str] = []
     edges: dict[tuple[str, str], list[tuple[str, str]]] = {}
+    invocations: dict[tuple[str, str], list[tuple[str, str, str]]] = {}
 
     for path in paths:
         try:
@@ -328,6 +351,7 @@ def main() -> None:
         workflows, workflow_findings = yaml_workflows(definition.path, definition.text)
         findings.extend(f"{definition.path.relative_to(root)}: {item}" for item in workflow_findings)
         edges[key] = []
+        invocations[key] = []
         permission = permission_for(definition)
         permission_errors = permission_findings(permission)
         findings.extend(f"{definition.path.relative_to(root)}: {item}" for item in permission_errors)
@@ -340,6 +364,7 @@ def main() -> None:
                     "lacks exact external_directory permission coverage"
                 )
         for workflow in workflows:
+            invocations[key].extend(workflow_invocations(workflow["workflow"]))
             for edge_kind, target in workflow_edges(workflow["workflow"]):
                 target_key = (edge_kind, target)
                 if target_key not in definitions:
@@ -360,6 +385,60 @@ def main() -> None:
                                 findings.append(
                                     f"{definition.path.relative_to(root)} -> {target}: missing {action} {effect} permission coverage for {resource}"
                                 )
+
+    primary_agents = {
+        name for (kind, name), definition in definitions.items()
+        if kind == "agent" and definition.data.get("mode", "all") == "primary"
+    }
+    for key, definition in definitions.items():
+        if key[0] != "agent":
+            continue
+        permission = permission_for(definition)
+        for primary in primary_agents:
+            if primary != key[1] and permission_effect(permission, "task", primary) == "allow":
+                findings.append(
+                    f"{definition.path.relative_to(root)}: primary agent {primary} must not be task-delegable"
+                )
+
+        agent_invocations = invocations.get(key, [])
+        ordered_targets = [(kind, target) for kind, target, _condition in agent_invocations]
+        for edge_kind, target, condition in agent_invocations:
+            normalized_condition = condition.lower()
+            if edge_kind == "agent" and target in primary_agents:
+                findings.append(
+                    f"{definition.path.relative_to(root)}: workflow must not delegate to primary agent {target}"
+                )
+            if target == "feature-branch-setup" and not (
+                "request" in normalized_condition and "explicit" in normalized_condition
+            ):
+                findings.append(
+                    f"{definition.path.relative_to(root)}: feature-branch-setup requires an explicit requester condition"
+                )
+            if target == "git-delegated-change-commit" and not (
+                ("user" in normalized_condition or "requester" in normalized_condition)
+                and ("authoriz" in normalized_condition or "explicit" in normalized_condition)
+            ):
+                findings.append(
+                    f"{definition.path.relative_to(root)}: commit requires explicit user authorization"
+                )
+            if target in {"github-pr-publication", "github-sdlc-lifecycle-recovery"} and not (
+                ("user" in normalized_condition or "requester" in normalized_condition)
+                and "explicit" in normalized_condition
+            ):
+                findings.append(
+                    f"{definition.path.relative_to(root)}: {target} requires an explicit user request"
+                )
+
+        if ("skill", "project-validation") in ordered_targets:
+            evidence = ("skill", "execution-evidence-reporting")
+            if evidence not in ordered_targets:
+                findings.append(
+                    f"{definition.path.relative_to(root)}: project-validation requires execution-evidence-reporting"
+                )
+            elif ordered_targets.index(evidence) < ordered_targets.index(("skill", "project-validation")):
+                findings.append(
+                    f"{definition.path.relative_to(root)}: execution evidence must follow project validation"
+                )
 
     # Direct self-delegation and indirect recursive edges are unsafe.
     visiting: set[tuple[str, str]] = set()

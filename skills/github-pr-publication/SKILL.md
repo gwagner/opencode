@@ -5,6 +5,8 @@ classification: technical
 opencode_permission:
   bash:
     "python3 /code/skills/github-pr-publication/scripts/publish-pr.py *": ask
+  external_directory:
+    "/code/skills/github-pr-publication/scripts/publish-pr.py": allow
   read: allow
 inputs:
   - caller-provided permitted read paths
