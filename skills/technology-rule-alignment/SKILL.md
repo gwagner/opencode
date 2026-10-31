@@ -5,6 +5,7 @@ classification: technical
 opencode_permission:
   read: allow
 inputs:
+  - caller-provided permitted read paths
   - one technology or technology-stack rule with its source
   - caller-permitted candidate agent and skill Markdown paths
   - approved audit or revision scope
@@ -17,6 +18,8 @@ inputs:
 Route one sourced technology or technology-stack rule to its smallest owning agent or skill surface and define its future audit criterion.
 
 ## Inputs
+
+Require caller-provided permitted read paths.
 
 Require one technology or technology-stack rule with its source, caller-permitted candidate agent and skill Markdown paths, and approved audit or revision scope.
 

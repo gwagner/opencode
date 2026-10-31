@@ -5,6 +5,7 @@ classification: non-technical
 opencode_permission:
   read: allow
 inputs:
+  - caller-provided permitted read paths
   - bounded scope
   - authoritative and observed evidence
 compatibility: opencode
@@ -15,6 +16,8 @@ metadata:
 # Gap, risk, and ambiguity analysis
 
 ## Inputs
+
+Require caller-provided permitted read paths.
 
 Require bounded scope and authoritative and observed evidence.
 

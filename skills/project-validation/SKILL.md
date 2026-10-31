@@ -13,7 +13,7 @@ opencode_permission:
     "/code/.github/**": allow
     "/code/compose*.yml": allow
     "/code/docker-compose*.yml": allow
-  shell:
+  bash:
     "go build *": allow
     "go test *": allow
     "go fmt *": allow
@@ -42,13 +42,13 @@ inputs:
 
 ## Inputs
 
-Require focused changed paths, project-native validation context, and a permitted validation command set. Run only commands permitted by both this contract and the caller; report unsupported checks as `skipped`.
+Require focused changed paths, project-native validation context, and a permitted validation command set. Run only commands permitted by both this contract and the caller. A discovered command outside either bounded permission set is not silently substituted: return it as `blocked` with its exact command and immediate need so the caller can obtain a method-specific authorization or explicitly mark it `skipped`.
 
 If `/code/validation.md` exists, follow it. Otherwise inspect only the permitted root guidance and manifests named by this contract; use the caller-provided validation context for any other project-native command.
 
 1. Inspect available permitted guidance and manifests for supported commands.
 2. Run the narrowest formatter and focused tests covering the change.
-3. Run build, lint, or broader regression checks only when relevant and safe.
+3. Run build, lint, or broader regression checks only when relevant, safe, and covered by exact caller permission. Ask the caller to authorize an otherwise-needed command before running it; never widen permissions from a manifest hint.
 4. Classify failures as change defect, pre-existing failure, environment blocker, or unknown; do not hide failures.
 5. Report commands actually run, results, skipped checks, and blockers.
 

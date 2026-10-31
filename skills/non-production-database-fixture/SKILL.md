@@ -6,8 +6,25 @@ opencode_permission:
   read: allow
   glob: allow
   grep: allow
-  skill:
-    project-validation: allow
+  bash:
+    go build *: allow
+    go test *: allow
+    go fmt *: allow
+    gofmt *: allow
+    go vet *: allow
+    go list *: allow
+    go env *: allow
+    go version *: allow
+    npm test *: allow
+    npm run test *: allow
+    npm run build *: allow
+    npm run lint *: allow
+    tsc *: allow
+    tailwindcss *: allow
+    pytest *: allow
+    python -m pytest *: allow
+    make test*: allow
+    make build*: allow
 inputs:
   - approved deterministic database-state contract
   - caller-provided permitted fixture configuration source and test paths
@@ -28,14 +45,6 @@ This skill verifies and uses existing project infrastructure. It never creates a
 ```yaml
 request: "Safely executed deterministic database-backed test lifecycle"
 workflow:
-  - id: validate-project
-    when: "After fixture lifecycle checks establish a safe project-native target."
-    skill: project-validation
-    report:
-      - passed
-      - failed
-      - skipped
-      - blocked
 ```
 
 ## Procedure
@@ -45,7 +54,7 @@ workflow:
 3. Require application state to be composed through production interfaces or established project adapters. Deny every reachable email, webhook, payment, cloud, network, or other external effect through existing test adapters.
 4. Require the lifecycle owner to perform cleanup only for its attested target. Uncertain ownership or cleanup must quarantine the target or return `blocked`; it must never guess, truncate shared state, or destroy an unattested database.
 5. Require each retry to use a wholly new target, lease, session, and identity set. Do not reuse failed or uncertain state.
-6. Use `project-validation` to run only the established project-native command. Do not construct connection strings, override inherited target configuration, invoke database-native destructive commands, or add a competing provisioner.
+6. The calling code-editing agent owns final `project-validation`; report the need to run only the established project-native command. Do not construct connection strings, override inherited target configuration, invoke database-native destructive commands, or add a competing provisioner.
 7. Report lifecycle owner, target-isolation evidence, migration and state-composition evidence, external-effect denial, exact command, outcome, teardown or quarantine evidence, and blockers. Never report credentials or connection details.
 
 ## Compatible foundations

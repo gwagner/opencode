@@ -2,7 +2,7 @@
 name: api-integration-tester
 description: Builds API integration tests from specifications and application code, including authentication and authorization behavior.
 classification: technical
-mode: all
+mode: subagent
 model: "openai/gpt-5.6-sol"
 permission:
   skill:
@@ -16,6 +16,7 @@ permission:
     project-validation: allow
     graphify: allow
     non-production-database-fixture: allow
+    execution-evidence-reporting: allow
   read:
     "/project/**": allow
     "/code/**": allow
@@ -28,7 +29,7 @@ permission:
     "/project/**": allow
     "/code/**": allow
     "/root/go/**": allow
-  shell:
+  bash:
     "go build *": allow
     "go test *": allow
     "go fmt *": allow
@@ -96,6 +97,9 @@ workflow:
       - failed
       - skipped
       - blocked
+  - id: execution-evidence
+    when: "After project validation."
+    skill: execution-evidence-reporting
 ```
 
 Before every stage verify identity, permission, references, recursive edge, and exclusive worktree ownership; load immediately before use. Never stage, commit, push, open or merge a pull request, or mutate a GitHub issue. Return changed paths and validation evidence to the calling orchestrator. Report discrepancies and exact blockers.

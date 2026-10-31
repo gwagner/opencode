@@ -7,6 +7,7 @@ opencode_permission:
   glob: allow
   grep: allow
 inputs:
+  - caller-provided permitted read paths
   - one reported defect and observed symptom
   - incident time window environment and build or release version when available
   - expected behavior or authoritative behavior source when available
@@ -17,6 +18,8 @@ inputs:
 # Root-cause analysis
 
 ## Inputs
+
+Require caller-provided permitted read paths.
 
 Require one reported defect and observed symptom; incident time window, environment, and build or release version when available; expected behavior or authoritative behavior source when available; caller-permitted investigation paths; and available log, metric, trace, reproduction, runtime, or test evidence.
 

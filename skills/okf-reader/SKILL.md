@@ -6,9 +6,12 @@ opencode_permission:
   read: allow
   glob: allow
   grep: allow
-  shell:
+  bash:
     "python3 /project/.opencode/scripts/retrieve-knowledge.py *": allow
+  external_directory:
+    /project/.opencode/scripts/retrieve-knowledge.py: allow
 inputs:
+  - caller-provided permitted read paths
   - question
   - accessible OKF bundle root
   - permitted retrieval command when indexed retrieval is needed
@@ -17,6 +20,8 @@ inputs:
 # OKF reader
 
 ## Inputs
+
+Require caller-provided permitted read paths.
 
 Require a question, accessible OKF bundle root, and the permitted retrieval command when indexed retrieval is needed.
 

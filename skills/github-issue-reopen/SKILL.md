@@ -1,9 +1,9 @@
 ---
 name: github-issue-reopen
 description: Reopens one closed GitHub issue and verifies its open state.
-classification: non-technical
+classification: technical
 opencode_permission:
-  shell:
+  bash:
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
     "gh issue view * --json number,title,state,url": allow

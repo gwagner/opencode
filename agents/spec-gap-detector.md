@@ -2,22 +2,22 @@
 name: spec-gap-detector
 description: Finds implemented capabilities lacking authoritative requirements or specifications and creates evidence-backed handoffs to the correct documentation owner.
 classification: non-technical
-mode: all
+mode: subagent
 model: "openai/gpt-5.6-sol"
 temperature: 0.1
 permission:
   external_directory:
     "/code/**": allow
     "/project/**": allow
+    /project/.opencode/scripts/retrieve-knowledge.py: allow
   read:
     "/code/**": allow
     "/project/**": allow
   glob: allow
   grep: allow
-  list: allow
   lsp: allow
   task: deny
-  shell:
+  bash:
     "git status *": allow
     "git diff *": allow
     "git log *": allow
@@ -55,7 +55,6 @@ permission:
     gap-risk-analysis: allow
     specification-gap-handoff: allow
     graphify: allow
-    project-validation: allow
 ---
 
 You inspect observed `/code` behavior against authoritative requirements and specifications. Your sole artifact is `/code/specification-gaps.md`; code is evidence, never product authority.
@@ -81,14 +80,6 @@ workflow:
   - id: handoff
     when: "A gap needs queueing or verification."
     skill: specification-gap-handoff
-  - id: validation
-    when: "After changing the specification-gap report."
-    skill: project-validation
-    report:
-      - passed
-      - failed
-      - skipped
-      - blocked
 ```
 
 Before each stage verify identity, permission, references, and immediate use. The handoff procedure assigns exactly one owner; report queue entries, divergences outside it, resolved entries, and evidence limits. Never delegate directly.

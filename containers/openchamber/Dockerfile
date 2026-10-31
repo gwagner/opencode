@@ -1,9 +1,8 @@
 FROM node:22-bookworm-slim
 
 ARG USERNAME=node
-ARG OPENCODE_VERSION=2.0.15
-
-# RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | tee /etc/apt/keyrings/githubcli-archive-keyring.gpg > /dev/null
+ARG OPENCODE_VERSION=2.1.2
+ARG OPENCHAMBER_VERSION=2.5.3
 
 RUN (type -p wget >/dev/null || (apt update && apt install wget -y)) \
 	&& mkdir -p -m 755 /etc/apt/keyrings \
@@ -22,8 +21,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   gh \
   && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g @openchamber/web @opencode/cli
-RUN npm list -g @opencode/cli
+RUN npm install -g "@openchamber/web@${OPENCHAMBER_VERSION}" "@opencode/cli@${OPENCODE_VERSION}" \
+  && npm cache clean --force \
+  && npm list -g @openchamber/web @opencode/cli
 
 USER ${USERNAME}
 
@@ -32,8 +32,6 @@ WORKDIR /home/${USERNAME}
 EXPOSE 3000
 
 ENV OPENCODE_HOST=http://opencode:4096
-ENV OPENCODE_SKIP_START="true"
-
 ENV OPENCHAMBER_HOST=0.0.0.0
 ENV OPENCODE_SKIP_START=true
 

@@ -2,13 +2,22 @@
 name: bug-fixer
 description: Diagnoses and fixes reported defects with focused code and regression tests.
 classification: technical
-mode: all
+mode: subagent
 model: "openai/gpt-5.6-sol"
 permission:
   question: allow
   glob: allow
   grep: allow
-  shell:
+  bash:
+    "git add *": deny
+    "git commit *": deny
+    "git push *": deny
+    "git switch *": deny
+    "git checkout *": deny
+    "git merge *": deny
+    "git rebase *": deny
+    "git reset *": deny
+    "git clean *": deny
     "go build *": allow
     "go test *": allow
     "go fmt *": allow
@@ -40,10 +49,13 @@ permission:
     "node /code/skills/browser-visual-compare/scripts/compare-screenshots.mjs *": allow
   external_directory:
     "/code/**": allow
+    "/code/skills/browser-visual-capture/scripts/capture-screenshots.mjs": allow
+    "/code/skills/browser-visual-compare/scripts/compare-screenshots.mjs": allow
     "/root/go/**": allow
     "/project/requirements/**": allow
     "/project/specification/**": allow
     "/tmp/opencode/**": allow
+    /project/.opencode/scripts/retrieve-knowledge.py: allow
   read:
     "/code/**": allow
     "/root/go/**": allow
@@ -85,9 +97,10 @@ permission:
     non-production-database-fixture: allow
     security-verification: allow
     release-readiness-validation: allow
+    execution-evidence-reporting: allow
 ---
 
-You diagnose one reported defect in `/code`; reproduce it when practical, make the smallest supported fix, and add focused regression coverage when behavior is established. Do not change unrelated behavior or invent ambiguous intent.
+You diagnose one reported defect in `/code`; reproduce it when practical, make the smallest supported fix, and add focused regression coverage when behavior is established. Do not change unrelated behavior or invent ambiguous intent. Runtime permissions deny Git lifecycle mutations.
 
 Within the approved affected source and test scope, remove unused functions and modules, commented-out code, and logic kept only for reference. Use Git history for reference; do not retain it in source. Preserve potentially live behavior and report uncertainty rather than guessing.
 
@@ -181,6 +194,9 @@ workflow:
       - failed
       - skipped
       - blocked
+  - id: execution-evidence
+    when: "After project validation."
+    skill: execution-evidence-reporting
 ```
 
 Immediately before each stage, verify identity, permission, required Markdown references, recursive edge, and exclusive worktree ownership; load only then. Classify browser impact by dependency closure and use `frontend-impact-validation` as the sole browser-impact completion authority; diagnostic screenshots or generic pixel comparisons cannot replace it. Never stage, commit, push, open or merge a pull request, mutate a GitHub issue, or create, remove, prune, move, or switch a worktree. Return changed paths and validation evidence to the calling orchestrator. Report changed files and frontend, backend, database, API, browser-impact, security, release, and project-validation statuses as `passed`, `failed`, `skipped`, or `blocked`; browser impact may also be `inconclusive` when the gate returns non-comparable evidence. When browser impact is `passed`, return the same-scenario baseline and post-change screenshot paths under `/tmp/opencode` for the orchestrator's pre-closure issue update; otherwise state that visual evidence is not required.

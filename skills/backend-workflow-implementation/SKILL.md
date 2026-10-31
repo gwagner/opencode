@@ -7,8 +7,25 @@ opencode_permission:
   glob: allow
   grep: allow
   edit: allow
-  skill:
-    project-validation: allow
+  bash:
+    go build *: allow
+    go test *: allow
+    go fmt *: allow
+    gofmt *: allow
+    go vet *: allow
+    go list *: allow
+    go env *: allow
+    go version *: allow
+    npm test *: allow
+    npm run test *: allow
+    npm run build *: allow
+    npm run lint *: allow
+    tsc *: allow
+    tailwindcss *: allow
+    pytest *: allow
+    python -m pytest *: allow
+    make test*: allow
+    make build*: allow
 inputs:
   - approved state-changing use-case contract
   - caller-provided permitted source and test paths
@@ -34,14 +51,6 @@ Within the approved affected source and test scope, remove unused functions and 
 ```yaml
 request: "One correctly implemented state-changing backend workflow"
 workflow:
-  - id: validate-project
-    when: "After implementation and every selected post-change check."
-    skill: project-validation
-    report:
-      - passed
-      - failed
-      - skipped
-      - blocked
 ```
 
 ## Procedure

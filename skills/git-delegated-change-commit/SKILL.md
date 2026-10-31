@@ -4,12 +4,13 @@ description: Reviews and commits one validated delegate-owned change batch from 
 classification: technical
 opencode_permission:
   read: allow
-  shell:
-    "git status*": allow
-    "git diff*": allow
-    "git add -- *": allow
-    "git commit --only *": allow
+  bash:
+    "git status --porcelain=v1 -z": allow
+    "git diff -- *": allow
+    "git add -- *": ask
+    "git commit --only *": ask
 inputs:
+  - caller-provided permitted read paths
   - explicit task-commit authorization
   - clean ownership baseline captured before delegation
   - one completed delegate change batch and owned paths
@@ -21,6 +22,8 @@ inputs:
 
 ## Inputs
 
+Require caller-provided permitted read paths.
+
 Require explicit task-commit authorization, a clean ownership baseline captured before delegation, one completed delegate change batch with owned paths, its passed `project-validation` result, and caller-permitted changed paths.
 
 ## Procedure
@@ -28,7 +31,7 @@ Require explicit task-commit authorization, a clean ownership baseline captured 
 1. Run `git status --porcelain=v1 -z` and compare every changed path with the baseline and delegate-owned path report. Stop on staged changes, ownership ambiguity, or an unrelated path.
 2. Review `git diff -- <owned paths>` and require the change to match the approved issue scope and delegate report. Never repair or extend the implementation in this skill.
 3. Require the delegate's final `project-validation` status to be `passed`; reject failed, skipped, blocked, stale, or missing evidence.
-4. Stage only the reviewed paths with `git add -- <owned paths>` and create one descriptive commit with `git commit --only ... -- <owned paths>`.
+4. OpenCode must present its native `ask` approval before staging only the reviewed paths with `git add -- <owned paths>` and before creating one descriptive commit with `git commit --only ... -- <owned paths>`.
 5. Re-run status and report any remaining change. A later independently validated delegate batch may invoke this skill again as a separate workflow pass.
 
 ## Boundaries

@@ -1,9 +1,9 @@
 ---
 name: github-issue-update
 description: Applies one requested reversible title, body, or label update to an existing GitHub issue.
-classification: non-technical
+classification: technical
 opencode_permission:
-  shell:
+  bash:
     "gh auth status": allow
     "gh repo view --json nameWithOwner,url": allow
     "gh issue view * --json number,title,body,labels,state,url": allow

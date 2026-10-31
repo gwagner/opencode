@@ -9,7 +9,25 @@ opencode_permission:
   edit: allow
   skill:
     non-production-database-fixture: allow
-    project-validation: allow
+  bash:
+    go build *: allow
+    go test *: allow
+    go fmt *: allow
+    gofmt *: allow
+    go vet *: allow
+    go list *: allow
+    go env *: allow
+    go version *: allow
+    npm test *: allow
+    npm run test *: allow
+    npm run build *: allow
+    npm run lint *: allow
+    tsc *: allow
+    tailwindcss *: allow
+    pytest *: allow
+    python -m pytest *: allow
+    make test*: allow
+    make build*: allow
 inputs:
   - established API contract
   - access-control model
@@ -40,14 +58,6 @@ workflow:
   - id: database-fixture
     when: "After access-control tests are implemented when execution requires deterministic application database state."
     skill: non-production-database-fixture
-  - id: validate-project
-    when: "After access-control test implementation and every selected post-change check."
-    skill: project-validation
-    report:
-      - passed
-      - failed
-      - skipped
-      - blocked
 ```
 
 Use when integration-testing APIs with access-control boundaries.

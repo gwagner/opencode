@@ -5,6 +5,7 @@ classification: non-technical
 opencode_permission:
   read: allow
 inputs:
+  - caller-provided permitted read paths
   - material claims
   - accessible authoritative or code evidence
 compatibility: opencode
@@ -15,6 +16,8 @@ metadata:
 # Evidence and traceability
 
 ## Inputs
+
+Require caller-provided permitted read paths.
 
 Require material claims and accessible authoritative or code evidence.
 

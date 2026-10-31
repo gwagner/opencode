@@ -4,12 +4,13 @@ description: Investigates a codebase efficiently with graphify. Use when answeri
 classification: technical
 opencode_permission:
   read: allow
-  shell:
+  bash:
     "graphify query *": allow
     "graphify explain *": allow
     "graphify path *": allow
     "graphify update .": allow
 inputs:
+  - caller-provided permitted read paths
   - codebase question or changed code
   - existing graph output
 ---
@@ -17,6 +18,8 @@ inputs:
 # Graphify
 
 ## Inputs
+
+Require caller-provided permitted read paths.
 
 Require a codebase question or changed code and existing graph output.
 

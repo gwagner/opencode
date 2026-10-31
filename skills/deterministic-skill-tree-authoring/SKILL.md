@@ -5,6 +5,7 @@ classification: technical
 opencode_permission:
   read: allow
 inputs:
+  - caller-provided permitted read paths
   - agent or skill role
   - identities
   - permissions
@@ -14,6 +15,8 @@ inputs:
 # Deterministic workflow authoring
 
 ## Inputs
+
+Require caller-provided permitted read paths.
 
 Require an agent or skill role, identities, permissions, and ordered workflow.
 
@@ -46,14 +49,6 @@ workflow:
           agent: "exact-agent-name"
         - when: "otherwise"
           skill: "exact-skill-name"
-  - id: "validation"
-    when: "After all selected post-change stages."
-    skill: "project-validation"
-    report:
-      - "passed"
-      - "failed"
-      - "skipped"
-      - "blocked"
 ```
 
 - `workflow` is strictly sequential. A conditionally skipped step does not reorder later steps.

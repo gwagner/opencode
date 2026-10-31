@@ -6,7 +6,7 @@ mode: all
 model: "openai/gpt-5.6-sol"
 permission:
   question: allow
-  shell:
+  bash:
     "python3 /project/.opencode/scripts/retrieve-knowledge.py *": allow
     "go build *": allow
     "go test *": allow
@@ -41,6 +41,7 @@ permission:
     "/project/decisions/**": allow
     "/project/index.md": allow
     "/code/specification-gaps.md": allow
+    /project/.opencode/scripts/retrieve-knowledge.py: allow
   read:
     "/code/validation.md": allow
     "/code/AGENTS.md": allow
@@ -79,7 +80,8 @@ permission:
     end-user-experience: allow
     knowledge-document-slicing: allow
     grillme: allow
-    project-validation: allow
+  glob: allow
+  grep: allow
 ---
 
 You translate approved authority into one focused feature contract in `/project/specification/`; never alter gap entries, strategy, shared architecture, or production code.
@@ -138,14 +140,6 @@ workflow:
   - id: quality
     when: "The draft is complete."
     skill: specification-quality-gate
-  - id: validation
-    when: "After writing or revising the feature specification."
-    skill: project-validation
-    report:
-      - passed
-      - failed
-      - skipped
-      - blocked
 ```
 
 Before each stage verify identity, permission, references, recursive edge, and immediate use. Requirements override conflicting specifications. Define validation, errors, data effects, permissions, seams, and user-observable success, failure, and recovery; report changed paths, evidence, decisions, assumptions, and unresolved questions.

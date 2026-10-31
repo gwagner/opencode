@@ -4,7 +4,7 @@ description: Ingests a web page into an Obsidian or OKF vault as a structured, d
 classification: non-technical
 mode: all
 permission:
-  shell:
+  bash:
     "go build *": allow
     "go test *": allow
     "go fmt *": allow
@@ -27,7 +27,6 @@ permission:
   webfetch: allow
   glob: allow
   grep: allow
-  list: allow
   external_directory:
     "/code/validation.md": allow
     "/code/AGENTS.md": allow
@@ -56,7 +55,6 @@ permission:
     okf-formatter: allow
     vault-ingestion: allow
     frontmatter-fixer: allow
-    project-validation: allow
 ---
 
 You ingest URLs only into a user-named existing vault directory under `/project/`; never infer or create a vault location, and edit only its confirmed subtree.
@@ -73,14 +71,6 @@ workflow:
   - id: format
     when: "The ingestion output requires an OKF-formatted final note."
     skill: okf-formatter
-  - id: validation
-    when: "After writing or formatting a vault note."
-    skill: project-validation
-    report:
-      - passed
-      - failed
-      - skipped
-      - blocked
 ```
 
 Before each skill stage verify identity, permission, links, and immediate use.

@@ -1,123 +1,92 @@
-# OpenCode configuration
+# OpenCode agent and skill bundle
 
-## Asset tree model
+This repository defines focused AI coding agents and reusable skills. Its primary product is a clear, deterministic path from an approved request to a validated change.
 
-`/code` is the source of truth for this OpenCode configuration bundle.
+## Core model
 
-| Path | Role |
-| --- | --- |
-| `/code` | Canonical, editable asset tree for agents, skills, scripts, plugins, docs, and tests. |
-| `/project/.opencode` | Active runtime tree that OpenCode reads. It mirrors `/code` through shared links. |
+- **Agents** own a user-facing role, boundaries, delegation, and completion.
+- **Skills** perform one reusable procedure with explicit inputs and minimum permissions.
+- **`sdlc-orchestrator`** selects authority and an implementation specialist, then returns validation evidence.
+- **`project-validation`** is required after code-editing work.
 
-Edit assets in `/code` first. The mirrored `.opencode/` tree should reflect those files through links, so runtime behavior stays aligned with the canonical copy. After changing agents, skills, plugins, commands, or config-time files, restart OpenCode so the running process reloads the mirrored configuration.
+The OpenChamber-first default flow is:
 
-## Agents
+1. Validate the selected OpenChamber-linked worktree without changing it. Prepare a fresh local branch only when the requester explicitly asks.
+2. Clarify a blocking ambiguity.
+3. Establish missing authority.
+4. Select one specialist.
+5. Implement and validate.
+6. Report changed paths and evidence, leaving the result uncommitted unless the user separately authorizes a commit.
 
-| Agent | Purpose |
-| --- | --- |
-| agent-builder | Audits and creates deterministic agents and skills; directly invoked, explicitly authorized changes may be committed and pushed after validation. |
-| api-integration-tester | Builds API integration tests. |
-| app-spec-architect | Defines cross-feature architecture and shared workflows from requirements. |
-| bug-fixer | Reproduces, diagnoses, and fixes defects with regression coverage. |
-| code-implementor | Implements approved, focused code changes. |
-| code-spec-engineer | Produces bounded implementation-ready feature contracts. |
-| github-issue-manager | Researches and manages GitHub issues through creation, updates, comments, state changes, and explicitly confirmed permanent deletion. |
-| github-sdlc | Orchestrates issue-originated work through delegated implementation, commits, pull-request checks, approved squash merge, completion comment, and issue closure. |
-| prd-strategist | Creates and refines OKF requirements. |
-| reverse-engineer-app-spec | Recovers an evidence-backed specification from code. |
-| sdlc-orchestrator | Orchestrates manually initiated CLI work through local delegated-change commits without remote lifecycle operations. |
-| spec-gap-detector | Finds implemented capabilities missing authoritative documentation and queues evidence-backed owner handoffs. |
-| url-to-vault | Ingests URLs into an OKF or Obsidian vault. |
+## Optional GitHub adapter
 
-## Skills
+GitHub issue and pull-request actions are available only when explicitly requested. They support issue creation, updates, comments, closure, and draft pull-request publication. OpenCode's native approval gate prompts before a delegated commit or publication command runs. Publication reports `branch-pushed; pull-request-not-created` when a push succeeds but draft-PR creation fails; it does not retry or recover that partial state. These adapters do not control the normal coding workflow and never automatically merge, delete branches, recover interrupted hosted state, or close issues. The ordered-rule behavior and matcher tests follow the pinned OpenCode v2.1.2 [permission evaluator](https://github.com/anomalyco/opencode/blob/a517687fde98a7329ada3ae644a01a9fc6c4e99e/packages/core/src/permission.ts) and [wildcard implementation](https://github.com/anomalyco/opencode/blob/a517687fde98a7329ada3ae644a01a9fc6c4e99e/packages/core/src/util/wildcard.ts).
 
-| Skill | Purpose |
-| --- | --- |
-| api-auth-testing | Tests API authentication and authorization. |
-| api-discovery | Discovers API contracts and implementation. |
-| api-integration-modeling | Models HTTP APIs and integrations. |
-| api-integration-testing | Implements API integration tests. |
-| api-test-reporting | Reports API test coverage and findings. |
-| application-specification | Defines specification conventions. |
-| backend-scaffolding | Scaffolds reachable backend layers. |
-| browser-visual-capture | Captures baseline/post-change Chromium screenshots for URL-based UI validation. |
-| code-comments | Adds code comments. |
-| codebase-reverse-engineering | Recovers behavior and architecture from code. |
-| data-persistence-modeling | Models data persistence and PostgreSQL schemas. |
-| evidence-traceability | Adds evidence and traceability to specifications. |
-| frontmatter-fixer | Repairs Markdown frontmatter. |
-| frontend-reference-examples | Progressively loads matching HTML, CSS, JavaScript, accessibility, and illustrative data references for frontend components. |
-| htmx | Implements server-fragment requests and safe swap ownership. |
-| gap-risk-analysis | Identifies gaps, risks, and assumptions. |
-| git-agent-skill-change-publication | Commits and pushes one validated directly owned agent or skill change batch without creating a pull request. |
-| git-change-baseline | Records a safe ownership baseline before task-owned editing begins. |
-| git-delegated-change-commit | Reviews and commits one validated delegate-owned change batch. |
-| go-code-standards | Applies focused Go standards. |
-| graphify | Efficiently queries and updates an existing code knowledge graph. |
-| grillme | Clarifies open design questions. |
-| github-issue-close | Closes one GitHub issue and verifies its closed state. |
-| github-issue-comment | Posts and verifies one GitHub issue comment. |
-| github-issue-deletion | Permanently deletes one GitHub issue after issue-specific confirmation. |
-| github-issue-reopen | Reopens one GitHub issue and verifies its open state. |
-| github-issue-update | Updates and verifies one GitHub issue's title, body, or labels. |
-| github-pr-approved-merge | Head-matches and squash-merges an approved pull request, then verifies deletion of only its remote branch. |
-| github-pr-check-validation | Validates required checks for an unchanged pull-request head. |
-| github-pr-publication | Pushes committed issue work and creates or returns its pull request. |
-| implement-stubs | Safely implements unfinished functions. |
-| okf-formatter | Formats content as OKF. |
-| okf-reader | Reads OKF knowledge bundles. |
-| okf-reorganizer | Reorganizes an OKF bundle. |
-| postgres-migration | Creates forward-only PostgreSQL migrations. |
-| postgres-schema-designer | Designs PostgreSQL schema specification documents. |
-| project-validation | Discovers and runs focused project-native validation. |
-| product-modeling | Models product objectives and workflows. |
-| requirements-analysis | Analyzes product requirements. |
-| safe-code-change | Performs focused, collaborative-safe code changes. |
-| security-operations | Reviews security and operational behavior. |
-| tailwind | Configures standalone Tailwind CLI builds and static output. |
-| spec-driven-implementation | Implements authoritative specifications. |
-| specification-quality-gate | Reviews specification readiness. |
-| specification-gap-handoff | Classifies code-to-authority documentation gaps and defines durable owner handoffs. |
-| specification-reconciliation | Compares code-derived and authoritative specifications. |
-| vault-ingestion | Ingests web content into a vault. |
-| workflow-state-modeling | Models workflow states and transitions. |
+## Layout
 
-## Graphify
+- `agents/` — user-facing roles and ordered workflows.
+- `skills/` — focused procedures and any small supporting scripts.
+- `tests/` — structural and behavioral checks for identities, workflow edges, permissions, Git helpers, publication safety, links, and YAML style.
 
-Code-oriented agents may load `graphify` only when `graphify-out/graph.json` exists. The skill selects focused graph queries before broad reports or raw source search, and updates the graph after relevant code changes.
+Edit `/code` assets directly. Restart OpenCode after configuration changes so it reloads the active configuration.
 
-## Workflow ownership
+## Supported deployment
 
-- Requirements route to `prd-strategist`, shared architecture and cross-feature decisions to `app-spec-architect`, bounded feature contracts to `code-spec-engineer`, defects to `bug-fixer`, and other implementation to `code-implementor`.
-- Every ready GitHub issue routes and hands off to `github-sdlc`. It selects `agent-builder` for any agent or skill edit, `bug-fixer` for defects, and otherwise `code-implementor`; dedicated API integration tests may be delegated separately.
-- Implementation delegates edit and validate only. `github-sdlc` owns issue-worktree validation, ownership baselines, delegated-change commits, pull-request publication, required checks, head-specific merge approval, squash merge, remote-branch deletion, completion comments, and issue closure.
-- `sdlc-orchestrator` serves manually initiated CLI work and owns only reviewed local delegated-change commits; it never publishes or merges remotely or mutates GitHub issues.
-- `github-issue-manager` uses shared issue skills for creation, blocked-state reconciliation, updates, comments, closure or reopening, and explicitly confirmed permanent deletion.
-- A directly invoked `agent-builder` may commit and push only its validated agent or skill change batch after an ownership baseline and explicit user authorization. When delegated, it returns changes to the orchestrator without staging, committing, or pushing.
-- `spec-gap-detector` compares implemented capabilities with requirements and approved specifications, writes only `/code/specification-gaps.md`, and queues one-owner documentation handoffs. Documentation owners report their changes; the detector alone verifies and closes gaps.
-- Code-writing agents load `safe-code-change` before edits and `project-validation` before validation. Unsupported project-native validation commands require confirmation instead of being silently unavailable.
-- Browser-capture commands and comparison behavior live in `browser-visual-capture`; agents only decide when the skill applies.
-- Frontend component examples live behind `frontend-reference-examples`: agents read its catalog, then only a matching component document. References never override approved requirements, specifications, or repository conventions.
+The checked-in stack pins **OpenCode 2.1.2** and **OpenChamber 2.5.3**. OpenCode 2.1.2 is the approved permission runtime: ordered permission rules use last-match-wins evaluation and the whole-resource wildcard behavior covered by `tests/test_pr_lifecycle_remediation.py`. Upgrade both the image pins and compatibility tests together; an unvalidated runtime is not supported.
 
-## Container note
+### Configuration source and mounts
 
-`/code/containers/golang/Dockerfile` pre-installs Playwright's bundled `ffmpeg` into `PLAYWRIGHT_BROWSERS_PATH=/ms-playwright` so container runs do not need to fetch it at runtime.
+This deployment uses an **external OpenCode server** from OpenChamber's perspective: the `opencode` service owns the server process, while OpenChamber connects through `OPENCODE_HOST` with `OPENCODE_SKIP_START=true`. It is not OpenChamber-managed mode. In particular, OpenChamber's `openchamber` and `openchamber_schedule` agent tools are unavailable in external/skip-start mode; this bundle neither configures nor claims those tools. Worktree selection and specialist delegation use OpenCode's own runtime interfaces.
 
-## Container runner
+`openchamber.yaml` bind-mounts this repository at `/home/opencode/.config/opencode`, and the OpenCode image starts as `/home/opencode`. OpenCode's documented global discovery therefore loads:
 
-`run` sources its sibling `project-mounts.sh`; the selected project is the single source of truth for host documentation/code mounts and container image.
+- `opencode.jsonc` as its global configuration;
+- `agents/` and `skills/` as the deployed definitions;
+- `AGENTS.md` as global instructions;
+- `/opt/plugins/` as the image-provided external skill directory.
 
-| Item | Behavior |
-| --- | --- |
-| Project environment | A project may set newline-delimited `CONTAINER_ENV` entries in `project-mounts.sh`. Use `NAME` to inherit an exported host value (recommended for secrets) or `NAME=value` for a literal value; `run` forwards each entry with `docker run --env`. |
-| Partner containers | A project may set `CONTAINER_NETWORK` and override `start_project_partners`. Call `ensure_container <name> <image> [docker options...]` there to create a missing named partner, start an existing stopped partner, or restart an existing running partner. `run` creates the network when needed and attaches its primary container. |
+The bundle owns the mounted global configuration and agent/skill definitions. `/opt/plugins/` is image-managed external content. Project, remote organizational, environment-selected, or system-managed OpenCode configuration can still merge with or override the global layer according to OpenCode precedence; inspect the resolved runtime configuration rather than assuming this checkout is the only source.
 
-## Read-only knowledge retrieval
+The repository does not reference a generated Graphify JavaScript plugin or invent a Graphify tool. Graphify is installed only as a CLI in the OpenCode image. OpenCode and OpenChamber share `/workspace`, `/worktrees`, and `/tmp/opencode`; the Obsidian vault is mounted at `/vault` for OpenCode.
 
-Search Markdown sections without returning full documents or modifying the bundle:
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `OPENCODE_SERVER_PASSWORD` | Yes | Shared authentication secret for OpenCode and OpenChamber. |
+| `OPENCHAMBER_UI_PASSWORD` | Yes | Password protecting the OpenChamber web UI. |
+| `HOME` | Yes | Resolves host SSH, GitHub CLI, and Git configuration mounts. |
+| `CONTAINER_ENGINE` | No | Image builder used by `build.sh`; defaults to `docker`. |
+
+Host directories and credential files named in `openchamber.yaml` must exist before startup. In particular, provision `/opt/opencode/{workspace,config,local,worktrees,tmp}`, `/opt/openchamber/config`, `/opt/obsidian/{vault,config}`, `${HOME}/.container-ssh/`, and `${HOME}/.config-gh/hosts.yml` with permissions appropriate for the container users.
+
+### Build and start
+
+Run from the repository root:
 
 ```sh
-python3 scripts/retrieve-knowledge.py --root /path/to/bundle [--max-sections 10] [--json] <query...>
+python3 scripts/validate-deployment.py
+./tests/agent-skill-architecture.sh
+./build.sh
+docker compose -f openchamber.yaml config --quiet
+docker compose -f openchamber.yaml up -d
 ```
 
-Results contain relative paths, line ranges, heading context, deterministic scores, and bounded excerpts. Navigation indexes influence ranking but are not returned; `log.md` and `.reorganization/` content are excluded.
+Set `CONTAINER_ENGINE=podman` only when the same engine will run the resulting images and its Compose implementation supports this file. `build.sh` resolves Dockerfile paths relative to itself, so it may be invoked from another directory.
+
+OpenChamber connects to `http://opencode:4096` with `OPENCODE_SKIP_START=true`; it must not launch a second, floating OpenCode runtime. In OpenChamber, select `sdlc-orchestrator` as the primary agent for coding work. A direct CLI selection of that same agent is an explicit fallback, not an intermediate launch step.
+
+### Reload and smoke verification
+
+Agent, skill, instruction, and `opencode.jsonc` changes require an OpenCode container restart. Dockerfile or version changes require rebuilding the affected image first.
+
+```sh
+docker compose -f openchamber.yaml restart opencode openchamber
+docker exec opencode opencode --version
+docker exec openchamber npm list -g @openchamber/web @opencode/cli
+docker exec openchamber sh -c 'curl -fsS -u "opencode:$OPENCODE_SERVER_PASSWORD" http://opencode:4096/api/info'
+```
+
+The expected versions are OpenCode `2.1.2`, `@openchamber/web@2.5.3`, and `@opencode/cli@2.1.2`. The API response must report OpenCode 2.1.2. Also inspect the resolved OpenCode configuration with the deployed runtime's supported debug/config interface and confirm that `sdlc-orchestrator` and its specialist agents are discovered from the mounted global directory. Do not substitute an unverified command when that runtime exposes no such interface; record the startup/API evidence and treat capability validation as blocked.
+
+Then open `http://localhost:3000`, select `sdlc-orchestrator`, and verify primary-agent launch, serial specialist delegation, native approval, and permission enforcement. Its first coding handoff must use the selected linked worktree without creating a branch, commit, pull request, or recovery action. Explicit branch preparation, commit, and publication must each produce a separate native approval path. Static checks do not establish these runtime capabilities; if any cannot be observed, the deployment is unsupported and execution must fail closed.
+
+`docker compose ... config --quiet`, `scripts/validate-deployment.py`, and `tests/agent-skill-architecture.sh` are non-starting checks. The shell test is the standard repository test entry point and includes the Python behavioral suite. This repository does not automatically rebuild, restart, or reload a running stack.

@@ -6,7 +6,10 @@ opencode_permission:
   read: allow
   skill:
     okf-formatter: allow
+    frontmatter-fixer: allow
+  edit: allow
 inputs:
+  - caller-provided permitted read and edit paths
   - draft specification
   - intended authority or evidence mode
   - permitted destination
@@ -18,6 +21,8 @@ metadata:
 # Specification quality gate
 
 ## Inputs
+
+Require caller-provided permitted read and edit paths.
 
 Require a draft specification, intended authority or evidence mode, and permitted destination.
 

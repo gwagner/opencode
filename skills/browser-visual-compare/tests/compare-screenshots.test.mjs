@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
@@ -44,7 +43,7 @@ function png(width, height, pixels) {
 }
 
 function runCase(expected, baselinePixels, postPixels, extra = {}) {
-  const directory = mkdtempSync(join(tmpdir(), 'visual-compare-test-'));
+  const directory = mkdtempSync(join('/tmp/opencode', 'visual-compare-test-'));
   const route = 'https://example.test/page';
   const baselinePath = join(directory, 'baseline.png');
   const postPath = join(directory, 'post.png');
